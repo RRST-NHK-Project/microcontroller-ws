@@ -38,10 +38,8 @@ BluetoothSerial SerialBT;
 #define ENC2_B 2
 #define ENC3_A 15
 #define ENC3_B 36
-// #define ENC5_A 21
-// #define ENC5_B 22
-// #define ENC6_A 19
-// #define ENC6_B 18
+#define ENC4_A 39
+#define ENC4_B 34
 
 #define MD1P 32
 #define MD2P 33
@@ -57,137 +55,6 @@ BluetoothSerial SerialBT;
 #define MD4D 13
 #define MD5D 21
 #define MD6D 19
-
-// パルスカウンタの定義
-gpio_set_pull_mode(ENC1_A, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC1_B, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC2_A, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC2_B, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC3_A, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC3_B, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC4_A, GPIO_PULLUP_ONLY);
-gpio_set_pull_mode(ENC4_B, GPIO_PULLUP_ONLY);
-
-pcnt_config_t pcnt_config1 = {};
-pcnt_config1.pulse_gpio_num = ENC1_A;
-pcnt_config1.ctrl_gpio_num = ENC1_B;
-pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
-pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config1.pos_mode = PCNT_COUNT_INC;
-pcnt_config1.neg_mode = PCNT_COUNT_DEC;
-pcnt_config1.counter_h_lim = COUNTER_H_LIM;
-pcnt_config1.counter_l_lim = COUNTER_L_LIM;
-pcnt_config1.unit = PCNT_UNIT_0;
-pcnt_config1.channel = PCNT_CHANNEL_0;
-
-pcnt_config_t pcnt_config2 = {};
-pcnt_config2.pulse_gpio_num = PULSE_PIN_DT;
-pcnt_config2.ctrl_gpio_num = PULSE_PIN_CLK;
-pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
-pcnt_config2.pos_mode = PCNT_COUNT_INC;
-pcnt_config2.neg_mode = PCNT_COUNT_DEC;
-pcnt_config2.counter_h_lim = COUNTER_H_LIM;
-pcnt_config2.counter_l_lim = COUNTER_L_LIM;
-pcnt_config2.unit = PCNT_UNIT_0;
-pcnt_config2.channel = PCNT_CHANNEL_1;
-
-pcnt_config_t pcnt_config3 = {};
-pcnt_config3.pulse_gpio_num = ENC2_A;
-pcnt_config3.ctrl_gpio_num = ENC2_B;
-pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
-pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config3.pos_mode = PCNT_COUNT_INC;
-pcnt_config3.neg_mode = PCNT_COUNT_DEC;
-pcnt_config3.counter_h_lim = COUNTER_H_LIM;
-pcnt_config3.counter_l_lim = COUNTER_L_LIM;
-pcnt_config3.unit = PCNT_UNIT_1;
-pcnt_config3.channel = PCNT_CHANNEL_0;
-
-pcnt_config_t pcnt_config4 = {};
-pcnt_config4.pulse_gpio_num = ENC2_A;
-pcnt_config4.ctrl_gpio_num = ENC2_B;
-pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
-pcnt_config4.pos_mode = PCNT_COUNT_INC;
-pcnt_config4.neg_mode = PCNT_COUNT_DEC;
-pcnt_config4.counter_h_lim = COUNTER_H_LIM;
-pcnt_config4.counter_l_lim = COUNTER_L_LIM;
-pcnt_config4.unit = PCNT_UNIT_1;
-pcnt_config4.channel = PCNT_CHANNEL_1;
-
-pcnt_config_t pcnt_config5 = {};
-pcnt_config5.pulse_gpio_num = ENC3_A;
-pcnt_config5.ctrl_gpio_num = ENC3_B;
-pcnt_config5.lctrl_mode = PCNT_MODE_KEEP;
-pcnt_config5.hctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config5.pos_mode = PCNT_COUNT_INC;
-pcnt_config5.neg_mode = PCNT_COUNT_DEC;
-pcnt_config5.counter_h_lim = COUNTER_H_LIM;
-pcnt_config5.counter_l_lim = COUNTER_L_LIM;
-pcnt_config5.unit = PCNT_UNIT_2;
-pcnt_config5.channel = PCNT_CHANNEL_0;
-
-pcnt_config_t pcnt_config6 = {};
-pcnt_config6.pulse_gpio_num = ENC3_A;
-pcnt_config6.ctrl_gpio_num = ENC3_B;
-pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
-pcnt_config6.pos_mode = PCNT_COUNT_INC;
-pcnt_config6.neg_mode = PCNT_COUNT_DEC;
-pcnt_config6.counter_h_lim = COUNTER_H_LIM;
-pcnt_config6.counter_l_lim = COUNTER_L_LIM;
-pcnt_config6.unit = PCNT_UNIT_2;
-pcnt_config6.channel = PCNT_CHANNEL_1;
-
-pcnt_config_t pcnt_config7 = {};
-pcnt_config7.pulse_gpio_num = ENC4_A;
-pcnt_config7.ctrl_gpio_num = ENC4_B;
-pcnt_config7.lctrl_mode = PCNT_MODE_KEEP;
-pcnt_config7.hctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config7.pos_mode = PCNT_COUNT_INC;
-pcnt_config7.neg_mode = PCNT_COUNT_DEC;
-pcnt_config7.counter_h_lim = COUNTER_H_LIM;
-pcnt_config7.counter_l_lim = COUNTER_L_LIM;
-pcnt_config7.unit = PCNT_UNIT_3;
-pcnt_config7.channel = PCNT_CHANNEL_0;
-
-pcnt_config_t pcnt_config8 = {};
-pcnt_config8.pulse_gpio_num = ENC4_A;
-pcnt_config8.ctrl_gpio_num = ENC4_B;
-pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
-pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
-pcnt_config8.pos_mode = PCNT_COUNT_INC;
-pcnt_config8.neg_mode = PCNT_COUNT_DEC;
-pcnt_config8.counter_h_lim = COUNTER_H_LIM;
-pcnt_config8.counter_l_lim = COUNTER_L_LIM;
-pcnt_config8.unit = PCNT_UNIT_3;
-pcnt_config8.channel = PCNT_CHANNEL_1;
-
-// パルスカウンタの初期化
-pcnt_unit_config(&pcnt_config1);
-pcnt_unit_config(&pcnt_config2);
-pcnt_unit_config(&pcnt_config3);
-pcnt_unit_config(&pcnt_config4);
-pcnt_unit_config(&pcnt_config5);
-pcnt_unit_config(&pcnt_config6);
-pcnt_unit_config(&pcnt_config7);
-pcnt_unit_config(&pcnt_config8);
-
-pcnt_counter_pause(PCNT_UNIT_0);
-pcnt_counter_pause(PCNT_UNIT_1);
-pcnt_counter_pause(PCNT_UNIT_2);
-pcnt_counter_pause(PCNT_UNIT_3);
-
-pcnt_counter_clear(PCNT_UNIT_0);
-pcnt_counter_clear(PCNT_UNIT_1);
-pcnt_counter_clear(PCNT_UNIT_2);
-pcnt_counter_clear(PCNT_UNIT_3);
-
-pcnt_counter_resume(PCNT_UNIT_0);
-pcnt_counter_resume(PCNT_UNIT_1);
-pcnt_counter_resume(PCNT_UNIT_2);
-pcnt_counter_resume(PCNT_UNIT_3);
 
 rcl_subscription_t subscriber;
 std_msgs__msg__Int32MultiArray msg;
@@ -233,15 +100,142 @@ void setup() {
     SerialBT.begin("ESP32");
     delay(2000);
 
+    // パルスカウンタの定義
+    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
+
+    pcnt_config_t pcnt_config1 = {};
+    pcnt_config1.pulse_gpio_num = ENC1_A;
+    pcnt_config1.ctrl_gpio_num = ENC1_B;
+    pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config1.pos_mode = PCNT_COUNT_INC;
+    pcnt_config1.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config1.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config1.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config1.unit = PCNT_UNIT_0;
+    pcnt_config1.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config2 = {};
+    pcnt_config2.pulse_gpio_num = ENC1_B;
+    pcnt_config2.ctrl_gpio_num = ENC1_A;
+    pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config2.pos_mode = PCNT_COUNT_INC;
+    pcnt_config2.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config2.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config2.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config2.unit = PCNT_UNIT_0;
+    pcnt_config2.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config3 = {};
+    pcnt_config3.pulse_gpio_num = ENC2_A;
+    pcnt_config3.ctrl_gpio_num = ENC2_B;
+    pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config3.pos_mode = PCNT_COUNT_INC;
+    pcnt_config3.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config3.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config3.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config3.unit = PCNT_UNIT_1;
+    pcnt_config3.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config4 = {};
+    pcnt_config4.pulse_gpio_num = ENC2_B;
+    pcnt_config4.ctrl_gpio_num = ENC2_A;
+    pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config4.pos_mode = PCNT_COUNT_INC;
+    pcnt_config4.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config4.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config4.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config4.unit = PCNT_UNIT_1;
+    pcnt_config4.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config5 = {};
+    pcnt_config5.pulse_gpio_num = ENC3_A;
+    pcnt_config5.ctrl_gpio_num = ENC3_B;
+    pcnt_config5.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config5.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config5.pos_mode = PCNT_COUNT_INC;
+    pcnt_config5.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config5.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config5.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config5.unit = PCNT_UNIT_2;
+    pcnt_config5.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config6 = {};
+    pcnt_config6.pulse_gpio_num = ENC3_B;
+    pcnt_config6.ctrl_gpio_num = ENC3_A;
+    pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config6.pos_mode = PCNT_COUNT_INC;
+    pcnt_config6.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config6.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config6.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config6.unit = PCNT_UNIT_2;
+    pcnt_config6.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config7 = {};
+    pcnt_config7.pulse_gpio_num = ENC4_A;
+    pcnt_config7.ctrl_gpio_num = ENC4_B;
+    pcnt_config7.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config7.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config7.pos_mode = PCNT_COUNT_INC;
+    pcnt_config7.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config7.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config7.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config7.unit = PCNT_UNIT_3;
+    pcnt_config7.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config8 = {};
+    pcnt_config8.pulse_gpio_num = ENC4_B;
+    pcnt_config8.ctrl_gpio_num = ENC4_A;
+    pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config8.pos_mode = PCNT_COUNT_INC;
+    pcnt_config8.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config8.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config8.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config8.unit = PCNT_UNIT_3;
+    pcnt_config8.channel = PCNT_CHANNEL_1;
+
+    // パルスカウンタの初期化
+    pcnt_unit_config(&pcnt_config1);
+    pcnt_unit_config(&pcnt_config2);
+    pcnt_unit_config(&pcnt_config3);
+    pcnt_unit_config(&pcnt_config4);
+    pcnt_unit_config(&pcnt_config5);
+    pcnt_unit_config(&pcnt_config6);
+    pcnt_unit_config(&pcnt_config7);
+    pcnt_unit_config(&pcnt_config8);
+
+    pcnt_counter_pause(PCNT_UNIT_0);
+    pcnt_counter_pause(PCNT_UNIT_1);
+    pcnt_counter_pause(PCNT_UNIT_2);
+    pcnt_counter_pause(PCNT_UNIT_3);
+
+    pcnt_counter_clear(PCNT_UNIT_0);
+    pcnt_counter_clear(PCNT_UNIT_1);
+    pcnt_counter_clear(PCNT_UNIT_2);
+    pcnt_counter_clear(PCNT_UNIT_3);
+
+    pcnt_counter_resume(PCNT_UNIT_0);
+    pcnt_counter_resume(PCNT_UNIT_1);
+    pcnt_counter_resume(PCNT_UNIT_2);
+    pcnt_counter_resume(PCNT_UNIT_3);
+
     set_microros_transports();
 
     allocator = rcl_get_default_allocator();
 
-    // 通信状態表示LED
-    pinMode(LED, OUTPUT);
-    digitalWrite(LED, HIGH);
-
-    // ★ エージェントと接続できるまでリトライ
+    // エージェントと接続できるまでリトライ
     while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
         SerialBT.println("Waiting for agent...");
         delay(1000); // 1秒待つ
@@ -279,12 +273,26 @@ void setup() {
     pinMode(MD4D, OUTPUT);
     pinMode(MD5D, OUTPUT);
     pinMode(MD6D, OUTPUT);
+
+    xTaskCreateUniversal(
+        ENC_Read_Task,
+        "ENC_Read_Task",
+        8192,
+        NULL,
+        1,
+        NULL,
+        APP_CPU_NUM);
+}
+
+void ENC_Read_Task(void *pvParameters) {
+    while (1) {
+        Serial.println("Reading encoders...");
+        delay(1); // ウォッチドッグタイマのリセット(必須)
+    }
 }
 
 void loop() {
     RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-
-    digitalWrite(LED, HIGH);
 
     // 以下メインの処理
 
