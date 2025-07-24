@@ -1,7 +1,7 @@
 #include "driver/pcnt.h"
 
-#define PULSE_PIN_CLK 34
-#define PULSE_PIN_DT  35
+#define PULSE_PIN_CLK 17
+#define PULSE_PIN_DT  18
 
 void setup() {
   Serial.begin(115200);
