@@ -39,7 +39,6 @@ BluetoothSerial SerialBT;
 #define MD_PWM_MAX 255
 
 // ピンの定義 //
-
 // エンコーダ
 #define ENC1_A 18
 #define ENC1_B 17
@@ -49,13 +48,11 @@ BluetoothSerial SerialBT;
 #define ENC3_B 19
 #define ENC4_A 22
 #define ENC4_B 23
-
 // MD PWM
 #define MD1P 32
 #define MD2P 33
 #define MD3P 27
 #define MD4P 14
-
 // MD DIR
 #define MD1D 25
 #define MD2D 26
@@ -71,6 +68,7 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 
+// ノード名とトピック名の定義（ID付き）
 String node_name = "esp32_micro_ros_node_" + String(ID, DEC);
 String publisher_topic_name = "from_esp32" + String(ID, DEC);
 String subscriber_topic_name = "to_esp32" + String(ID, DEC);
@@ -91,8 +89,10 @@ int16_t count[4] = {0};
             error_loop();       \
     }
 
+// エラー発生時のループ
 void error_loop() {
     while (1) {
+        // このエラーが表示される場合は、シリアルモニターを閉じているか確認
         SerialBT.println("RCL Error!");
         delay(1000);
     }
@@ -114,7 +114,6 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 // コールバック内でグローバル変数にコピー
 void subscription_callback(const void *msgin) {
     const std_msgs__msg__Int32MultiArray *msg = (const std_msgs__msg__Int32MultiArray *)msgin;
-
     size_t len = msg->data.size;
     if (len > MAX_ARRAY_SIZE)
         len = MAX_ARRAY_SIZE;
@@ -122,7 +121,6 @@ void subscription_callback(const void *msgin) {
     for (size_t i = 0; i < len; i++) {
         received_data[i] = msg->data.data[i];
     }
-
     received_size = len;
 }
 
@@ -131,7 +129,6 @@ void setup() {
     delay(2000);
 
     // パルスカウンタの定義
-
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
@@ -265,7 +262,6 @@ void setup() {
     pcnt_counter_resume(PCNT_UNIT_3);
 
     set_microros_transports();
-
     allocator = rcl_get_default_allocator();
 
     // Agentと接続できるまでリトライ
