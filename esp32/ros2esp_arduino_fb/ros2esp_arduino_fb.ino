@@ -6,8 +6,6 @@ microROSで受信したデータをもとにピン操作
 4MB版のESPでは容量が不足するためTools/PartitionSchemeからNO OTA(2MB APP/2MB SPIFFS)を選択すること。
 
 TODO:時間経過でスタックするバグの修正
-TODO:エンコーダの取得部分の追加
-
 */
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
@@ -36,6 +34,9 @@ BluetoothSerial SerialBT;
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
 #define COUNTER_L_LIM -32768
+
+// MD出力の上限値
+#define MD_PWM_MAX 255
 
 // ピンの定義 //
 
@@ -362,9 +363,22 @@ void loop() {
         SerialBT.println();
     }
 
-    // ピンの操作
+    // MD出力の制限
+    received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
 
-    // ここまで
+    // ピンの操作
+    digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
+    digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
+    digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
+
+    analogWrite(MD1P, abs(received_data[1]));
+    analogWrite(MD2P, abs(received_data[2]));
+    analogWrite(MD3P, abs(received_data[3]));
+    analogWrite(MD4P, abs(received_data[4]));
 
     // delay(10);
 }
