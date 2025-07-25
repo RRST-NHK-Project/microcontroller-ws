@@ -1,14 +1,14 @@
 #include "driver/pcnt.h"
 
-#define PULSE_PIN_CLK 18
-#define PULSE_PIN_DT  19
+#define PULSE_PIN_CLK 17
+#define PULSE_PIN_DT  18
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  gpio_set_pull_mode(GPIO_NUM_18, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode(GPIO_NUM_19, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
+  gpio_set_pull_mode(GPIO_NUM_35, GPIO_PULLUP_ONLY);
 
 
   pcnt_config_t pcnt_config1 = {};
