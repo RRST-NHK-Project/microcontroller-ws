@@ -68,8 +68,9 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 
-String publisher_name = "micro_ros_arduino_node_publisher";
-Srring subscriber_name = "mr_swerve_drive";
+String node_name = "esp32_micro_ros_node_" + String(ID, DEC);
+String publisher_topic_name = "from_esp32" + String(ID, DEC);
+String subscriber_topic_name = "to_esp32" + String(ID, DEC);
 
 // 受信データ格納用のバッファ
 int32_t buffer[MAX_ARRAY_SIZE];
@@ -258,21 +259,21 @@ void setup() {
     }
 
     // Nodeの初期化
-    RCCHECK(rclc_node_init_default(&node, "micro_ros_esp_node_00", "", &support));
+    RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
 
     // Subscriberの初期化
     RCCHECK(rclc_subscription_init_default(
         &subscriber,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        publisher_name));
+        publisher_topic_name.c_str()));
 
     // Publisherの初期化
     RCCHECK(rclc_publisher_init_default(
         &publisher,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        subscriber_name));
+        subscriber_topic_name.c_str()));
 
     std_msgs__msg__Int32MultiArray__init(&msg);
     msg.data.data = buffer;
