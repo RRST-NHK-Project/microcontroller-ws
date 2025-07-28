@@ -69,9 +69,9 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 
 // ノード名とトピック名の定義（ID付き）
-String node_name = "esp32_micro_ros_node_" + String(ID, DEC);
-String publisher_topic_name = "from_esp32" + String(ID, DEC);
-String subscriber_topic_name = "to_esp32" + String(ID, DEC);
+String node_name = "esp32node_" + String(ID, DEC);
+String publisher_topic_name = "from_esp32_" + String(ID, DEC);
+String subscriber_topic_name = "to_esp32_" + String(ID, DEC);
 
 // 受信データ格納用のバッファ
 int32_t buffer[MAX_ARRAY_SIZE];
@@ -83,11 +83,21 @@ volatile size_t received_size = 0;              // 受信データのサイズ
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
 
-#define RCCHECK(fn)             \
-    {                           \
-        if ((fn) != RCL_RET_OK) \
-            error_loop();       \
-    }
+// #define RCCHECK(fn)             \
+//     {                           \
+//         if ((fn) != RCL_RET_OK) \
+//             error_loop();       \
+//     }
+
+// 詳細デバッグ
+#define RCCHECK(fn)                                                                     \
+    do {                                                                                \
+        rcl_ret_t temp_rc = fn;                                                         \
+        if ((temp_rc) != RCL_RET_OK) {                                                  \
+            SerialBT.printf("RCL error at %s:%d -> %d\n", __FILE__, __LINE__, temp_rc); \
+            error_loop();                                                               \
+        }                                                                               \
+    } while (0)
 
 // エラー発生時のループ
 void error_loop() {
@@ -108,6 +118,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
         msg.data.data[2] = count[2];
         msg.data.data[3] = count[3];
         RCCHECK(rcl_publish(&publisher, &msg, NULL));
+        SerialBT.println("Published.");
     }
 }
 
@@ -125,7 +136,7 @@ void subscription_callback(const void *msgin) {
 }
 
 void setup() {
-    SerialBT.begin("ESP32" + String(ID, DEC)); // Bluetoothの初期化
+    SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
     delay(2000);
 
     // パルスカウンタの定義
@@ -300,7 +311,9 @@ void setup() {
     msg.data.size = 0;
     msg.data.capacity = MAX_ARRAY_SIZE;
 
-    RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
+
+    // Executorにサービスを追加
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
