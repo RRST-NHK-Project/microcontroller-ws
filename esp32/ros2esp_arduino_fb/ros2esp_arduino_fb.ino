@@ -108,20 +108,6 @@ void error_loop() {
     }
 }
 
-// Publisherのコールバック関数
-void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
-    RCLC_UNUSED(last_call_time);
-    if (timer != NULL) {
-        msg.data.size = 4;
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        RCCHECK(rcl_publish(&publisher, &msg, NULL));
-        SerialBT.println("Published.");
-    }
-}
-
 // コールバック内でグローバル変数にコピー
 void subscription_callback(const void *msgin) {
     const std_msgs__msg__Int32MultiArray *msg = (const std_msgs__msg__Int32MultiArray *)msgin;
@@ -298,14 +284,6 @@ void setup() {
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
         publisher_topic_name.c_str()));
 
-    // タイマーの初期化
-    const unsigned int timer_timeout = 10; // 10msごとにコールバックを呼び出す
-    RCCHECK(rclc_timer_init_default(
-        &timer,
-        &support,
-        RCL_MS_TO_NS(timer_timeout),
-        timer_callback));
-
     std_msgs__msg__Int32MultiArray__init(&msg);
     msg.data.data = buffer;
     msg.data.size = 0;
@@ -352,8 +330,16 @@ void ENC_Read_Task(void *pvParameters) {
         if (received_data[0] == 1) {
             SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
         }
-        // delay(10);
-        delay(1); // ウォッチドッグタイマのリセット(必須)
+
+        msg.data.size = 4;
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        RCCHECK(rcl_publish(&publisher, &msg, NULL));
+
+        delay(10);
+        // delay(1); // ウォッチドッグタイマのリセット(必須)
     }
 }
 
