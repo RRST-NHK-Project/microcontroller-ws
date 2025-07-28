@@ -69,9 +69,9 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 
 // ノード名とトピック名の定義（ID付き）
-String node_name = "esp32_micro_ros_node_" + String(ID, DEC);
-String publisher_topic_name = "from_esp32" + String(ID, DEC);
-String subscriber_topic_name = "to_esp32" + String(ID, DEC);
+String node_name = "esp32node_" + String(ID, DEC);
+String publisher_topic_name = "from_esp32_" + String(ID, DEC);
+String subscriber_topic_name = "to_esp32_" + String(ID, DEC);
 
 // 受信データ格納用のバッファ
 int32_t buffer[MAX_ARRAY_SIZE];
@@ -83,11 +83,21 @@ volatile size_t received_size = 0;              // 受信データのサイズ
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
 
-#define RCCHECK(fn)             \
-    {                           \
-        if ((fn) != RCL_RET_OK) \
-            error_loop();       \
-    }
+// #define RCCHECK(fn)             \
+//     {                           \
+//         if ((fn) != RCL_RET_OK) \
+//             error_loop();       \
+//     }
+
+// 詳細デバッグ
+#define RCCHECK(fn)                                                                     \
+    do {                                                                                \
+        rcl_ret_t temp_rc = fn;                                                         \
+        if ((temp_rc) != RCL_RET_OK) {                                                  \
+            SerialBT.printf("RCL error at %s:%d -> %d\n", __FILE__, __LINE__, temp_rc); \
+            error_loop();                                                               \
+        }                                                                               \
+    } while (0)
 
 // エラー発生時のループ
 void error_loop() {
@@ -95,19 +105,6 @@ void error_loop() {
         // このエラーが表示される場合は、シリアルモニターを閉じているか確認
         SerialBT.println("RCL Error!");
         delay(1000);
-    }
-}
-
-// Publisherのコールバック関数
-void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
-    RCLC_UNUSED(last_call_time);
-    if (timer != NULL) {
-        msg.data.size = 4;
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        RCCHECK(rcl_publish(&publisher, &msg, NULL));
     }
 }
 
@@ -125,7 +122,7 @@ void subscription_callback(const void *msgin) {
 }
 
 void setup() {
-    SerialBT.begin("ESP32" + String(ID, DEC)); // Bluetoothの初期化
+    SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
     delay(2000);
 
     // パルスカウンタの定義
@@ -287,20 +284,14 @@ void setup() {
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
         publisher_topic_name.c_str()));
 
-    // タイマーの初期化
-    const unsigned int timer_timeout = 10; // 10msごとにコールバックを呼び出す
-    RCCHECK(rclc_timer_init_default(
-        &timer,
-        &support,
-        RCL_MS_TO_NS(timer_timeout),
-        timer_callback));
-
     std_msgs__msg__Int32MultiArray__init(&msg);
     msg.data.data = buffer;
     msg.data.size = 0;
     msg.data.capacity = MAX_ARRAY_SIZE;
 
-    RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
+
+    // Executorにサービスを追加
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
@@ -339,8 +330,16 @@ void ENC_Read_Task(void *pvParameters) {
         if (received_data[0] == 1) {
             SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
         }
-        // delay(10);
-        delay(1); // ウォッチドッグタイマのリセット(必須)
+
+        msg.data.size = 4;
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        RCCHECK(rcl_publish(&publisher, &msg, NULL));
+
+        delay(10);
+        // delay(1); // ウォッチドッグタイマのリセット(必須)
     }
 }
 
