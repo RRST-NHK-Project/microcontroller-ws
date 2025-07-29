@@ -34,7 +34,7 @@ BluetoothSerial SerialBT;
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
 #define COUNTER_L_LIM -32768
-#define PCNT_FILTER_VALUE 1023 // 0~1023
+#define PCNT_FILTER_VALUE 1023 // 0~1023, 1 = 12.5ns
 
 // MD出力の上限値
 #define MD_PWM_MAX 255
@@ -138,14 +138,14 @@ void setup() {
     // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
 
     // プルアップを有効化
-    // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
-    // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
 
     // パルスカウンタの設定
     pcnt_config_t pcnt_config1 = {};
@@ -160,17 +160,17 @@ void setup() {
     pcnt_config1.unit = PCNT_UNIT_0;
     pcnt_config1.channel = PCNT_CHANNEL_0;
 
-    pcnt_config_t pcnt_config2 = {};
-    pcnt_config2.pulse_gpio_num = ENC1_B;
-    pcnt_config2.ctrl_gpio_num = ENC1_A;
-    pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config2.pos_mode = PCNT_COUNT_INC;
-    pcnt_config2.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config2.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config2.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config2.unit = PCNT_UNIT_0;
-    pcnt_config2.channel = PCNT_CHANNEL_1;
+    // pcnt_config_t pcnt_config2 = {};
+    // pcnt_config2.pulse_gpio_num = ENC1_B;
+    // pcnt_config2.ctrl_gpio_num = ENC1_A;
+    // pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config2.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config2.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config2.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config2.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config2.unit = PCNT_UNIT_0;
+    // pcnt_config2.channel = PCNT_CHANNEL_1;
 
     pcnt_config_t pcnt_config3 = {};
     pcnt_config3.pulse_gpio_num = ENC2_A;
@@ -184,17 +184,17 @@ void setup() {
     pcnt_config3.unit = PCNT_UNIT_1;
     pcnt_config3.channel = PCNT_CHANNEL_0;
 
-    pcnt_config_t pcnt_config4 = {};
-    pcnt_config4.pulse_gpio_num = ENC2_B;
-    pcnt_config4.ctrl_gpio_num = ENC2_A;
-    pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config4.pos_mode = PCNT_COUNT_INC;
-    pcnt_config4.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config4.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config4.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config4.unit = PCNT_UNIT_1;
-    pcnt_config4.channel = PCNT_CHANNEL_1;
+    // pcnt_config_t pcnt_config4 = {};
+    // pcnt_config4.pulse_gpio_num = ENC2_B;
+    // pcnt_config4.ctrl_gpio_num = ENC2_A;
+    // pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config4.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config4.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config4.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config4.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config4.unit = PCNT_UNIT_1;
+    // pcnt_config4.channel = PCNT_CHANNEL_1;
 
     pcnt_config_t pcnt_config5 = {};
     pcnt_config5.pulse_gpio_num = ENC3_A;
@@ -208,17 +208,17 @@ void setup() {
     pcnt_config5.unit = PCNT_UNIT_2;
     pcnt_config5.channel = PCNT_CHANNEL_0;
 
-    pcnt_config_t pcnt_config6 = {};
-    pcnt_config6.pulse_gpio_num = ENC3_B;
-    pcnt_config6.ctrl_gpio_num = ENC3_A;
-    pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config6.pos_mode = PCNT_COUNT_INC;
-    pcnt_config6.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config6.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config6.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config6.unit = PCNT_UNIT_2;
-    pcnt_config6.channel = PCNT_CHANNEL_1;
+    // pcnt_config_t pcnt_config6 = {};
+    // pcnt_config6.pulse_gpio_num = ENC3_B;
+    // pcnt_config6.ctrl_gpio_num = ENC3_A;
+    // pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config6.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config6.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config6.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config6.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config6.unit = PCNT_UNIT_2;
+    // pcnt_config6.channel = PCNT_CHANNEL_1;
 
     pcnt_config_t pcnt_config7 = {};
     pcnt_config7.pulse_gpio_num = ENC4_A;
@@ -232,17 +232,17 @@ void setup() {
     pcnt_config7.unit = PCNT_UNIT_3;
     pcnt_config7.channel = PCNT_CHANNEL_0;
 
-    pcnt_config_t pcnt_config8 = {};
-    pcnt_config8.pulse_gpio_num = ENC4_B;
-    pcnt_config8.ctrl_gpio_num = ENC4_A;
-    pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config8.pos_mode = PCNT_COUNT_INC;
-    pcnt_config8.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config8.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config8.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config8.unit = PCNT_UNIT_3;
-    pcnt_config8.channel = PCNT_CHANNEL_1;
+    // pcnt_config_t pcnt_config8 = {};
+    // pcnt_config8.pulse_gpio_num = ENC4_B;
+    // pcnt_config8.ctrl_gpio_num = ENC4_A;
+    // pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config8.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config8.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config8.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config8.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config8.unit = PCNT_UNIT_3;
+    // pcnt_config8.channel = PCNT_CHANNEL_1;
 
     // チャタrング防止のフィルターを有効化
     pcnt_filter_enable(PCNT_UNIT_0);
@@ -250,7 +250,7 @@ void setup() {
     pcnt_filter_enable(PCNT_UNIT_2);
     pcnt_filter_enable(PCNT_UNIT_3);
 
-    // フィルター値を設定, 1 = 12.5ns
+    // フィルター値を設定
     pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
     pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
     pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
@@ -258,13 +258,13 @@ void setup() {
 
     // パルスカウンタの初期化
     pcnt_unit_config(&pcnt_config1);
-    pcnt_unit_config(&pcnt_config2);
+    // pcnt_unit_config(&pcnt_config2);
     pcnt_unit_config(&pcnt_config3);
-    pcnt_unit_config(&pcnt_config4);
+    // pcnt_unit_config(&pcnt_config4);
     pcnt_unit_config(&pcnt_config5);
-    pcnt_unit_config(&pcnt_config6);
+    // pcnt_unit_config(&pcnt_config6);
     pcnt_unit_config(&pcnt_config7);
-    pcnt_unit_config(&pcnt_config8);
+    // pcnt_unit_config(&pcnt_config8);
 
     pcnt_counter_pause(PCNT_UNIT_0);
     pcnt_counter_pause(PCNT_UNIT_1);
