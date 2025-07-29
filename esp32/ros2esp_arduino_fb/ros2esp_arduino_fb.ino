@@ -34,6 +34,7 @@ BluetoothSerial SerialBT;
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
 #define COUNTER_L_LIM -32768
+#define PCNT_FILTER_VALUE 1023 // 0~1023
 
 // MD出力の上限値
 #define MD_PWM_MAX 255
@@ -127,14 +128,24 @@ void setup() {
 
     // パルスカウンタの定義
     // プルアップを有効化
-    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
+
+    // プルアップを有効化
+    // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
 
     // パルスカウンタの設定
     pcnt_config_t pcnt_config1 = {};
@@ -232,6 +243,18 @@ void setup() {
     pcnt_config8.counter_l_lim = COUNTER_L_LIM;
     pcnt_config8.unit = PCNT_UNIT_3;
     pcnt_config8.channel = PCNT_CHANNEL_1;
+
+    // チャタrング防止のフィルターを有効化
+    pcnt_filter_enable(PCNT_UNIT_0);
+    pcnt_filter_enable(PCNT_UNIT_1);
+    pcnt_filter_enable(PCNT_UNIT_2);
+    pcnt_filter_enable(PCNT_UNIT_3);
+
+    // フィルター値を設定, 1 = 12.5ns
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
 
     // パルスカウンタの初期化
     pcnt_unit_config(&pcnt_config1);
