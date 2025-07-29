@@ -138,14 +138,14 @@ void setup() {
     // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
 
     // プルアップを有効化
-    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
 
     // パルスカウンタの設定
     pcnt_config_t pcnt_config1 = {};
