@@ -37,8 +37,8 @@ BluetoothSerial SerialBT;
 #define SERVO4 26
 #define SERVO5 27
 #define SERVO6 14
-#define SERVO7 13
-#define SERVO8 12
+#define SERVO7_SV7 13
+#define SERVO8_SV8 12
 
 // MOSFET（ソレノイド・表示灯）
 #define SV1 23
@@ -47,8 +47,12 @@ BluetoothSerial SerialBT;
 #define SV4 19
 #define SV5 18
 #define SV6 17
-#define SV7 16
-#define SV8 2
+
+#define MD5P 2
+#define MD6P 16
+
+#define MD5D 4
+#define MD6D 5
 
 rcl_subscription_t subscriber;
 std_msgs__msg__Int32MultiArray msg;
@@ -132,8 +136,8 @@ void setup() {
     pinMode(SERVO4, OUTPUT);
     pinMode(SERVO5, OUTPUT);
     pinMode(SERVO6, OUTPUT);
-    pinMode(SERVO7, OUTPUT);
-    pinMode(SERVO8, OUTPUT);
+    pinMode(SERVO7_SV7, OUTPUT);
+    pinMode(SERVO8_SV8, OUTPUT);
 
     // トランジスタ(ソレノイド・表示灯)
     pinMode(SV1, OUTPUT);
@@ -142,8 +146,11 @@ void setup() {
     pinMode(SV4, OUTPUT);
     pinMode(SV5, OUTPUT);
     pinMode(SV6, OUTPUT);
-    pinMode(SV7, OUTPUT);
-    pinMode(SV8, OUTPUT);
+
+    pinMode(MD5P, OUTPUT);
+    pinMode(MD6P, OUTPUT);
+    pinMode(MD5D, OUTPUT);
+    pinMode(MD6D, OUTPUT);
 }
 
 void loop() {
