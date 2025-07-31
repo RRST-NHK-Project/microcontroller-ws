@@ -7,7 +7,8 @@ microROSで受信したデータをもとにピン操作
 
 TODO:時間経過でスタックするバグの修正
 */
-
+#include <Arduino.h>
+#include <esp32-hal-ledc.h>
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **複数のESPを使用する場合はIDを変更** //
 #define ID 0
@@ -60,9 +61,13 @@ BluetoothSerial SerialBT;
 #define MD3D 12
 #define MD4D 13
 
+// PWM周波数と分解能
+const int pwm_freq = 1000;    // 1kHz
+const int pwm_resolution = 8; // 8bit: 0〜255
+
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
-rcl_timer_t timer;
+// rcl_timer_t timer;
 std_msgs__msg__Int32MultiArray msg;
 rclc_executor_t executor;
 rclc_support_t support;
@@ -244,18 +249,6 @@ void setup() {
     // pcnt_config8.unit = PCNT_UNIT_3;
     // pcnt_config8.channel = PCNT_CHANNEL_1;
 
-    // チャタrング防止のフィルターを有効化
-    pcnt_filter_enable(PCNT_UNIT_0);
-    pcnt_filter_enable(PCNT_UNIT_1);
-    pcnt_filter_enable(PCNT_UNIT_2);
-    pcnt_filter_enable(PCNT_UNIT_3);
-
-    // フィルター値を設定
-    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-
     // パルスカウンタの初期化
     pcnt_unit_config(&pcnt_config1);
     // pcnt_unit_config(&pcnt_config2);
@@ -280,6 +273,18 @@ void setup() {
     pcnt_counter_resume(PCNT_UNIT_1);
     pcnt_counter_resume(PCNT_UNIT_2);
     pcnt_counter_resume(PCNT_UNIT_3);
+
+    // チャタrング防止のフィルターを有効化
+    pcnt_filter_enable(PCNT_UNIT_0);
+    pcnt_filter_enable(PCNT_UNIT_1);
+    pcnt_filter_enable(PCNT_UNIT_2);
+    pcnt_filter_enable(PCNT_UNIT_3);
+
+    // フィルター値を設定
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_2, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
 
     set_microros_transports();
     allocator = rcl_get_default_allocator();
@@ -316,29 +321,43 @@ void setup() {
 
     // Executorにサービスを追加
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-    RCCHECK(rclc_executor_add_timer(&executor, &timer));
+    // RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
     // ピンの初期化 //
     // MD DIR
-    pinMode(MD1P, OUTPUT);
-    pinMode(MD2P, OUTPUT);
-    pinMode(MD3P, OUTPUT);
-    pinMode(MD4P, OUTPUT);
-    // MD PWM
-    pinMode(MD1D, OUTPUT);
-    pinMode(MD2D, OUTPUT);
-    pinMode(MD3D, OUTPUT);
-    pinMode(MD4D, OUTPUT);
+    // pinMode(MD1P, OUTPUT);
+    // pinMode(MD2P, OUTPUT);
+    // pinMode(MD3P, OUTPUT);
+    // pinMode(MD4P, OUTPUT);
+    // // MD PWM
+    // pinMode(MD1D, OUTPUT);
+    // pinMode(MD2D, OUTPUT);
+    // pinMode(MD3D, OUTPUT);
+    // pinMode(MD4D, OUTPUT);
+    ledcAttach(MD1P, pwm_freq, pwm_resolution);
+    ledcAttach(MD2P, pwm_freq, pwm_resolution);
+    ledcAttach(MD3P, pwm_freq, pwm_resolution);
+    ledcAttach(MD4P, pwm_freq, pwm_resolution);
 
     // エンコーダ取得のスレッド（タスク）の作成
     xTaskCreateUniversal(
         ENC_Read_Task,
         "ENC_Read_Task",
-        8192,
+        4096,
         NULL,
-        1,
+        2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
+
+    // 受信＆ピン操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        Pin_Output_Task,
+        "Pin_Output_Task",
+        4096,
+        NULL,
+        1, // 優先度、最大25？
+        NULL,
+        PRO_CPU_NUM);
 }
 
 void ENC_Read_Task(void *pvParameters) {
@@ -361,42 +380,52 @@ void ENC_Read_Task(void *pvParameters) {
         msg.data.data[3] = count[3];
         RCCHECK(rcl_publish(&publisher, &msg, NULL));
 
-        delay(10);
+        vTaskDelay(1);
         // delay(1); // ウォッチドッグタイマのリセット(必須)
+    }
+}
+
+void Pin_Output_Task(void *pvParameters) {
+    while (1) {
+        // 以下メインの処理
+
+        // デバッグ用
+        if (received_data[0] == 1) {
+            SerialBT.print("Received: ");
+            for (size_t i = 0; i < received_size; i++) {
+                SerialBT.print(received_data[i]);
+                SerialBT.print(", ");
+            }
+            SerialBT.println();
+        }
+
+        // MD出力の制限
+        received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
+
+        // ピンの操作
+        digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
+        digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
+        digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
+        digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
+
+        // analogWrite(MD1P, abs(received_data[1]));
+        // analogWrite(MD2P, abs(received_data[2]));
+        // analogWrite(MD3P, abs(received_data[3]));
+        // analogWrite(MD4P, abs(received_data[4]));
+
+        ledcWrite(MD1P, abs(received_data[1]));
+        ledcWrite(MD2P, abs(received_data[2]));
+        ledcWrite(MD3P, abs(received_data[3]));
+        ledcWrite(MD4P, abs(received_data[4]));
+
+        vTaskDelay(1);
     }
 }
 
 void loop() {
     RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-
-    // 以下メインの処理
-
-    // デバッグ用
-    if (received_data[0] == 1) {
-        SerialBT.print("Received: ");
-        for (size_t i = 0; i < received_size; i++) {
-            SerialBT.print(received_data[i]);
-            SerialBT.print(", ");
-        }
-        SerialBT.println();
-    }
-
-    // MD出力の制限
-    received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
-
-    // ピンの操作
-    digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
-    digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
-    digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
-
-    analogWrite(MD1P, abs(received_data[1]));
-    analogWrite(MD2P, abs(received_data[2]));
-    analogWrite(MD3P, abs(received_data[3]));
-    analogWrite(MD4P, abs(received_data[4]));
-
-    // delay(10);
+    vTaskDelay(1);
 }
