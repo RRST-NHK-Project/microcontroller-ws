@@ -2,7 +2,7 @@
 2025, RRST-NHK-Project
 ros2espパッケージ、マイコン側プログラム
 microROSで受信したデータをもとにピン操作
-ワイヤレスデバッグ(Bluetooth Serial)に対応しています。ROS側からオンオフ切り替えできます。スマホアプリもしくはTeratermでデバッグ可能です。
+//ワイヤレスデバッグを廃止しトピックでのデバッグ機能を追加
 ４MB版のESPでは容量が不足するためTools/PartitionSchemeからNO OTA(2MB APP/2MB SPIFFS)を選択してください。
 
 TODO:時間経過でスタックするバグの修正
@@ -16,10 +16,6 @@ TODO:時間経過でスタックするバグの修正
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
 #include <std_msgs/msg/int32_multi_array.h>
-
-// ワイヤレスデバッグで使う
-#include "BluetoothSerial.h"
-BluetoothSerial SerialBT;
 
 #define MAX_ARRAY_SIZE 19
 
@@ -74,7 +70,6 @@ volatile size_t received_size = 0;              // 受信データのサイズ
 
 void error_loop() {
     while (1) {
-        SerialBT.println("RCL Error!");
         delay(1000);
     }
 }
@@ -163,10 +158,7 @@ void loop() {
 
     // デバッグ用
     if (received_data[0] == 1) {
-        SerialBT.print("Received: ");
         for (size_t i = 0; i < received_size; i++) {
-            SerialBT.print(received_data[i]);
-            SerialBT.print(", ");
         }
         SerialBT.println();
     }
