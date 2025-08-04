@@ -9,7 +9,6 @@ unsigned char rxBuf[8]; //CANメッセージの**受信データ本体（最大8
 byte txBuf[8] = {0};  //CANで送信するデータの格納
 unsigned long Pre_millis = 0; //前回受信した時間の記録
 int16_t last_encoder_count = -1;        // 前回のカウント（初回は未定）
-long encoder_multi_turn_count = 0;      // エンコーダの累積カウント
 const int16_t encoder_max = 8192;       // 1回転のカウント数
 const double gear_ratio = 36.0; // エンコーダ:モーター軸
 
@@ -18,11 +17,11 @@ MCP_CAN CAN0(10); //CSピン
 //------------PIDゲイン-----------//
 double kp_pos = 0.1;
 double ki_pos = 0.0;
-double kd_pos = 0.008;
+double kd_pos = 0.0;
 
-// double kp_vel = 0.5;
-// double ki_vel = 0.0;
-// double kd_vel = 0.03;
+double kp_vel = 0.0;
+double ki_vel = 0.0;
+double kd_vel = 0.0;
 
 
 //----------設定値-------------//
@@ -43,8 +42,11 @@ double motor_output_current_A = 0.0; // 出力電流指令（A）
 
 unsigned long lastPidTime = 0; // PID制御の時間計測用
 
+int16_t last_encoder_raw = -1;        // 前回の生エンコーダ値（0〜8191）
+long total_encoder_count = 0;         // 累積カウント値（-∞〜∞）
+long count = 0;
+
 //--------------関数作成-------------//
-//int16_t fmap(double x,double in_min,double in_max,int16_t out_min,int16_t out_max); //x:目標角度
 double pid_control(double setpoint, double input, double &error_prev, double &integral, double kp, double ki, double kd, double dt);
 //setpoint:目標値,input:現在の値,&error_prev:前回の誤差,&integral:積分値
 double constrain_double(double val, double min_val, double max_val);// 範囲制限
@@ -76,7 +78,7 @@ void setup()
 void loop()
 {
   //角度指定
-  pos_setpoint = deg_to_count(pos_setpoint_deg);
+  pos_setpoint = pos_setpoint_deg;
 
   //---CAN受信処理---//
    // --- CANメッセージ受信処理 ---
@@ -87,31 +89,26 @@ void loop()
     if (len >= 7)
     {
       // 角度、RPMをバッファから復元
-      int16_t angle = (rxBuf[0] << 8) | rxBuf[1];
+      uint16_t angle = (rxBuf[0] << 8) | rxBuf[1];
       int16_t rpm   = (rxBuf[2] << 8) | rxBuf[3];      
       pos_input = (double)angle; // 現在位置
       vel_input = (double)rpm;   // 現在速度
       
+double total_encoder_count = angle; 
+ int16_t delta = (int16_t)angle - (int16_t)last_encoder_count;
+ if (delta > 8192 / 2) {
+    delta -= 8192;  // 例：100 → 8100 のとき（逆回転で小さく見える）
+  } else if (delta < -8192 / 2) {
+    delta += 8192;  // 例：8100 → 100 のとき（順回転で0に戻った）
+  }
 
-    // 1回転でリセットされることを考慮 → 差分から回転方向と回数を推定
-    if (last_encoder_count != -1) {
-    int16_t delta = angle - last_encoder_count;
+  total_encoder_count += delta;
+  count = count+total_encoder_count /8192;
+  last_encoder_count = angle; // 次回の比較用に保存
 
-    // ラップアラウンド検出（+8192 or -8192 の補正）
-    if (delta > encoder_max / 2) {
-    delta -= encoder_max;  // 例：100 - 8100 = -8000 → -8000 + 8192 = 192
-    } else if (delta < -encoder_max / 2) {
-    delta += encoder_max;
-    }
-
-  encoder_multi_turn_count += delta; // 累積カウント
-}
-
-last_encoder_count = angle; // 次回の比較用に保存
-
-// 出力軸の累積角度（degree）を算出（ギア比補正付き）
-double motor_angle_deg = (double)encoder_multi_turn_count * (360.0 / (encoder_max * gear_ratio));
-pos_input = motor_angle_deg;
+  // 出力軸の累積角度（degree）を算出（ギア比補正付き）
+  double motor_angle_deg = angle * (360.0 / (8192.0 * gear_ratio)) + count*10;
+  pos_input = motor_angle_deg;
 
       // PID周期（秒）を算出
       unsigned long now = millis();
@@ -124,19 +121,27 @@ pos_input = motor_angle_deg;
       pos_output = pid_control(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
       
       // 速度制御（目標速度→出力電流）
-     // vel_output = pid_control(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
+     //vel_output = pid_control(vel_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
+      
+      
       // 出力制限（A単位。実際にはC610仕様上 ±10A以内にすべき）
-      motor_output_current_A = constrain_double(pos_output, -16384, 16384);
+      double current_limit_A = 16310.0;
+      motor_output_current_A = constrain_double(-pos_output, -current_limit_A, current_limit_A);
       
       // デバッグ出力
       //Serial.print("エンコーダ\t");
       //Serial.print(count_to_deg(pos_input));
-      //Serial.print("\n角度 ");
-      //Serial.println(motor_angle_deg);
+      Serial.println("\n角度\t ");
+      //Serial.println("\t総角度");
+      Serial.print(pos_input);
+      Serial.print("回転数");
+      Serial.println(count);
+      //Serial.print(total_encoder_count*360/8182);
+      
       //Serial.print("\tRPM\t");
       //Serial.print(rpm);
       //Serial.print("\t電流\t");
-      Serial.println(motor_output_current_A);
+    // Serial.println(motor_output_current_A);
     }
     else
     {
@@ -148,25 +153,25 @@ pos_input = motor_angle_deg;
     Serial.println("CANメッセージ未受信");
   }
 
-     // --- CAN送信（20ms周期） ---
-  if (millis() - Pre_millis > 20)
-  {
-    // 電流指令（A）をint16_t値（-16384〜+16384）に変換
-    int16_t motor_output_current_Byte = motor_output_current_A;//fmap(motor_output_current_A, -10, 10, -10000, 10000);
-    if (motor_output_current_A < -16384) motor_output_current_A = -16384;
-    if (motor_output_current_A > 16384) motor_output_current_A = 16384;
+  // --- CAN送信（20ms周期） ---
+if (millis() - Pre_millis > 20)
+{
+  // fmapなしでfloat → int16_tにスケーリング
+  double current_limit_A = 10.0;
+  motor_output_current_A = constrain_double(motor_output_current_A, -current_limit_A, current_limit_A);
 
-    txBuf[0] = (motor_output_current_Byte >> 8) & 0xFF;
-    txBuf[1] = motor_output_current_Byte & 0xFF;
-    for (int i = 2; i < 8; i++) txBuf[i] = 0; // 他のモーターは使っていないので0
+  int16_t motor_output_current_Byte = (int16_t)(motor_output_current_A * 16384.0 / current_limit_A);
 
-    // CAN送信（ID: 0x200、標準フレーム）
-    byte result = CAN0.sendMsgBuf(0x200, 0, 8, txBuf);
-    if (result != CAN_OK)
-      Serial.println("CAN send fail");
+  txBuf[0] = (motor_output_current_Byte >> 8) & 0xFF;
+  txBuf[1] = motor_output_current_Byte & 0xFF;
+  for (int i = 2; i < 8; i++) txBuf[i] = 0;
 
-    Pre_millis = millis(); // 送信タイマー更新
-  }
+  byte result = CAN0.sendMsgBuf(0x200, 0, 8, txBuf);
+  if (result != CAN_OK)
+    Serial.println("CAN send fail");
+
+  Pre_millis = millis();
+}
 
   delay(10); // デバッグ出力抑制
 }
@@ -186,15 +191,6 @@ double pid_control(double setpoint, double input, double &error_prev, double &in
   return kp * error + ki * integral + kd * derivative;
 }
 
-//--- double対応map関数（範囲を再マッピング） ---
-//  int16_t fmap(double x, double in_min, double in_max, int16_t out_min, int16_t out_max)
-//  {
-//    if (x < in_min) x = in_min;
-//     if (x > in_max) x = in_max;
-//     return //(int16_t)((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
-//  }
-
-// --- 値を上下限で制限 ---
 double constrain_double(double val, double min_val, double max_val)
 {
   if (val < min_val) return min_val;
