@@ -11,12 +11,13 @@ int16_t last_encoder_count = -1;        // 前回のカウント（初回は未�
 const int16_t encoder_max = 8192;       // 1回転のカウント数
 const double gear_ratio = 36.0; // エンコーダ:モーター軸
 
+int o=0;
 MCP_CAN CAN0(10); //CSピン
 
 //------------PIDゲイン-----------//
-double kp_pos = 0.8;
-double ki_pos = 0.0;
-double kd_pos = 0.2;
+double kp_pos = 1.5;
+double ki_pos = 0.001;
+double kd_pos = 0.5;
 
 double kp_vel = 0.0;
 double ki_vel = 0.0;
@@ -25,7 +26,7 @@ double kd_vel = 0.0;
 
 //----------設定値-------------//
 double pos_setpoint = 0.0;  //目標角度(カウント)
-double pos_setpoint_deg = 720.0; //角度指定
+double pos_setpoint_deg = 180.0; //角度指定
 double pos_input = 0.0; //現在のエンコーダの値
 double pos_error_prev = 0.0;        // 前回の角度誤差
 double pos_integral = 0.0;          // 角度積分項
@@ -60,6 +61,8 @@ double count_to_deg(double count);// カウント→度変換
 
 void setup()
 {
+  calibrate_offset();
+
   Serial.begin(115200);
   while(!Serial); //初期化まち
 
@@ -95,6 +98,8 @@ void setup()
     total_encoder_count = 0;
     round_cnt = 0;
   }
+  Serial.println("角度\t0度\t目標角度");
+
 }
 
 unsigned long lastUpdateTime = 0;   // 最終更新時間(ms)
@@ -126,6 +131,11 @@ void loop()
         update_total_angle(angle);
         lastUpdateTime = now;
       }
+//       if (len != 8) {
+//        Serial.print("CAN length error: ");
+//        Serial.println(len);
+// }
+
  
   // 出力軸の累積角度（degree）を算出（ギア比補正付き）
   double motor_angle_deg = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
@@ -147,32 +157,32 @@ void loop()
       
       // 出力制限（A単位。実際にはC610仕様上 ±10A以内にすべき）
       double current_limit_A = 16310.0;
-      motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
-      if(motor_output_current_A>0.1){
-        motor_output_current_A = 0.1;
-      }else if(motor_output_current_A<-0.1){
-        motor_output_current_A =-0.1;
-      }else
-      motor_output_current_A=motor_output_current_A;
-      //motor_output_current_A=0;
-      // // デバッグ出力
-      //Serial.print("エンコーダ\t");
-      //Serial.print(count_to_deg(pos_input));
-      //Serial.println("\n角度\t ");
-      //Serial.println("\t総角度");
-      // Serial.print("\t角度\t");
-       Serial.println(pos_input);
-      //Serial.print("\tエンコーダ\t");
-      //Serial.println(motor_angle_deg);
-      //Serial.println(round_cnt);
-      //Serial.print("回転数");
-      //Serial.println(count);
-      //Serial.print(total_encoder_count*360/8182);
+      double output_limit = 0.5;
       
-      //Serial.print("\tRPM\t");
-      //Serial.print(rpm);
-      //Serial.print("\t電流\t");
-    //Serial.println(motor_output_current_A);
+      // motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+      // if(motor_output_current_A > output_limit){
+      //   motor_output_current_A = output_limit;
+      // }else if(motor_output_current_A < -output_limit){
+      //   motor_output_current_A = -output_limit;
+      // }else if(pos_input == pos_setpoint_deg)
+      //   motor_output_current_A = 0;
+      //   else
+      // motor_output_current_A = motor_output_current_A;
+      motor_output_current_A=0.0;
+      // // デバッグ出力
+      
+//     Serial.print(pos_input);   // 現在角度
+//     Serial.print("\t");
+//     Serial.print(0);           // 原点（0度）
+//     Serial.print("\t");
+//     Serial.println(pos_setpoint_deg);    // 目標角度
+  //Serial.print(pos_input);     // 出力軸の累積角度 [deg]
+// Serial.print("\t");
+//Serial.print(pos_setpoint); // 目標角度 [deg]
+ //Serial.print("\t");
+ Serial.println((rxBuf[0] << 8) | rxBuf[1]); // 生のエンコーダ値（モーター軸）
+
+
     }
     else
     {
@@ -244,16 +254,15 @@ double count_to_deg(double count)
 }
 
 void update_total_angle(uint16_t angle) {
-  int16_t last_angle = last_encoder;
 
-  int32_t delta = (int32_t)angle - (int32_t)last_angle;  // int32_tに拡張
+  int16_t delta = angle - last_encoder;  // int32_tに拡張
 
   // 複数回転ジャンプがあればround_cntを調整
-  if (abs(delta) > encoder_max) {
-    int32_t count = delta / encoder_max;  // 複数回転分の増減
-    round_cnt += count;
-    delta = delta % encoder_max;           // deltaを1回転未満に補正
-  }
+  // if (abs(delta) > encoder_max) {
+  //   int32_t count = delta / encoder_max;  // 複数回転分の増減
+  //   round_cnt += count;
+  //   delta = delta % encoder_max;           // deltaを1回転未満に補正
+  // }
 
   // 1回転未満のジャンプに対する補正
   if (delta > encoder_max / 2) {
@@ -267,4 +276,19 @@ void update_total_angle(uint16_t angle) {
   total_encoder_count = round_cnt * encoder_max + angle - offset_angle;
 
   last_encoder = angle;
+}
+
+void calibrate_offset() {
+  uint16_t angle_sum = 0;
+  const int sample_count = 10;
+  
+  for (int i = 0; i < sample_count; i++) {
+    while (!CAN0.checkReceive());
+    CAN0.readMsgBuf(&rxId, &len, rxBuf);
+    angle_sum += (rxBuf[0] << 8) | rxBuf[1];
+    delay(5);
+  }
+
+  offset_angle = angle_sum / sample_count;
+  last_encoder = offset_angle;
 }
