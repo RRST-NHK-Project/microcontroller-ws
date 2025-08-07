@@ -8,15 +8,14 @@ unsigned char rxBuf[8]; //CANメッセージの**受信データ本体（最大8
 byte txBuf[8] = {0};  //CANで送信するデータの格納
 unsigned long Pre_millis = 0; //前回受信した時間の記録
 int16_t last_encoder_count = -1;        // 前回のカウント（初回は未定）
-const int16_t encoder_max = 8192;       // 1回転のカウント数
+const int16_t encoder_max = 8191;       // 1回転のカウント数
 const double gear_ratio = 36.0; // エンコーダ:モーター軸
 
-int o=0;
-MCP_CAN CAN0(10); //CSピン
+MCP_CAN CAN0(5); //CSピン
 
 //------------PIDゲイン-----------//
 double kp_pos = 1.5;
-double ki_pos = 0.001;
+double ki_pos = 0.0;
 double kd_pos = 0.5;
 
 double kp_vel = 0.0;
@@ -44,20 +43,19 @@ unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 int16_t last_encoder = -1;        // 前回の生エンコーダ値（0〜8191）
 int32_t total_encoder_count = 0;         // 累積カウント値（-∞〜∞）
-int32_t round_cnt = 0;
-int16_t offset_angle = 0;
+int32_t round_cnt = 0;  //回転した回数
+int16_t offset_pulse = 0;   //初期角度
+
+
+unsigned long lastUpdateTime = 0;   // 最終更新時間(ms)
+const unsigned long updateInterval = 0;  // 最低更新間隔(ms)
+unsigned long now = 0;
+
 
 //--------------関数作成-------------//
 double pid_control(double setpoint, double input, double &error_prev, double &integral, double kp, double ki, double kd, double dt);
 //setpoint:目標値,input:現在の値,&error_prev:前回の誤差,&integral:積分値
 double constrain_double(double val, double min_val, double max_val);// 範囲制限
-double deg_to_count(double deg);// 度→カウント変換
-double count_to_deg(double count);// カウント→度変換
-
-// volatile bool canMessageAvailable = false;
-// void timerIsr() {
-//   canMessageAvailable = true;  // 割り込み内でフラグ立てるだけにする（重い処理は避ける）
-// }
 
 void setup()
 {
@@ -67,6 +65,8 @@ void setup()
   while(!Serial); //初期化まち
 
  // Serial.print("CAN接続中");
+ // SPI初期化（ESP32用にピン指定）
+  SPI.begin(18, 19, 23, 5);  // SCK, MISO, MOSI, SS（CS）
 
  if (CAN0.begin(MCP_ANY, CAN_1000KBPS, MCP_8MHZ) == CAN_OK)
   {
@@ -78,8 +78,6 @@ void setup()
    // Serial.println("接続失敗");
     while (1);  // 初期化失敗時は停止
   }
-//Timer1.initialize(5000);  // 5000us = 5ms
-  //Timer1.attachInterrupt(timerIsr);
 
   Pre_millis = millis();
   lastPidTime = millis();
@@ -87,59 +85,114 @@ void setup()
    // 初期オフセットを記録（起動時のエンコーダ値を基準にする）
   while (!CAN0.checkReceive()); // 最初のメッセージ待ち
   CAN0.readMsgBuf(&rxId, &len, rxBuf);
-  offset_angle = (rxBuf[0] << 8) | rxBuf[1]; // 起動時角度
+  offset_pulse = (rxBuf[0] << 8) | rxBuf[1]; // 起動時角度
 
-  last_encoder = offset_angle;
+  last_encoder = offset_pulse;
   total_encoder_count = 0; while (!CAN0.checkReceive());  // 最初の受信を待つ
   CAN0.readMsgBuf(&rxId, &len, rxBuf);
   if (len >= 2) {
-    offset_angle = (rxBuf[0] << 8) | rxBuf[1];
-    last_encoder = offset_angle;
+    offset_pulse = (rxBuf[0] << 8) | rxBuf[1];
+    last_encoder = offset_pulse;
     total_encoder_count = 0;
     round_cnt = 0;
   }
-  Serial.println("角度\t0度\t目標角度");
+ //  Serial.println("角度\t0度\t目標角度");
+
+ xTaskCreateUniversal(
+            CAN_Read_Task,
+            "CAN_Read_Task",
+            4096,
+            NULL,
+            1, // 優先度、最大25？
+            NULL,
+            APP_CPU_NUM);
+    
+
+
+ xTaskCreateUniversal(
+            PID_Task,
+            "PID_Task",
+            4096,
+            NULL,
+            2, // 優先度、最大25？
+            NULL,
+            APP_CPU_NUM);
+    
+
 
 }
 
-unsigned long lastUpdateTime = 0;   // 最終更新時間(ms)
-const unsigned long updateInterval = 5;  // 最低更新間隔(ms)
-unsigned long now = 0;
-void loop()
-{
-  now = millis();
+void CAN_Read_Task(void *pvParameters) {
+  while(1){
+    now = millis();
   
-  //角度指定
-  pos_setpoint = pos_setpoint_deg;
-
-  //---CAN受信処理---//
+   //---CAN受信処理---//
    // --- CANメッセージ受信処理 ---
-  if (CAN0.checkReceive() == CAN_MSGAVAIL)
-  {
+   if (CAN0.checkReceive() == CAN_MSGAVAIL)
+   {
     CAN0.readMsgBuf(&rxId, &len, rxBuf);
 
     if (len >= 7)
     {
-      // 角度、RPMをバッファから復元
-      uint16_t angle = (rxBuf[0] << 8) | rxBuf[1];
+            
+    //  Serial.print((rxBuf[0] << 8) | rxBuf[1]); // 生のエンコーダ値（モーター軸）
+    //  Serial.print("\t");
+    //  Serial.println(motor_output_current_A);
+
+    }
+    else
+    {
+      //Serial.println("でーた大きすぎるて"); // バッファ長が想定外
+    }
+   }
+   else
+   {
+   // Serial.println("CANメッセージ未受信");
+   }
+
+   // --- CAN送信（20ms周期） ---
+   if (millis() - Pre_millis > 20)
+   {
+   double current_limit_A = 10.0;
+   motor_output_current_A = constrain_double(motor_output_current_A, -current_limit_A, current_limit_A);
+
+   int16_t motor_output_current_Byte = (int16_t)(motor_output_current_A * 16384.0 / current_limit_A);
+
+   txBuf[0] = (motor_output_current_Byte >> 8) & 0xFF; //流れる電流のデータ
+   txBuf[1] = motor_output_current_Byte & 0xFF;
+   for (int i = 2; i < 8; i++) txBuf[i] = 0;
+
+   byte result = CAN0.sendMsgBuf(0x200, 0, 8, txBuf);
+   if (result != CAN_OK)
+    //Serial.println("CAN send fail");
+
+   Pre_millis = millis();
+   }
+    double motor_angle_deg = total_encoder_count * (360.0 / (8191.0 * gear_ratio));
+      pos_input = motor_angle_deg;
+
+  }
+}
+
+void PID_Task(void *pvParameters) {
+   
+  while(1){
+    if(len >= 7){
+     // 角度、RPMをバッファから復元
+      uint16_t pulse = (rxBuf[0] << 8) | rxBuf[1];
       int16_t rpm   = (rxBuf[2] << 8) | rxBuf[3];      
       //pos_input = (double)angle; // 現在位置
       vel_input = (double)rpm;   // 現在速度
-    // 最低更新間隔を満たしていれば更新
+     // 最低更新間隔を満たしていれば更新
       if (now - lastUpdateTime >= updateInterval)
       {
-        update_total_angle(angle);
+        update_total_pulse(pulse);
         lastUpdateTime = now;
       }
-//       if (len != 8) {
-//        Serial.print("CAN length error: ");
-//        Serial.println(len);
-// }
 
  
-  // 出力軸の累積角度（degree）を算出（ギア比補正付き）
-  double motor_angle_deg = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
-      pos_input = motor_angle_deg;
+      // 出力軸の累積角度（degree）を算出（ギア比補正付き）
+     
       // PID周期（秒）を算出
       unsigned long now = millis();
       double dt = (now - lastPidTime) / 1000.0;
@@ -149,72 +202,32 @@ void loop()
       // --- カスケードPID制御 ---//
       // 位置制御（目標角度→目標速度）
       pos_output = pid_control(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
-      if(pos_output<5 && pos_output>-5)
+      
+      if(pos_output<5 && pos_output>-5)//なくてもいい
       pos_output=0;
       // 速度制御（目標速度→出力電流）
      //vel_output = pid_control(vel_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
       
       
       // 出力制限（A単位。実際にはC610仕様上 ±10A以内にすべき）
-      double current_limit_A = 16310.0;
-      double output_limit = 0.5;
+      double current_limit_A = 10;
+      double output_limit = 10;
       
-      // motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
-      // if(motor_output_current_A > output_limit){
-      //   motor_output_current_A = output_limit;
-      // }else if(motor_output_current_A < -output_limit){
-      //   motor_output_current_A = -output_limit;
-      // }else if(pos_input == pos_setpoint_deg)
-      //   motor_output_current_A = 0;
-      //   else
-      // motor_output_current_A = motor_output_current_A;
-      motor_output_current_A=0.0;
+      motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+     
+     
+      //motor_output_current_A=0.1;
       // // デバッグ出力
-      
-//     Serial.print(pos_input);   // 現在角度
-//     Serial.print("\t");
-//     Serial.print(0);           // 原点（0度）
-//     Serial.print("\t");
-//     Serial.println(pos_setpoint_deg);    // 目標角度
-  //Serial.print(pos_input);     // 出力軸の累積角度 [deg]
-// Serial.print("\t");
-//Serial.print(pos_setpoint); // 目標角度 [deg]
- //Serial.print("\t");
- Serial.println((rxBuf[0] << 8) | rxBuf[1]); // 生のエンコーダ値（モーター軸）
-
 
     }
-    else
-    {
-      //Serial.println("でーた大きすぎるて"); // バッファ長が想定外
-    }
+
   }
-  else
-  {
-   // Serial.println("CANメッセージ未受信");
-  }
-
-  // --- CAN送信（20ms周期） ---
-if (millis() - Pre_millis > 5)
-{
-  // fmapなしでfloat → int16_tにスケーリング
-  double current_limit_A = 10.0;
-  motor_output_current_A = constrain_double(motor_output_current_A, -current_limit_A, current_limit_A);
-
-  int16_t motor_output_current_Byte = (int16_t)(motor_output_current_A * 16384.0 / current_limit_A);
-
-  txBuf[0] = (motor_output_current_Byte >> 8) & 0xFF;
-  txBuf[1] = motor_output_current_Byte & 0xFF;
-  for (int i = 2; i < 8; i++) txBuf[i] = 0;
-
-  byte result = CAN0.sendMsgBuf(0x200, 0, 8, txBuf);
-  if (result != CAN_OK)
-    //Serial.println("CAN send fail");
-
-  Pre_millis = millis();
 }
 
- delay(10); // デバッグ出力抑制
+
+void loop()
+{
+ delay(5); // デバッグ出力抑制
 }
   
 //-------関数------//
@@ -241,54 +254,35 @@ double constrain_double(double val, double min_val, double max_val)
   return val;
 }
 
-// --- 度数法→カウント変換（0〜360° → 0〜8192） ---
-double deg_to_count(double deg)
-{
-  return deg * (8192.0*gear_ratio / 360.0);
-}
+void update_total_pulse(uint16_t pulse) {
 
-// --- カウント→度数法変換 ---
-double count_to_deg(double count)
-{
-  return count * (360.0 / (8192.0*gear_ratio));
-}
-
-void update_total_angle(uint16_t angle) {
-
-  int16_t delta = angle - last_encoder;  // int32_tに拡張
-
-  // 複数回転ジャンプがあればround_cntを調整
-  // if (abs(delta) > encoder_max) {
-  //   int32_t count = delta / encoder_max;  // 複数回転分の増減
-  //   round_cnt += count;
-  //   delta = delta % encoder_max;           // deltaを1回転未満に補正
-  // }
+  int32_t delta = pulse - last_encoder;  // int32_tに拡張
 
   // 1回転未満のジャンプに対する補正
-  if (delta > encoder_max / 2) {
+  if (delta > 6000) {
     round_cnt--;
   }
-  else if (delta < -encoder_max / 2) {
+  else if (delta < -6000) {
     round_cnt++;
   }
 
   // 累積カウント値を計算
-  total_encoder_count = round_cnt * encoder_max + angle - offset_angle;
+  total_encoder_count = round_cnt * encoder_max + pulse - offset_pulse;
 
-  last_encoder = angle;
+  last_encoder = pulse;
 }
 
 void calibrate_offset() {
-  uint16_t angle_sum = 0;
+  uint16_t pulse_sum = 0;
   const int sample_count = 10;
   
   for (int i = 0; i < sample_count; i++) {
     while (!CAN0.checkReceive());
     CAN0.readMsgBuf(&rxId, &len, rxBuf);
-    angle_sum += (rxBuf[0] << 8) | rxBuf[1];
+    pulse_sum += (rxBuf[0] << 8) | rxBuf[1];
     delay(5);
   }
 
-  offset_angle = angle_sum / sample_count;
-  last_encoder = offset_angle;
+  offset_pulse = pulse_sum / sample_count;
+  last_encoder = offset_pulse;
 }
