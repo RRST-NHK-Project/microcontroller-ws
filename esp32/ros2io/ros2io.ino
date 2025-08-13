@@ -1,6 +1,8 @@
 /*
-2025, RRST-NHK-Project
-ROSへの入出力が可能な汎用ユニット
+For NHK-Robocon-2026??
+ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
+Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定)
+2025, NHK-Project, RRST
 */
 #include <Arduino.h>
 #include <esp32-hal-ledc.h>
@@ -8,10 +10,18 @@ ROSへの入出力が可能な汎用ユニット
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **複数のESPを使用する場合はIDを変更** //
 #define ID 0
-// #define MODE 0 //テストモード
-#define MODE 1 //MDモード
-//#define MODE 2 // エンコーダモード
-// #define MODE 3 //サーボ・ソレノイドモード
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+// **使用する基板に合わせてモードを変更** //
+#define MODE 1
+/*
+0:デバッグ・テスト用
+1:MD専用
+2:エンコーダー専用
+3:サーボ・ソレノイドバルブ・スイッチ
+4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー
+*/
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 // microROS関連
@@ -42,27 +52,65 @@ BluetoothSerial SerialBT;
 
 // ピンの定義 //
 // エンコーダ
-#define ENC1_A 18
-#define ENC1_B 17
-#define ENC2_A 16
-#define ENC2_B 2
-#define ENC3_A 15
-#define ENC3_B 19
-#define ENC4_A 22
-#define ENC4_B 23
-// MD PWM
-#define MD1P 32
-#define MD2P 33
-#define MD3P 27
-#define MD4P 14
-// MD DIR
-#define MD1D 25
-#define MD2D 26
-#define MD3D 12
-#define MD4D 13
+#define ENC1_A 12
+#define ENC1_B 13
+#define ENC2_A 14
+#define ENC2_B 15
+#define ENC3_A 21
+#define ENC3_B 22
+#define ENC4_A 23
+#define ENC4_B 25
 
-#define PWM_FREQ 20000   // PWM周波数
-#define PWM_RESOLUTION 8 // PWM分解能（8ビット）
+// MD PWM
+#define MD1P 21
+#define MD2P 22
+#define MD3P 23
+#define MD4P 25
+#define MD5P 26
+#define MD6P 27
+#define MD7P 2
+#define MD8P 4
+
+// MD DIR
+#define MD1D 12
+#define MD2D 13
+#define MD3D 14
+#define MD4D 15
+#define MD5D 32
+#define MD6D 33
+#define MD7D 5
+#define MD8D 19
+
+// サーボ
+#define SERVO1 16
+#define SERVO2 17
+#define SERVO3 18
+#define SERVO4 19
+#define SERVO5 21
+#define SERVO6 22
+#define SERVO7 23
+#define SERVO8 25
+
+// ソレノイドバルブ
+#define SV1 2
+#define SV2 4
+#define SV3 5
+#define SV4 12
+#define SV5 13
+#define SV6 14
+#define SV7 15
+
+// スイッチ
+#define SW1 26
+#define SW2 27
+#define SW3 32
+#define SW4 33
+
+#define MD_PWM_FREQ 20000   // MDのPWM周波数
+#define MD_PWM_RESOLUTION 8 // MDのPWM分解能（8ビット）
+
+#define SERVO_PWM_FREQ 50       // サーボPWM周波数
+#define SERVO_PWM_RESOLUTION 16 // サーボPWM分解能（16ビット）
 
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
@@ -130,161 +178,29 @@ void setup() {
     SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
     delay(2000);
 
-    if (MODE == 2) {
-        // パルスカウンタの定義
-        // プルアップを有効化
-        // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
-
-        // プルアップを有効化
-        // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
-        // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
-
-        // パルスカウンタの設定
-        pcnt_config_t pcnt_config1 = {};
-        pcnt_config1.pulse_gpio_num = ENC1_A;
-        pcnt_config1.ctrl_gpio_num = ENC1_B;
-        pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
-        pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
-        pcnt_config1.pos_mode = PCNT_COUNT_INC;
-        pcnt_config1.neg_mode = PCNT_COUNT_DEC;
-        pcnt_config1.counter_h_lim = COUNTER_H_LIM;
-        pcnt_config1.counter_l_lim = COUNTER_L_LIM;
-        pcnt_config1.unit = PCNT_UNIT_0;
-        pcnt_config1.channel = PCNT_CHANNEL_0;
-
-        // pcnt_config_t pcnt_config2 = {};
-        // pcnt_config2.pulse_gpio_num = ENC1_B;
-        // pcnt_config2.ctrl_gpio_num = ENC1_A;
-        // pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
-        // pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
-        // pcnt_config2.pos_mode = PCNT_COUNT_INC;
-        // pcnt_config2.neg_mode = PCNT_COUNT_DEC;
-        // pcnt_config2.counter_h_lim = COUNTER_H_LIM;
-        // pcnt_config2.counter_l_lim = COUNTER_L_LIM;
-        // pcnt_config2.unit = PCNT_UNIT_0;
-        // pcnt_config2.channel = PCNT_CHANNEL_1;
-
-        pcnt_config_t pcnt_config3 = {};
-        pcnt_config3.pulse_gpio_num = ENC2_A;
-        pcnt_config3.ctrl_gpio_num = ENC2_B;
-        pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
-        pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
-        pcnt_config3.pos_mode = PCNT_COUNT_INC;
-        pcnt_config3.neg_mode = PCNT_COUNT_DEC;
-        pcnt_config3.counter_h_lim = COUNTER_H_LIM;
-        pcnt_config3.counter_l_lim = COUNTER_L_LIM;
-        pcnt_config3.unit = PCNT_UNIT_1;
-        pcnt_config3.channel = PCNT_CHANNEL_0;
-
-        // pcnt_config_t pcnt_config4 = {};
-        // pcnt_config4.pulse_gpio_num = ENC2_B;
-        // pcnt_config4.ctrl_gpio_num = ENC2_A;
-        // pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
-        // pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
-        // pcnt_config4.pos_mode = PCNT_COUNT_INC;
-        // pcnt_config4.neg_mode = PCNT_COUNT_DEC;
-        // pcnt_config4.counter_h_lim = COUNTER_H_LIM;
-        // pcnt_config4.counter_l_lim = COUNTER_L_LIM;
-        // pcnt_config4.unit = PCNT_UNIT_1;
-        // pcnt_config4.channel = PCNT_CHANNEL_1;
-
-        pcnt_config_t pcnt_config5 = {};
-        pcnt_config5.pulse_gpio_num = ENC3_A;
-        pcnt_config5.ctrl_gpio_num = ENC3_B;
-        pcnt_config5.lctrl_mode = PCNT_MODE_KEEP;
-        pcnt_config5.hctrl_mode = PCNT_MODE_REVERSE;
-        pcnt_config5.pos_mode = PCNT_COUNT_INC;
-        pcnt_config5.neg_mode = PCNT_COUNT_DEC;
-        pcnt_config5.counter_h_lim = COUNTER_H_LIM;
-        pcnt_config5.counter_l_lim = COUNTER_L_LIM;
-        pcnt_config5.unit = PCNT_UNIT_2;
-        pcnt_config5.channel = PCNT_CHANNEL_0;
-
-        // pcnt_config_t pcnt_config6 = {};
-        // pcnt_config6.pulse_gpio_num = ENC3_B;
-        // pcnt_config6.ctrl_gpio_num = ENC3_A;
-        // pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
-        // pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
-        // pcnt_config6.pos_mode = PCNT_COUNT_INC;
-        // pcnt_config6.neg_mode = PCNT_COUNT_DEC;
-        // pcnt_config6.counter_h_lim = COUNTER_H_LIM;
-        // pcnt_config6.counter_l_lim = COUNTER_L_LIM;
-        // pcnt_config6.unit = PCNT_UNIT_2;
-        // pcnt_config6.channel = PCNT_CHANNEL_1;
-
-        pcnt_config_t pcnt_config7 = {};
-        pcnt_config7.pulse_gpio_num = ENC4_A;
-        pcnt_config7.ctrl_gpio_num = ENC4_B;
-        pcnt_config7.lctrl_mode = PCNT_MODE_KEEP;
-        pcnt_config7.hctrl_mode = PCNT_MODE_REVERSE;
-        pcnt_config7.pos_mode = PCNT_COUNT_INC;
-        pcnt_config7.neg_mode = PCNT_COUNT_DEC;
-        pcnt_config7.counter_h_lim = COUNTER_H_LIM;
-        pcnt_config7.counter_l_lim = COUNTER_L_LIM;
-        pcnt_config7.unit = PCNT_UNIT_3;
-        pcnt_config7.channel = PCNT_CHANNEL_0;
-
-        // pcnt_config_t pcnt_config8 = {};
-        // pcnt_config8.pulse_gpio_num = ENC4_B;
-        // pcnt_config8.ctrl_gpio_num = ENC4_A;
-        // pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
-        // pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
-        // pcnt_config8.pos_mode = PCNT_COUNT_INC;
-        // pcnt_config8.neg_mode = PCNT_COUNT_DEC;
-        // pcnt_config8.counter_h_lim = COUNTER_H_LIM;
-        // pcnt_config8.counter_l_lim = COUNTER_L_LIM;
-        // pcnt_config8.unit = PCNT_UNIT_3;
-        // pcnt_config8.channel = PCNT_CHANNEL_1;
-
-        // パルスカウンタの初期化
-        pcnt_unit_config(&pcnt_config1);
-        // pcnt_unit_config(&pcnt_config2);
-        pcnt_unit_config(&pcnt_config3);
-        // pcnt_unit_config(&pcnt_config4);
-        pcnt_unit_config(&pcnt_config5);
-        // pcnt_unit_config(&pcnt_config6);
-        pcnt_unit_config(&pcnt_config7);
-        // pcnt_unit_config(&pcnt_config8);
-
-        pcnt_counter_pause(PCNT_UNIT_0);
-        pcnt_counter_pause(PCNT_UNIT_1);
-        pcnt_counter_pause(PCNT_UNIT_2);
-        pcnt_counter_pause(PCNT_UNIT_3);
-
-        pcnt_counter_clear(PCNT_UNIT_0);
-        pcnt_counter_clear(PCNT_UNIT_1);
-        pcnt_counter_clear(PCNT_UNIT_2);
-        pcnt_counter_clear(PCNT_UNIT_3);
-
-        pcnt_counter_resume(PCNT_UNIT_0);
-        pcnt_counter_resume(PCNT_UNIT_1);
-        pcnt_counter_resume(PCNT_UNIT_2);
-        pcnt_counter_resume(PCNT_UNIT_3);
-
-        // チャタrング防止のフィルターを有効化
-        pcnt_filter_enable(PCNT_UNIT_0);
-        pcnt_filter_enable(PCNT_UNIT_1);
-        pcnt_filter_enable(PCNT_UNIT_2);
-        pcnt_filter_enable(PCNT_UNIT_3);
-
-        // フィルター値を設定
-        pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-        pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
-        pcnt_set_filter_value(PCNT_UNIT_2, PCNT_FILTER_VALUE);
-        pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
+    switch (MODE) {
+    case 0:
+        SerialBT.println("Mode: Debug/Test");
+        mode0_init();
+        break;
+    case 1:
+        SerialBT.println("Mode: MD Control");
+        mode1_init();
+        break;
+    case 2:
+        SerialBT.println("Mode: Encoder Control");
+        mode2_init();
+        break;
+    case 3:
+        SerialBT.println("Mode: Servo/Solenoid/Switch Control");
+        mode3_init();
+        break;
+    case 4:
+        SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
+        mode4_init();
+        break;
+    default:
+        SerialBT.println("Unknown Mode");
     }
 
     set_microros_transports();
@@ -323,53 +239,6 @@ void setup() {
     // Executorにサービスを追加
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     // RCCHECK(rclc_executor_add_timer(&executor, &timer));
-
-    // ピンの初期化 //
-    // MD DIR
-    // pinMode(MD1P, OUTPUT);
-    // pinMode(MD2P, OUTPUT);
-    // pinMode(MD3P, OUTPUT);
-    // pinMode(MD4P, OUTPUT);
-    // // MD PWM
-    // pinMode(MD1D, OUTPUT);
-    // pinMode(MD2D, OUTPUT);
-    // pinMode(MD3D, OUTPUT);
-    // // pinMode(MD4D, OUTPUT);
-    // ledcAttach(MD1P, pwm_freq, pwm_resolution);
-    // ledcAttach(MD2P, pwm_freq, pwm_resolution);
-    // ledcAttach(MD3P, pwm_freq, pwm_resolution);
-    // ledcAttach(MD4P, pwm_freq, pwm_resolution);
-
-    if (MODE == 1) {
-        ledcAttach(MD1P, PWM_FREQ, PWM_RESOLUTION);
-        ledcAttach(MD2P, PWM_FREQ, PWM_RESOLUTION);
-        ledcAttach(MD3P, PWM_FREQ, PWM_RESOLUTION);
-        ledcAttach(MD4P, PWM_FREQ, PWM_RESOLUTION);
-    }
-
-    if (MODE == 2) {
-        // エンコーダ取得のスレッド（タスク）の作成
-        xTaskCreateUniversal(
-            ENC_Read_Task,
-            "ENC_Read_Task",
-            4096,
-            NULL,
-            2, // 優先度、最大25？
-            NULL,
-            APP_CPU_NUM);
-    }
-
-    if (MODE == 1) {
-        // 受信＆ピン操作のスレッド（タスク）の作成
-        xTaskCreateUniversal(
-            Pin_Output_Task,
-            "Pin_Output_Task",
-            4096,
-            NULL,
-            1, // 優先度、最大25？
-            NULL,
-            PRO_CPU_NUM);
-    }
 }
 
 void ENC_Read_Task(void *pvParameters) {
@@ -392,12 +261,11 @@ void ENC_Read_Task(void *pvParameters) {
         msg.data.data[3] = count[3];
         RCCHECK(rcl_publish(&publisher, &msg, NULL));
 
-        vTaskDelay(1);
-        // delay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
     }
 }
 
-void Pin_Output_Task(void *pvParameters) {
+void MD_Output_Task(void *pvParameters) {
     while (1) {
         // 以下メインの処理
 
@@ -416,12 +284,20 @@ void Pin_Output_Task(void *pvParameters) {
         received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
         received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
         received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[5] = constrain(received_data[5], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[6] = constrain(received_data[6], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[7] = constrain(received_data[7], -MD_PWM_MAX, MD_PWM_MAX);
+        received_data[8] = constrain(received_data[8], -MD_PWM_MAX, MD_PWM_MAX);
 
         // ピンの操作
         digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
         digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
         digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
         digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
+        digitalWrite(MD5D, received_data[5] > 0 ? HIGH : LOW);
+        digitalWrite(MD6D, received_data[6] > 0 ? HIGH : LOW);
+        digitalWrite(MD7D, received_data[7] > 0 ? HIGH : LOW);
+        digitalWrite(MD8D, received_data[8] > 0 ? HIGH : LOW);
 
         // analogWrite(MD1P, abs(received_data[1]));
         // analogWrite(MD2P, abs(received_data[2]));
@@ -432,9 +308,278 @@ void Pin_Output_Task(void *pvParameters) {
         ledcWrite(MD2P, abs(received_data[2]));
         ledcWrite(MD3P, abs(received_data[3]));
         ledcWrite(MD4P, abs(received_data[4]));
+        ledcWrite(MD5P, abs(received_data[5]));
+        ledcWrite(MD6P, abs(received_data[6]));
+        ledcWrite(MD7P, abs(received_data[7]));
+        ledcWrite(MD8P, abs(received_data[8]));
 
         vTaskDelay(1);
     }
+}
+
+void IO_Task(void *pvParameters) {
+    while (1) {
+        // 以下メインの処理
+
+        // デバッグ用
+        if (received_data[0] == 1) {
+            SerialBT.print("Received: ");
+            for (size_t i = 0; i < received_size; i++) {
+                SerialBT.print(received_data[i]);
+                SerialBT.print(", ");
+            }
+            SerialBT.println();
+        }
+        // 工事中！！！！！！！！！！
+
+        vTaskDelay(1);
+    }
+}
+
+// 各モードの初期化関数
+void mode0_init() {
+    // デバッグ・テスト用の初期化
+    SerialBT.println("Debug/Test Mode Initialized");
+    // そのうち書く
+}
+
+void mode1_init() {
+    // モード1用の初期化
+    SerialBT.println("Mode 1 Initialized");
+    // PWMの初期化
+    ledcAttach(MD1P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD2P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD3P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD4P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD5P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD6P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD7P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD8P, PWM_FREQ, PWM_RESOLUTION);
+
+    // 受信＆ピン操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        MD_Output_Task,
+        "MD_Output_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        PRO_CPU_NUM);
+}
+
+void mode2_init() {
+    // モード2用の初期化
+    SerialBT.println("Mode 2 Initialized");
+    // プルアップを有効化
+    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
+
+    // プルダウンを有効化
+    // gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLDOWN_ONLY);
+    // gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLDOWN_ONLY);
+
+    // パルスカウンタの設定
+    pcnt_config_t pcnt_config1 = {};
+    pcnt_config1.pulse_gpio_num = ENC1_A;
+    pcnt_config1.ctrl_gpio_num = ENC1_B;
+    pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config1.pos_mode = PCNT_COUNT_INC;
+    pcnt_config1.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config1.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config1.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config1.unit = PCNT_UNIT_0;
+    pcnt_config1.channel = PCNT_CHANNEL_0;
+
+    // pcnt_config_t pcnt_config2 = {};
+    // pcnt_config2.pulse_gpio_num = ENC1_B;
+    // pcnt_config2.ctrl_gpio_num = ENC1_A;
+    // pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config2.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config2.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config2.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config2.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config2.unit = PCNT_UNIT_0;
+    // pcnt_config2.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config3 = {};
+    pcnt_config3.pulse_gpio_num = ENC2_A;
+    pcnt_config3.ctrl_gpio_num = ENC2_B;
+    pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config3.pos_mode = PCNT_COUNT_INC;
+    pcnt_config3.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config3.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config3.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config3.unit = PCNT_UNIT_1;
+    pcnt_config3.channel = PCNT_CHANNEL_0;
+
+    // pcnt_config_t pcnt_config4 = {};
+    // pcnt_config4.pulse_gpio_num = ENC2_B;
+    // pcnt_config4.ctrl_gpio_num = ENC2_A;
+    // pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config4.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config4.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config4.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config4.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config4.unit = PCNT_UNIT_1;
+    // pcnt_config4.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config5 = {};
+    pcnt_config5.pulse_gpio_num = ENC3_A;
+    pcnt_config5.ctrl_gpio_num = ENC3_B;
+    pcnt_config5.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config5.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config5.pos_mode = PCNT_COUNT_INC;
+    pcnt_config5.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config5.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config5.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config5.unit = PCNT_UNIT_2;
+    pcnt_config5.channel = PCNT_CHANNEL_0;
+
+    // pcnt_config_t pcnt_config6 = {};
+    // pcnt_config6.pulse_gpio_num = ENC3_B;
+    // pcnt_config6.ctrl_gpio_num = ENC3_A;
+    // pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config6.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config6.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config6.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config6.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config6.unit = PCNT_UNIT_2;
+    // pcnt_config6.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config7 = {};
+    pcnt_config7.pulse_gpio_num = ENC4_A;
+    pcnt_config7.ctrl_gpio_num = ENC4_B;
+    pcnt_config7.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config7.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config7.pos_mode = PCNT_COUNT_INC;
+    pcnt_config7.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config7.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config7.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config7.unit = PCNT_UNIT_3;
+    pcnt_config7.channel = PCNT_CHANNEL_0;
+
+    // pcnt_config_t pcnt_config8 = {};
+    // pcnt_config8.pulse_gpio_num = ENC4_B;
+    // pcnt_config8.ctrl_gpio_num = ENC4_A;
+    // pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
+    // pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
+    // pcnt_config8.pos_mode = PCNT_COUNT_INC;
+    // pcnt_config8.neg_mode = PCNT_COUNT_DEC;
+    // pcnt_config8.counter_h_lim = COUNTER_H_LIM;
+    // pcnt_config8.counter_l_lim = COUNTER_L_LIM;
+    // pcnt_config8.unit = PCNT_UNIT_3;
+    // pcnt_config8.channel = PCNT_CHANNEL_1;
+
+    // パルスカウンタの初期化
+    pcnt_unit_config(&pcnt_config1);
+    // pcnt_unit_config(&pcnt_config2);
+    pcnt_unit_config(&pcnt_config3);
+    // pcnt_unit_config(&pcnt_config4);
+    pcnt_unit_config(&pcnt_config5);
+    // pcnt_unit_config(&pcnt_config6);
+    pcnt_unit_config(&pcnt_config7);
+    // pcnt_unit_config(&pcnt_config8);
+
+    pcnt_counter_pause(PCNT_UNIT_0);
+    pcnt_counter_pause(PCNT_UNIT_1);
+    pcnt_counter_pause(PCNT_UNIT_2);
+    pcnt_counter_pause(PCNT_UNIT_3);
+
+    pcnt_counter_clear(PCNT_UNIT_0);
+    pcnt_counter_clear(PCNT_UNIT_1);
+    pcnt_counter_clear(PCNT_UNIT_2);
+    pcnt_counter_clear(PCNT_UNIT_3);
+
+    pcnt_counter_resume(PCNT_UNIT_0);
+    pcnt_counter_resume(PCNT_UNIT_1);
+    pcnt_counter_resume(PCNT_UNIT_2);
+    pcnt_counter_resume(PCNT_UNIT_3);
+
+    // チャタリング防止のフィルターを有効化
+    pcnt_filter_enable(PCNT_UNIT_0);
+    pcnt_filter_enable(PCNT_UNIT_1);
+    pcnt_filter_enable(PCNT_UNIT_2);
+    pcnt_filter_enable(PCNT_UNIT_3);
+
+    // フィルター値を設定
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_2, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
+
+    // エンコーダ取得のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        ENC_Read_Task,
+        "ENC_Read_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+}
+
+void mode3_init() {
+    // モード3用の初期化
+    SerialBT.println("Mode 3 Initialized");
+
+    // サーボのPWMの初期化
+    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO2, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO3, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO5, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO6, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO8, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+
+    PinMode(SV1, OUTPUT);
+    PinMode(SV2, OUTPUT);
+    PinMode(SV3, OUTPUT);
+    PinMode(SV4, OUTPUT);
+    PinMode(SV5, OUTPUT);
+    PinMode(SV6, OUTPUT);
+    PinMode(SV7, OUTPUT);
+
+    // 内蔵プルアップを有効化
+    gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV2, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV3, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV4, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV5, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV6, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)SV7, GPIO_PULLUP_ONLY);
+
+    // IO操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        IO_Task,
+        "IO_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+}
+
+void mode4_init() {
+    // モード4用の初期化
+    SerialBT.println("Mode 4 Initialized");
 }
 
 void loop() {
