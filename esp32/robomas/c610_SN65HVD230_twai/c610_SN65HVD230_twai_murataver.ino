@@ -3,7 +3,7 @@
 
 //---------定義--------//
 const int ENCODER_MAX = 8192; //エンコーダの最大
-const int HALF_ENCODER = ENCODER_MAX / 1.5;
+const int HALF_ENCODER = ENCODER_MAX / 2;
 constexpr float gear_ratio = 36.0f; // 減速比
 constexpr int MOTOR_ID = 1; //モータID
 constexpr int   CAN_ID_TX = 0x200 + 2;             // 1〜4にまとめて送るグループID
@@ -19,10 +19,10 @@ float vel = 0.0f; //出力速度
 int32_t current_position = 0; // 累積角度カウント
 float motor_output_current_A = 0.0;
 float limit = 19520;
-float current_limit_A = 19520.0; // 最大出力電流（例：5A）
+float current_limit_A = 8.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
-float pos_setpoint = 180.0; //目標角度
+float pos_setpoint = 720.0; //目標角度
 float pos_input = 0.0; //現在のエンコーダの値
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
@@ -36,13 +36,13 @@ float vel_output = 0;            // 速度PID出力
 unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 //------------PIDゲイン-----------//
-float kp_pos = 1.0;
-float ki_pos = 0.002;
-float kd_pos = 0.2;
+float kp_pos = 0.4;//0.10;
+float ki_pos = 0.0;//0.0;
+float kd_pos = 0.02;//0.05;
 
-// float kp_vel = 0.3;
-// float ki_vel = 0.02;
-// float kd_vel = 0.08;
+float kp_vel = 0.8;
+float ki_vel = 0.04;
+float kd_vel = 0.0;
 
 
 //--------------関数作成-------------//
@@ -97,10 +97,10 @@ void loop() {
     }
 
     // ===== PID計算 =====
-    float vel_setpoint = pid(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
-    //float vel_output = pid(vel_setpoint, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
-    motor_output_current_A = constrain_double(vel_setpoint, -current_limit_A, current_limit_A);
-    //motor_output_current_A = 0.1;
+    float pos_output = pid(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+    float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
+    motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+    //motor_output_current_A = 0.3;
 
     // ===== CAN送信 =====
     int16_t current_cmd = (int16_t)(motor_output_current_A * 16384.0 / 20.0);
@@ -115,7 +115,14 @@ void loop() {
     for(int i=2;i<8;i++) msg.data[i] = 0;
     twai_transmit(&msg, 0); // 非ブロッキング
 
-    Serial.println(pos_input);
+   // Serial.print("raw:"); Serial.print(last_encoder_count);
+    //Serial.print(" rot:"); Serial.print(rotation_count);
+    //Serial.print(" total:"); Serial.print(total_encoder_count);
+   // Serial.print(" angle:"); Serial.print(pos_input,2);
+    //Serial.print(" pos_set:"); Serial.print(pos_setpoint);
+    //Serial.print(" cur[A]:"); Serial.println(motor_output_current_A,2);
+
+
 
 
     delay(1);
@@ -128,8 +135,8 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
                    float kp, float ki, float kd, float dt)
 {
   float error = setpoint - input;
-  if(error<5&&error>-5)
-  error = 0;
+  // if(error<2&&error>-2)
+  // error = 0;
   integral += ((error +error_prev)* dt/2);
   float derivative = (error - error_prev) / dt;
   error_prev = error;
