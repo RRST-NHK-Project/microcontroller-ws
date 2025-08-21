@@ -10,6 +10,7 @@ constexpr int motor_id = 1; //モータID
 
 
 //-----状態量-----//
+
 int16_t encoder_count = 0;
 int16_t rpm = 0;
 int16_t last_encoder_count = -1;     // 前回の角度（0〜8191）
@@ -17,6 +18,8 @@ int32_t rotation_count = 0;     // 回転数（±）
 int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
 float angle = 0.0f; //出力軸角度
 float vel = 0.0f; //出力速度
+bool offset_ok = false;
+int encoder_offset = 0;
 
 int32_t current_position = 0; // 累積角度カウント
 float motor_output_current_A = 0.0;
@@ -40,7 +43,7 @@ unsigned long lastPidTime = 0; // PID制御の時間計測用
 //------------PIDゲイン-----------//
 float kp_pos = 0.8;//0.4;
 float ki_pos = 0.01;
-float kd_pos = 0.015;//0.02;
+float kd_pos = 0.02;//0.02;
 
 // float kp_vel = 1.0;
 // float ki_vel = 0.01;
@@ -108,6 +111,7 @@ void setup() {
 //   CAN.onReceive(can_callback);
 }
 
+
 void loop() {
   unsigned long now = millis();
     float dt = (now - lastPidTime) / 1000.0;
@@ -122,6 +126,22 @@ void loop() {
             for(int i=0;i<8;i++) rx[i] = CAN.read();
             encoder_count = (rx[0]<<8)|rx[1];
             rpm = (rx[2]<<8)|rx[3];
+
+             // --- 初回オフセット設定 --- //
+      if (!offset_ok) {
+        encoder_offset = encoder_count;
+        last_encoder_count = -1;
+        rotation_count = 0;
+        total_encoder_count = 0;
+        pos_integral = 0;
+        pos_error_prev = 0;
+        offset_ok = true;
+        Serial.println("Offset set!");
+      }
+
+      int enc_relative = encoder_count - encoder_offset;
+      if (enc_relative < 0) enc_relative += ENCODER_MAX; // wrap-around補正
+
               if(last_encoder_count != -1) {
                 int diff = encoder_count - last_encoder_count;
                 if(diff > HALF_ENCODER) rotation_count--;
@@ -143,8 +163,8 @@ float pos_output = pid(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp
   send_cur(motor_output_current_A);
 
   // 3. デバッグ出力
-  Serial.print("pos:\t"); Serial.print(pos_input);
-  //Serial.print(" vel:"); Serial.println(vel);
+  //Serial.print("pos:\t"); Serial.println(pos_input);
+  Serial.println(pos_setpoint-pos_input);
 
   delay(1);
 }
