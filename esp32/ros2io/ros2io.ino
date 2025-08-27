@@ -347,14 +347,14 @@ void mode1_init() {
     // モード1用の初期化
     SerialBT.println("Mode 1 Initialized");
     // PWMの初期化
-    ledcAttach(MD1P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD2P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD3P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD4P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD5P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD6P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD7P, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttach(MD8P, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttach(MD1P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD2P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD3P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD4P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD5P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD6P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD7P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcAttach(MD8P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
 
     // 受信＆ピン操作のスレッド（タスク）の作成
     xTaskCreateUniversal(
@@ -549,13 +549,13 @@ void mode3_init() {
     ledcAttach(SERVO7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
     ledcAttach(SERVO8, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
 
-    PinMode(SV1, OUTPUT);
-    PinMode(SV2, OUTPUT);
-    PinMode(SV3, OUTPUT);
-    PinMode(SV4, OUTPUT);
-    PinMode(SV5, OUTPUT);
-    PinMode(SV6, OUTPUT);
-    PinMode(SV7, OUTPUT);
+    pinMode(SV1, OUTPUT);
+    pinMode(SV2, OUTPUT);
+    pinMode(SV3, OUTPUT);
+    pinMode(SV4, OUTPUT);
+    pinMode(SV5, OUTPUT);
+    pinMode(SV6, OUTPUT);
+    pinMode(SV7, OUTPUT);
 
     // 内蔵プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
