@@ -14,7 +14,7 @@ Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除�
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 1
+#define MODE 3
 /*
 0:デバッグ・テスト用
 1:MD専用
@@ -39,8 +39,13 @@ BluetoothSerial SerialBT;
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
+// 各アクチュエータの総数を定義
+#define MD 8
+#define SERVO 8
+#define SV 7
+
 // 受信配列の要素数を事前に定義
-#define MAX_ARRAY_SIZE 19
+#define MAX_ARRAY_SIZE 24
 
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
@@ -225,273 +230,6 @@ void subscription_callback(const void *msgin) {
     received_data[i] = msg->data.data[i];
   }
   received_size = len;
-}
-
-void setup() {
-  SerialBT.begin("ESP32_" + String(ID, DEC));  // Bluetoothの初期化
-  delay(2000);
-
-  switch (MODE) {
-    case 0:
-      SerialBT.println("Mode: Debug/Test");
-      mode0_init();
-      break;
-    case 1:
-      SerialBT.println("Mode: MD Control");
-      mode1_init();
-      break;
-    case 2:
-      SerialBT.println("Mode: Encoder Control");
-      mode2_init();
-      break;
-    case 3:
-      SerialBT.println("Mode: Servo/Solenoid/Switch Control");
-      mode3_init();
-      break;
-    case 4:
-      SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
-      mode4_init();
-      break;
-    default:
-      SerialBT.println("Unknown Mode");
-  }
-
-  set_microros_transports();
-  allocator = rcl_get_default_allocator();
-
-  // Agentと接続できるまでリトライ
-  while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
-    SerialBT.println("Waiting for agent...");
-    delay(1000);  // 1秒待つ
-  }
-
-  // Nodeの初期化
-  RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
-
-  // Subscriberの初期化
-  RCCHECK(rclc_subscription_init_default(
-    &subscriber,
-    &node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-    subscriber_topic_name.c_str()));
-
-  // Publisherの初期化
-  RCCHECK(rclc_publisher_init_default(
-    &publisher,
-    &node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-    publisher_topic_name.c_str()));
-
-  std_msgs__msg__Int32MultiArray__init(&msg);
-  msg.data.data = buffer;
-  msg.data.size = 0;
-  msg.data.capacity = MAX_ARRAY_SIZE;
-
-  RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));  // 以下のサービスの数でexecutorのサイズを変える。
-
-  // Executorにサービスを追加
-  RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-  // RCCHECK(rclc_executor_add_timer(&executor, &timer));
-}
-
-void ENC_Read_Task(void *pvParameters) {
-  while (1) {
-    // SerialBT.println("Reading encoders...");
-    pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-    pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-    pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
-    pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
-
-    // デバッグ用
-    if (received_data[0] == 1) {
-      SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
-    }
-
-    msg.data.size = 4;
-    msg.data.data[0] = count[0];
-    msg.data.data[1] = count[1];
-    msg.data.data[2] = count[2];
-    msg.data.data[3] = count[3];
-    RCCHECK(rcl_publish(&publisher, &msg, NULL));
-
-    vTaskDelay(pdMS_TO_TICKS(1));  // ウォッチドッグタイマのリセット(必須)
-  }
-}
-
-void MD_Output_Task(void *pvParameters) {
-  while (1) {
-    // 以下メインの処理
-
-    // デバッグ用
-    if (received_data[0] == 1) {
-      SerialBT.print("Received: ");
-      for (size_t i = 0; i < received_size; i++) {
-        SerialBT.print(received_data[i]);
-        SerialBT.print(", ");
-      }
-      SerialBT.println();
-    }
-
-    // MD出力の制限
-    received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[5] = constrain(received_data[5], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[6] = constrain(received_data[6], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[7] = constrain(received_data[7], -MD_PWM_MAX, MD_PWM_MAX);
-    received_data[8] = constrain(received_data[8], -MD_PWM_MAX, MD_PWM_MAX);
-
-    // ピンの操作
-    digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
-    digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
-    digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
-    digitalWrite(MD5D, received_data[5] > 0 ? HIGH : LOW);
-    digitalWrite(MD6D, received_data[6] > 0 ? HIGH : LOW);
-    digitalWrite(MD7D, received_data[7] > 0 ? HIGH : LOW);
-    digitalWrite(MD8D, received_data[8] > 0 ? HIGH : LOW);
-
-    // analogWrite(MD1P, abs(received_data[1]));
-    // analogWrite(MD2P, abs(received_data[2]));
-    // analogWrite(MD3P, abs(received_data[3]));
-    // analogWrite(MD4P, abs(received_data[4]));
-
-    ledcWrite(MD1P, abs(received_data[1]));
-    ledcWrite(MD2P, abs(received_data[2]));
-    ledcWrite(MD3P, abs(received_data[3]));
-    ledcWrite(MD4P, abs(received_data[4]));
-    ledcWrite(MD5P, abs(received_data[5]));
-    ledcWrite(MD6P, abs(received_data[6]));
-    ledcWrite(MD7P, abs(received_data[7]));
-    ledcWrite(MD8P, abs(received_data[8]));
-
-    vTaskDelay(pdMS_TO_TICKS(1));  // ウォッチドッグタイマのリセット(必須)
-  }
-}
-
-void Servo_Output_Task(void *pvParameters) {
-  //for文で書きかえたいところ、、、
-  while (1) {
-    // サーボ1
-    int angle1 = received_data[0];
-    if (angle1 < SERVO1_MIN_DEG) angle1 = SERVO1_MIN_DEG;
-    if (angle1 > SERVO1_MAX_DEG) angle1 = SERVO1_MAX_DEG;
-    int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
-    int duty1 = (int)(us1 * SERVO_PWM_SCALE);
-    ledcWrite(0, duty1);
-
-    // サーボ2
-    int angle2 = received_data[1];
-    if (angle2 < SERVO2_MIN_DEG) angle2 = SERVO2_MIN_DEG;
-    if (angle2 > SERVO2_MAX_DEG) angle2 = SERVO2_MAX_DEG;
-    int us2 = map(angle2, SERVO2_MIN_DEG, SERVO2_MAX_DEG, SERVO2_MIN_US, SERVO2_MAX_US);
-    int duty2 = (int)(us2 * SERVO_PWM_SCALE);
-    ledcWrite(1, duty2);
-
-    // サーボ3
-    int angle3 = received_data[2];
-    if (angle3 < SERVO3_MIN_DEG) angle3 = SERVO3_MIN_DEG;
-    if (angle3 > SERVO3_MAX_DEG) angle3 = SERVO3_MAX_DEG;
-    int us3 = map(angle3, SERVO3_MIN_DEG, SERVO3_MAX_DEG, SERVO3_MIN_US, SERVO3_MAX_US);
-    int duty3 = (int)(us3 * SERVO_PWM_SCALE);
-    ledcWrite(2, duty3);
-
-    // サーボ4
-    int angle4 = received_data[3];
-    if (angle4 < SERVO4_MIN_DEG) angle4 = SERVO4_MIN_DEG;
-    if (angle4 > SERVO4_MAX_DEG) angle4 = SERVO4_MAX_DEG;
-    int us4 = map(angle4, SERVO4_MIN_DEG, SERVO4_MAX_DEG, SERVO4_MIN_US, SERVO4_MAX_US);
-    int duty4 = (int)(us4 * SERVO_PWM_SCALE);
-    ledcWrite(3, duty4);
-
-    // サーボ5
-    int angle5 = received_data[4];
-    if (angle5 < SERVO5_MIN_DEG) angle5 = SERVO5_MIN_DEG;
-    if (angle5 > SERVO5_MAX_DEG) angle5 = SERVO5_MAX_DEG;
-    int us5 = map(angle5, SERVO5_MIN_DEG, SERVO5_MAX_DEG, SERVO5_MIN_US, SERVO5_MAX_US);
-    int duty5 = (int)(us5 * SERVO_PWM_SCALE);
-    ledcWrite(4, duty5);
-
-    // サーボ6
-    int angle6 = received_data[5];
-    if (angle6 < SERVO6_MIN_DEG) angle6 = SERVO6_MIN_DEG;
-    if (angle6 > SERVO6_MAX_DEG) angle6 = SERVO6_MAX_DEG;
-    int us6 = map(angle6, SERVO6_MIN_DEG, SERVO6_MAX_DEG, SERVO6_MIN_US, SERVO6_MAX_US);
-    int duty6 = (int)(us6 * SERVO_PWM_SCALE);
-    ledcWrite(5, duty6);
-
-    // サーボ7
-    int angle7 = received_data[6];
-    if (angle7 < SERVO7_MIN_DEG) angle7 = SERVO7_MIN_DEG;
-    if (angle7 > SERVO7_MAX_DEG) angle7 = SERVO7_MAX_DEG;
-    int us7 = map(angle7, SERVO7_MIN_DEG, SERVO7_MAX_DEG, SERVO7_MIN_US, SERVO7_MAX_US);
-    int duty7 = (int)(us7 * SERVO_PWM_SCALE);
-    ledcWrite(6, duty7);
-
-    // サーボ8
-    int angle8 = received_data[7];
-    if (angle8 < SERVO8_MIN_DEG) angle8 = SERVO8_MIN_DEG;
-    if (angle8 > SERVO8_MAX_DEG) angle8 = SERVO8_MAX_DEG;
-    int us8 = map(angle8, SERVO8_MIN_DEG, SERVO8_MAX_DEG, SERVO8_MIN_US, SERVO8_MAX_US);
-    int duty8 = (int)(us8 * SERVO_PWM_SCALE);
-    ledcWrite(7, duty8);
-
-    vTaskDelay(pdMS_TO_TICKS(20));  // 50Hz更新
-  }
-}
-
-void IO_Task(void *pvParameters) {
-  while (1) {
-
-    digitalWrite(SV1, received_data[17] ? HIGH : LOW);
-    digitalWrite(SV2, received_data[18] ? HIGH : LOW);
-    digitalWrite(SV3, received_data[19] ? HIGH : LOW);
-    digitalWrite(SV4, received_data[20] ? HIGH : LOW);
-    digitalWrite(SV5, received_data[21] ? HIGH : LOW);
-    digitalWrite(SV6, received_data[22] ? HIGH : LOW);
-    digitalWrite(SV7, received_data[23] ? HIGH : LOW);
-
-    // スイッチの状態を取得
-    if (SW1 == HIGH) {
-      sw_state[0] = true;
-    } else {
-      sw_state[0] = false;
-    }
-
-    if (SW2 == HIGH) {
-      sw_state[1] = true;
-    } else {
-      sw_state[1] = false;
-    }
-
-    if (SW3 == HIGH) {
-      sw_state[2] = true;
-    } else {
-      sw_state[2] = false;
-    }
-
-    if (SW4 == HIGH) {
-      sw_state[3] = true;
-    } else {
-      sw_state[3] = false;
-    }
-
-    // デバッグ用
-    if (received_data[0] == 1) {
-      SerialBT.printf("%d, %d, %d, %d\n", sw_state[0], sw_state[1], sw_state[2], sw_state[3]);
-
-      msg.data.size = 8;
-      msg.data.data[4] = sw_state[0];
-      msg.data.data[5] = sw_state[1];
-      msg.data.data[6] = sw_state[2];
-      msg.data.data[7] = sw_state[3];
-      RCCHECK(rcl_publish(&publisher, &msg, NULL));
-
-
-      vTaskDelay(pdMS_TO_TICKS(1));  // ウォッチドッグタイマのリセット(必須)
-    }
-  }
 }
 
 
@@ -817,6 +555,254 @@ void mode4_init() {
     2,  // 優先度、最大25？
     NULL,
     APP_CPU_NUM);
+}
+
+void setup() {
+  SerialBT.begin("ESP32_" + String(ID, DEC));  // Bluetoothの初期化
+  delay(2000);
+
+  switch (MODE) {
+    case 0:
+      SerialBT.println("Mode: Debug/Test");
+      mode0_init();
+      break;
+    case 1:
+      SerialBT.println("Mode: MD Control");
+      mode1_init();
+      break;
+    case 2:
+      SerialBT.println("Mode: Encoder Control");
+      mode2_init();
+      break;
+    case 3:
+      SerialBT.println("Mode: Servo/Solenoid/Switch Control");
+      mode3_init();
+      break;
+    case 4:
+      SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
+      mode4_init();
+      break;
+    default:
+      SerialBT.println("Unknown Mode");
+  }
+
+  set_microros_transports();
+  allocator = rcl_get_default_allocator();
+
+  // Agentと接続できるまでリトライ
+  while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
+    SerialBT.println("Waiting for agent...");
+    delay(1000);  // 1秒待つ
+  }
+
+  // Nodeの初期化
+  RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
+
+  // Subscriberの初期化
+  RCCHECK(rclc_subscription_init_default(
+    &subscriber,
+    &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+    subscriber_topic_name.c_str()));
+
+  // Publisherの初期化
+  RCCHECK(rclc_publisher_init_default(
+    &publisher,
+    &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+    publisher_topic_name.c_str()));
+
+  std_msgs__msg__Int32MultiArray__init(&msg);
+  msg.data.data = buffer;
+  msg.data.size = 0;
+  msg.data.capacity = MAX_ARRAY_SIZE;
+
+  RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));  // 以下のサービスの数でexecutorのサイズを変える。
+
+  // Executorにサービスを追加
+  RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+  // RCCHECK(rclc_executor_add_timer(&executor, &timer));
+}
+
+void ENC_Read_Task(void *pvParameters) {
+  while (1) {
+    // SerialBT.println("Reading encoders...");
+    pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
+    pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
+    pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
+    pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
+
+    // デバッグ用
+    if (received_data[0] == 1) {
+      SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
+    }
+
+    msg.data.size = 4;
+    msg.data.data[0] = count[0];
+    msg.data.data[1] = count[1];
+    msg.data.data[2] = count[2];
+    msg.data.data[3] = count[3];
+    RCCHECK(rcl_publish(&publisher, &msg, NULL));
+
+    vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+  }
+}
+
+void MD_Output_Task(void *pvParameters) {
+  while (1) {
+    // 以下メインの処理
+
+    // デバッグ用
+    if (received_data[0] == 1) {
+      SerialBT.print("Received: ");
+      for (size_t i = 0; i < received_size; i++) {
+        SerialBT.print(received_data[i]);
+        SerialBT.print(", ");
+      }
+      SerialBT.println();
+    }
+
+    // MD出力の制限
+    received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[5] = constrain(received_data[5], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[6] = constrain(received_data[6], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[7] = constrain(received_data[7], -MD_PWM_MAX, MD_PWM_MAX);
+    received_data[8] = constrain(received_data[8], -MD_PWM_MAX, MD_PWM_MAX);
+
+    // ピンの操作
+    digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
+    digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
+    digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
+    digitalWrite(MD5D, received_data[5] > 0 ? HIGH : LOW);
+    digitalWrite(MD6D, received_data[6] > 0 ? HIGH : LOW);
+    digitalWrite(MD7D, received_data[7] > 0 ? HIGH : LOW);
+    digitalWrite(MD8D, received_data[8] > 0 ? HIGH : LOW);
+
+    // analogWrite(MD1P, abs(received_data[1]));
+    // analogWrite(MD2P, abs(received_data[2]));
+    // analogWrite(MD3P, abs(received_data[3]));
+    // analogWrite(MD4P, abs(received_data[4]));
+
+    ledcWrite(MD1P, abs(received_data[1]));
+    ledcWrite(MD2P, abs(received_data[2]));
+    ledcWrite(MD3P, abs(received_data[3]));
+    ledcWrite(MD4P, abs(received_data[4]));
+    ledcWrite(MD5P, abs(received_data[5]));
+    ledcWrite(MD6P, abs(received_data[6]));
+    ledcWrite(MD7P, abs(received_data[7]));
+    ledcWrite(MD8P, abs(received_data[8]));
+
+    vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+  }
+}
+
+void Servo_Output_Task(void *pvParameters) {
+  //for文で書きかえたいところ、、、
+  while (1) {
+    // サーボ1
+    int angle1 = received_data[0];
+    if (angle1 < SERVO1_MIN_DEG) angle1 = SERVO1_MIN_DEG;
+    if (angle1 > SERVO1_MAX_DEG) angle1 = SERVO1_MAX_DEG;
+    int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
+    int duty1 = (int)(us1 * SERVO_PWM_SCALE);
+    ledcWrite(0, duty1);
+
+    // サーボ2
+    int angle2 = received_data[1];
+    if (angle2 < SERVO2_MIN_DEG) angle2 = SERVO2_MIN_DEG;
+    if (angle2 > SERVO2_MAX_DEG) angle2 = SERVO2_MAX_DEG;
+    int us2 = map(angle2, SERVO2_MIN_DEG, SERVO2_MAX_DEG, SERVO2_MIN_US, SERVO2_MAX_US);
+    int duty2 = (int)(us2 * SERVO_PWM_SCALE);
+    ledcWrite(1, duty2);
+
+    // サーボ3
+    int angle3 = received_data[2];
+    if (angle3 < SERVO3_MIN_DEG) angle3 = SERVO3_MIN_DEG;
+    if (angle3 > SERVO3_MAX_DEG) angle3 = SERVO3_MAX_DEG;
+    int us3 = map(angle3, SERVO3_MIN_DEG, SERVO3_MAX_DEG, SERVO3_MIN_US, SERVO3_MAX_US);
+    int duty3 = (int)(us3 * SERVO_PWM_SCALE);
+    ledcWrite(2, duty3);
+
+    // サーボ4
+    int angle4 = received_data[3];
+    if (angle4 < SERVO4_MIN_DEG) angle4 = SERVO4_MIN_DEG;
+    if (angle4 > SERVO4_MAX_DEG) angle4 = SERVO4_MAX_DEG;
+    int us4 = map(angle4, SERVO4_MIN_DEG, SERVO4_MAX_DEG, SERVO4_MIN_US, SERVO4_MAX_US);
+    int duty4 = (int)(us4 * SERVO_PWM_SCALE);
+    ledcWrite(3, duty4);
+
+    // サーボ5
+    int angle5 = received_data[4];
+    if (angle5 < SERVO5_MIN_DEG) angle5 = SERVO5_MIN_DEG;
+    if (angle5 > SERVO5_MAX_DEG) angle5 = SERVO5_MAX_DEG;
+    int us5 = map(angle5, SERVO5_MIN_DEG, SERVO5_MAX_DEG, SERVO5_MIN_US, SERVO5_MAX_US);
+    int duty5 = (int)(us5 * SERVO_PWM_SCALE);
+    ledcWrite(4, duty5);
+
+    // サーボ6
+    int angle6 = received_data[5];
+    if (angle6 < SERVO6_MIN_DEG) angle6 = SERVO6_MIN_DEG;
+    if (angle6 > SERVO6_MAX_DEG) angle6 = SERVO6_MAX_DEG;
+    int us6 = map(angle6, SERVO6_MIN_DEG, SERVO6_MAX_DEG, SERVO6_MIN_US, SERVO6_MAX_US);
+    int duty6 = (int)(us6 * SERVO_PWM_SCALE);
+    ledcWrite(5, duty6);
+
+    // サーボ7
+    int angle7 = received_data[6];
+    if (angle7 < SERVO7_MIN_DEG) angle7 = SERVO7_MIN_DEG;
+    if (angle7 > SERVO7_MAX_DEG) angle7 = SERVO7_MAX_DEG;
+    int us7 = map(angle7, SERVO7_MIN_DEG, SERVO7_MAX_DEG, SERVO7_MIN_US, SERVO7_MAX_US);
+    int duty7 = (int)(us7 * SERVO_PWM_SCALE);
+    ledcWrite(6, duty7);
+
+    // サーボ8
+    int angle8 = received_data[7];
+    if (angle8 < SERVO8_MIN_DEG) angle8 = SERVO8_MIN_DEG;
+    if (angle8 > SERVO8_MAX_DEG) angle8 = SERVO8_MAX_DEG;
+    int us8 = map(angle8, SERVO8_MIN_DEG, SERVO8_MAX_DEG, SERVO8_MIN_US, SERVO8_MAX_US);
+    int duty8 = (int)(us8 * SERVO_PWM_SCALE);
+    ledcWrite(7, duty8);
+
+    vTaskDelay(50);  // ウォッチドッグタイマのリセット(必須)
+  }
+}
+
+void IO_Task(void *pvParameters) {
+  while (1) {
+
+    digitalWrite(SV1, received_data[17] ? HIGH : LOW);
+    digitalWrite(SV2, received_data[18] ? HIGH : LOW);
+    digitalWrite(SV3, received_data[19] ? HIGH : LOW);
+    digitalWrite(SV4, received_data[20] ? HIGH : LOW);
+    digitalWrite(SV5, received_data[21] ? HIGH : LOW);
+    digitalWrite(SV6, received_data[22] ? HIGH : LOW);
+    digitalWrite(SV7, received_data[23] ? HIGH : LOW);
+
+    // スイッチの状態を取得
+    sw_state[0] = (digitalRead(SW1) == HIGH);
+    sw_state[1] = (digitalRead(SW2) == HIGH);
+    sw_state[2] = (digitalRead(SW3) == HIGH);
+    sw_state[3] = (digitalRead(SW4) == HIGH);
+
+
+    // デバッグ用
+    if (received_data[0] == 1) {
+      SerialBT.printf("%d, %d, %d, %d\n", sw_state[0], sw_state[1], sw_state[2], sw_state[3]);
+    }
+    msg.data.size = 8;
+    msg.data.data[4] = sw_state[0];
+    msg.data.data[5] = sw_state[1];
+    msg.data.data[6] = sw_state[2];
+    msg.data.data[7] = sw_state[3];
+    RCCHECK(rcl_publish(&publisher, &msg, NULL));
+
+
+    vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+  }
 }
 
 void loop() {
