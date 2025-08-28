@@ -45,7 +45,7 @@ BluetoothSerial SerialBT;
 #define SV 7
 
 // 受信配列の要素数を事前に定義
-#define MAX_ARRAY_SIZE 24
+#define MAX_ARRAY_SIZE 25
 
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
@@ -523,14 +523,14 @@ void mode4_init() {
   pinMode(SV6, OUTPUT);
   pinMode(SV7, OUTPUT);
 
-  // 内蔵プルアップを有効化
-  gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV2, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV3, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV4, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV5, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV6, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV7, GPIO_PULLUP_ONLY);
+  // // 内蔵プルアップを有効化
+  // gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV2, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV3, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV4, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV5, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV6, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV7, GPIO_PULLUP_ONLY);
 
   // エンコーダ取得のスレッド（タスク）の作成
   xTaskCreateUniversal(
@@ -782,13 +782,13 @@ void Servo_Output_Task(void *pvParameters) {
 void IO_Task(void *pvParameters) {
   while (1) {
 
-    digitalWrite(SV1, received_data[17] ? HIGH : LOW);
-    digitalWrite(SV2, received_data[18] ? HIGH : LOW);
-    digitalWrite(SV3, received_data[19] ? HIGH : LOW);
-    digitalWrite(SV4, received_data[20] ? HIGH : LOW);
-    digitalWrite(SV5, received_data[21] ? HIGH : LOW);
-    digitalWrite(SV6, received_data[22] ? HIGH : LOW);
-    digitalWrite(SV7, received_data[23] ? HIGH : LOW);
+    digitalWrite(SV1, received_data[18] ? HIGH : LOW);
+    digitalWrite(SV2, received_data[19] ? HIGH : LOW);
+    digitalWrite(SV3, received_data[20] ? HIGH : LOW);
+    digitalWrite(SV4, received_data[21] ? HIGH : LOW);
+    digitalWrite(SV5, received_data[22] ? HIGH : LOW);
+    digitalWrite(SV6, received_data[23] ? HIGH : LOW);
+    digitalWrite(SV7, received_data[24] ? HIGH : LOW);
 
     // スイッチの状態を取得
     sw_state[0] = (digitalRead(SW1) == HIGH);
