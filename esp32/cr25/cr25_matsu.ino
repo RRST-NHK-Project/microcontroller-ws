@@ -100,8 +100,8 @@ BluetoothSerial SerialBT;
 #define SERVO8 25
 
 //ロボマス
-#define RX 25
-#define TX 26
+#define RX 4
+#define TX 5
 
 // ソレノイドバルブ
 #define SV1 2

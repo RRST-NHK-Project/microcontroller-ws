@@ -101,7 +101,7 @@ void setup() {
   while (!Serial)
     ;
 
-  CAN.setPins(25, 26);
+  CAN.setPins(5, 4);//rx.tx
   if (!CAN.begin(1000E3)) {
     Serial.println("Starting CAN failed!");
     while (1)
