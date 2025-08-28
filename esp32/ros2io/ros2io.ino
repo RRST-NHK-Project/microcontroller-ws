@@ -460,14 +460,20 @@ void mode3_init() {
   pinMode(SV6, OUTPUT);
   pinMode(SV7, OUTPUT);
 
+  pinMode(SW1, INPUT_PULLUP);
+  pinMode(SW2, INPUT_PULLUP);
+  pinMode(SW3, INPUT_PULLUP);
+  pinMode(SW4, INPUT_PULLUP);
+
+
   // 内蔵プルアップを有効化
-  gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV2, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV3, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV4, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV5, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV6, GPIO_PULLUP_ONLY);
-  gpio_set_pull_mode((gpio_num_t)SV7, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV2, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV3, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV4, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV5, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV6, GPIO_PULLUP_ONLY);
+  // gpio_set_pull_mode((gpio_num_t)SV7, GPIO_PULLUP_ONLY);
 
   // サーボ操作のスレッド（タスク）の作成
   xTaskCreateUniversal(
@@ -799,7 +805,6 @@ void IO_Task(void *pvParameters) {
     msg.data.data[6] = sw_state[2];
     msg.data.data[7] = sw_state[3];
     RCCHECK(rcl_publish(&publisher, &msg, NULL));
-
 
     vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
   }
