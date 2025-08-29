@@ -1,7 +1,7 @@
 /*
 For NHK-Robocon-2026??
 ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
-Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定)
+Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定)→削除済み
 2025, NHK-Project, RRST
 */
 #include <Arduino.h>
@@ -33,8 +33,8 @@ Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除�
 #include <std_msgs/msg/int32_multi_array.h>
 
 // ワイヤレスデバッグ
-#include "BluetoothSerial.h"
-BluetoothSerial SerialBT;
+//#include "BluetoothSerial.h"
+//BluetoothSerial SerialBT;
 
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
@@ -175,6 +175,7 @@ rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
+rcl_timer_t timer;
 
 // ノード名とトピック名の定義（ID付き）
 String node_name = "esp32node_" + String(ID, DEC);
@@ -200,21 +201,23 @@ bool sw_state[4] = { false };
 //             error_loop();       \
 //     }
 
-// 詳細デバッグ
+// 詳細デバッグ用マクロ
 #define RCCHECK(fn) \
   do { \
-    rcl_ret_t temp_rc = fn; \
-    if ((temp_rc) != RCL_RET_OK) { \
-      SerialBT.printf("RCL error at %s:%d -> %d\n", __FILE__, __LINE__, temp_rc); \
+    rcl_ret_t temp_rc = (fn); \
+    if (temp_rc != RCL_RET_OK) { \
+      /* デバッグ出力 */ \
+      /* SerialBT.printf("RCL error at %s:%d -> %d\n", __FILE__, __LINE__, temp_rc); */ \
       error_loop(); \
     } \
   } while (0)
+
 
 // エラー発生時のループ
 void error_loop() {
   while (1) {
     // このエラーが表示される場合は、シリアルモニターを閉じているか確認
-    SerialBT.println("RCL Error!");
+    // SerialBT.println("RCL Error!");
     delay(1000);
   }
 }
@@ -392,13 +395,13 @@ void enc_init() {
 // 各モードの初期化関数
 void mode0_init() {
   // デバッグ・テスト用の初期化
-  SerialBT.println("Debug/Test Mode Initialized");
+  //SerialBT.println("Debug/Test Mode Initialized");
   // そのうち書く
 }
 
 void mode1_init() {
   // モード1用の初期化
-  SerialBT.println("Mode 1 Initialized");
+  //SerialBT.println("Mode 1 Initialized");
   // PWMの初期化
   ledcAttach(MD1P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
   ledcAttach(MD2P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
@@ -422,7 +425,7 @@ void mode1_init() {
 
 void mode2_init() {
   // モード2用の初期化
-  SerialBT.println("Mode 2 Initialized");
+  //SerialBT.println("Mode 2 Initialized");
 
   // エンコーダの初期化
   enc_init();
@@ -440,7 +443,7 @@ void mode2_init() {
 
 void mode3_init() {
   // モード3用の初期化
-  SerialBT.println("Mode 3 Initialized");
+  //SerialBT.println("Mode 3 Initialized");
 
   // サーボのPWMの初期化
   ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
@@ -494,11 +497,21 @@ void mode3_init() {
     2,  // 優先度、最大25？
     NULL,
     APP_CPU_NUM);
+
+  // SW操作のスレッド（タスク）の作成
+  xTaskCreateUniversal(
+    SW_Task,
+    "SW_Task",
+    4096,
+    NULL,
+    2,  // 優先度、最大25？
+    NULL,
+    APP_CPU_NUM);
 }
 
 void mode4_init() {
   // モード4用の初期化
-  SerialBT.println("Mode 4 Initialized");
+  //SerialBT.println("Mode 4 Initialized");
   //エンコーダとIO操作が同時にできるようになってから実装する予定
   //とりあえず書いておく
 
@@ -564,7 +577,7 @@ void mode4_init() {
 }
 
 void setup() {
-  SerialBT.begin("ESP32_" + String(ID, DEC));  // Bluetoothの初期化
+  //SerialBT.begin("ESP32_" + String(ID, DEC));  // Bluetoothの初期化
   delay(2000);
 
   set_microros_transports();
@@ -572,7 +585,7 @@ void setup() {
 
   // Agentと接続できるまでリトライ
   while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
-    SerialBT.println("Waiting for agent...");
+    // SerialBT.println("Waiting for agent...");
     delay(1000);  // 1秒待つ
   }
 
@@ -598,38 +611,49 @@ void setup() {
   msg.data.size = 0;
   msg.data.capacity = MAX_ARRAY_SIZE;
 
-  RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));  // 以下のサービスの数でexecutorのサイズを変える。
+  // Timer（20ms周期） ← 修正
+  RCCHECK(rclc_timer_init_default(
+    &timer,
+    &support,  // ここを executor.context → &support に変更
+    RCL_MS_TO_NS(20),
+    publisher_timer_callback));
 
-  // Executorにサービスを追加
+  // Executorの初期化
+  RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));  // サービスの数でサイズを変える
+
+  // Executorにサブスクリプションとタイマーを追加
   RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-  // RCCHECK(rclc_executor_add_timer(&executor, &timer));
+  RCCHECK(rclc_executor_add_timer(&executor, &timer));
+
+  // Executorをタスク化
+  xTaskCreatePinnedToCore(executor_task, "executor_task", 8192, NULL, 2, NULL, APP_CPU_NUM);
 
 
   switch (MODE) {
     case 0:
-      SerialBT.println("Mode: Debug/Test");
+      //SerialBT.println("Mode: Debug/Test");
       mode0_init();
       break;
     case 1:
-      SerialBT.println("Mode: MD Control");
+      //SerialBT.println("Mode: MD Control");
       mode1_init();
       break;
     case 2:
-      SerialBT.println("Mode: Encoder Control");
+      //SerialBT.println("Mode: Encoder Control");
       mode2_init();
       break;
     case 3:
-      SerialBT.println("Mode: Servo/Solenoid/Switch Control");
+      //SerialBT.println("Mode: Servo/Solenoid/Switch Control");
       mode3_init();
       break;
     case 4:
-      SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
+      //SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
       mode4_init();
       break;
-    default:
-      SerialBT.println("Unknown Mode");
+    default:;
+      ;
+      //SerialBT.println("Unknown Mode");
   }
-
 }
 
 void ENC_Read_Task(void *pvParameters) {
@@ -642,7 +666,7 @@ void ENC_Read_Task(void *pvParameters) {
 
     // デバッグ用
     if (received_data[0] == 1) {
-      SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
+      //SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
     }
 
     msg.data.size = 4;
@@ -661,14 +685,14 @@ void MD_Output_Task(void *pvParameters) {
     // 以下メインの処理
 
     // デバッグ用
-    if (received_data[0] == 1) {
-      SerialBT.print("Received: ");
-      for (size_t i = 0; i < received_size; i++) {
-        SerialBT.print(received_data[i]);
-        SerialBT.print(", ");
-      }
-      SerialBT.println();
-    }
+    // if (received_data[0] == 1) {
+    //   SerialBT.print("Received: ");
+    //   for (size_t i = 0; i < received_size; i++) {
+    //     SerialBT.print(received_data[i]);
+    //     SerialBT.print(", ");
+    //   }
+    //   SerialBT.println();
+    // }
 
     // MD出力の制限
     received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
@@ -775,7 +799,8 @@ void Servo_Output_Task(void *pvParameters) {
     int duty8 = (int)(us8 * SERVO_PWM_SCALE);
     ledcWrite(7, duty8);
 
-    vTaskDelay(50);  // ウォッチドッグタイマのリセット(必須)
+    //vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
@@ -790,6 +815,13 @@ void IO_Task(void *pvParameters) {
     digitalWrite(SV6, received_data[23] ? HIGH : LOW);
     digitalWrite(SV7, received_data[24] ? HIGH : LOW);
 
+    //vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+
+void SW_Task(void *pvParameters) {
+  while (1) {
     // スイッチの状態を取得
     sw_state[0] = (digitalRead(SW1) == HIGH);
     sw_state[1] = (digitalRead(SW2) == HIGH);
@@ -797,22 +829,60 @@ void IO_Task(void *pvParameters) {
     sw_state[3] = (digitalRead(SW4) == HIGH);
 
 
-    // デバッグ用
-    if (received_data[0] == 1) {
-      SerialBT.printf("%d, %d, %d, %d\n", sw_state[0], sw_state[1], sw_state[2], sw_state[3]);
-    }
-    msg.data.size = 8;
-    msg.data.data[4] = sw_state[0];
-    msg.data.data[5] = sw_state[1];
-    msg.data.data[6] = sw_state[2];
-    msg.data.data[7] = sw_state[3];
-    RCCHECK(rcl_publish(&publisher, &msg, NULL));
+    // // デバッグ用
+    // if (received_data[0] == 1) {
+    //   SerialBT.printf("%d, %d, %d, %d\n", sw_state[0], sw_state[1], sw_state[2], sw_state[3]);
+    // }
+    // msg.data.size = 8;
+    // msg.data.data[4] = sw_state[0];
+    // msg.data.data[5] = sw_state[1];
+    // msg.data.data[6] = sw_state[2];
+    // msg.data.data[7] = sw_state[3];
+    // RCCHECK(rcl_publish(&publisher, &msg, NULL));
 
-    vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+    //vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    //vTaskDelay(pdMS_TO_TICKS(20));
   }
 }
 
+void executor_task(void *arg) {
+  while (1) {
+    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(20));
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+}
+
+// void publisher_task(void *arg) {
+//   while (1) {
+//     msg.data.size = 8;
+//     msg.data.data[4] = sw_state[0];
+//     msg.data.data[5] = sw_state[1];
+//     msg.data.data[6] = sw_state[2];
+//     msg.data.data[7] = sw_state[3];
+
+//     RCCHECK(rcl_publish(&publisher, &msg, NULL));
+//     vTaskDelay(pdMS_TO_TICKS(20));
+//   }
+// }
+
+// Timer callback
+void publisher_timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
+  (void)last_call_time;
+  if (!timer) return;
+
+  // メッセージ作成
+  msg.data.size = 8;
+  msg.data.data[4] = sw_state[0];
+  msg.data.data[5] = sw_state[1];
+  msg.data.data[6] = sw_state[2];
+  msg.data.data[7] = sw_state[3];
+
+  RCCHECK(rcl_publish(&publisher, &msg, NULL));
+}
+
+
 void loop() {
-  RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-  vTaskDelay(1);
+  vTaskDelay(1000);
 }
