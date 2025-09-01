@@ -2,6 +2,7 @@
 For NHK-Robocon-2026??
 ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
 ライブラリのインストールが必要(https://github.com/micro-ROS/micro_ros_arduino)
+ボードマネージャーはesp32 by Espressif Systemsを選択
 Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定　→　2025/09/01削除済み)
 2025, NHK-Project, RRST
 */
