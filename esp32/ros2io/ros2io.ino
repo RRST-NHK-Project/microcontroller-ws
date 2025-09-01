@@ -83,7 +83,7 @@ GPTくんに書いてもらいました！便利！
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **MODE 0でのテスト内容変更** //
-#define TEST_MODE 0
+#define TEST_MODE 3
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 // microROS関連
@@ -985,7 +985,7 @@ void mode0_init() {
         }
     }
 
-    switch (MODE) {
+    switch (TEST_MODE) {
     case 0:
         // なにもしない
         Serial.println("MODE_DUMMY");
