@@ -240,6 +240,79 @@ void subscription_callback(const void *msgin) {
     received_size = len;
 }
 
+void setup() {
+    // SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
+    delay(2000);
+
+    set_microros_transports();
+    allocator = rcl_get_default_allocator();
+
+    // Agentと接続できるまでリトライ
+    while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
+        // SerialBT.println("Waiting for agent...");
+        delay(1000); // 1秒待つ
+    }
+
+    // Nodeの初期化
+    RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
+
+    // Subscriberの初期化
+    RCCHECK(rclc_subscription_init_default(
+        &subscriber,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        subscriber_topic_name.c_str()));
+
+    // Publisherの初期化
+    RCCHECK(rclc_publisher_init_default(
+        &publisher,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        publisher_topic_name.c_str()));
+
+    std_msgs__msg__Int32MultiArray__init(&msg);
+    msg.data.data = buffer;
+    msg.data.size = 0;
+    msg.data.capacity = MAX_ARRAY_SIZE;
+
+    RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
+
+    // Executorにサービスを追加
+    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+    // RCCHECK(rclc_executor_add_timer(&executor, &timer));
+
+    switch (MODE) {
+    case 0:
+        // SerialBT.println("Mode: Debug/Test");
+        mode0_init();
+        break;
+    case 1:
+        // SerialBT.println("Mode: MD Control");
+        mode1_init();
+        break;
+    case 2:
+        // SerialBT.println("Mode: Encoder Control");
+        mode2_init();
+        break;
+    case 3:
+        // SerialBT.println("Mode: Servo/Solenoid/Switch Control");
+        mode3_init();
+        break;
+    case 4:
+        // SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
+        mode4_init();
+        break;
+    default:;
+        ;
+        // SerialBT.println("Unknown Mode");
+    }
+}
+
+void loop() {
+    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
+    vTaskDelay(1);
+}
+
 void ENC_Read_Task(void *pvParameters) {
     while (1) {
         // SerialBT.println("Reading encoders...");
@@ -789,77 +862,4 @@ void mode4_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
-}
-
-void setup() {
-    // SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
-    delay(2000);
-
-    set_microros_transports();
-    allocator = rcl_get_default_allocator();
-
-    // Agentと接続できるまでリトライ
-    while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
-        // SerialBT.println("Waiting for agent...");
-        delay(1000); // 1秒待つ
-    }
-
-    // Nodeの初期化
-    RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
-
-    // Subscriberの初期化
-    RCCHECK(rclc_subscription_init_default(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        subscriber_topic_name.c_str()));
-
-    // Publisherの初期化
-    RCCHECK(rclc_publisher_init_default(
-        &publisher,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        publisher_topic_name.c_str()));
-
-    std_msgs__msg__Int32MultiArray__init(&msg);
-    msg.data.data = buffer;
-    msg.data.size = 0;
-    msg.data.capacity = MAX_ARRAY_SIZE;
-
-    RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
-
-    // Executorにサービスを追加
-    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-    // RCCHECK(rclc_executor_add_timer(&executor, &timer));
-
-    switch (MODE) {
-    case 0:
-        // SerialBT.println("Mode: Debug/Test");
-        mode0_init();
-        break;
-    case 1:
-        // SerialBT.println("Mode: MD Control");
-        mode1_init();
-        break;
-    case 2:
-        // SerialBT.println("Mode: Encoder Control");
-        mode2_init();
-        break;
-    case 3:
-        // SerialBT.println("Mode: Servo/Solenoid/Switch Control");
-        mode3_init();
-        break;
-    case 4:
-        // SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
-        mode4_init();
-        break;
-    default:;
-        ;
-        // SerialBT.println("Unknown Mode");
-    }
-}
-
-void loop() {
-    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-    vTaskDelay(1);
 }
