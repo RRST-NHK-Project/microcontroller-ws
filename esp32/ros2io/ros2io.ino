@@ -22,14 +22,19 @@ dataのインデックスを確認、ROS側と合わせる
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 3
+#define MODE 0
 /*
-0:デバッグ・テスト用（ROSと接続せずにデバッグのみを行う）
+0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと
 1:MD専用
 2:エンコーダ・スイッチ
 3:サーボ・ソレノイドバルブ
 4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー（Pub,Subを同時にしたときの遅延問題が解決できていないため未実装）
 */
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+// **MODE 0でのテスト内容変更** //
+#define TEST_MODE 0
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 // microROS関連
@@ -52,8 +57,15 @@ dataのインデックスを確認、ROS側と合わせる
 #define SERVO 8
 #define SV 7
 
-// 受信配列の要素数を事前に定義
+// 受信配列の要素数を定義
 #define MAX_ARRAY_SIZE 25
+/*
+0:予備
+1~8:MD
+9~16:サーボ
+17~23:ソレノイドバルブ
+24:予備
+*/
 
 // パルスカウンタの上限・下限の定義
 #define COUNTER_H_LIM 32767
@@ -123,7 +135,6 @@ dataのインデックスを確認、ROS側と合わせる
 // MD用
 #define MD_PWM_FREQ 20000   // MDのPWM周波数
 #define MD_PWM_RESOLUTION 8 // MDのPWM分解能（8ビット）
-//
 
 // サーボ用
 #define SERVO_PWM_FREQ 50       // サーボPWM周波数
@@ -172,7 +183,6 @@ dataのインデックスを確認、ROS側と合わせる
 #define SERVO8_MAX_US 2500
 #define SERVO8_MIN_DEG 0
 #define SERVO8_MAX_DEG 180
-//
 
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
@@ -242,6 +252,43 @@ void subscription_callback(const void *msgin) {
 
 void setup() {
     // SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
+
+    // MODEに応じた初期化
+    switch (MODE) {
+    case 0:
+        Serial.begin(9600);
+        mode0_init();
+        break;
+    case 1:
+        ros_init();
+        mode1_init();
+        break;
+    case 2:
+        ros_init();
+        mode2_init();
+        break;
+    case 3:
+        ros_init();
+        mode3_init();
+        break;
+    case 4:
+        ros_init();
+        mode4_init();
+        break;
+    default:;
+        ;
+    }
+}
+
+void loop() {
+    if (MODE != 0) {
+        RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
+        vTaskDelay(1);
+    }
+}
+
+// micro-ROSの初期化
+void ros_init() {
     delay(2000);
 
     set_microros_transports();
@@ -280,61 +327,6 @@ void setup() {
     // Executorにサービスを追加
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     // RCCHECK(rclc_executor_add_timer(&executor, &timer));
-
-    switch (MODE) {
-    case 0:
-        // SerialBT.println("Mode: Debug/Test");
-        mode0_init();
-        break;
-    case 1:
-        // SerialBT.println("Mode: MD Control");
-        mode1_init();
-        break;
-    case 2:
-        // SerialBT.println("Mode: Encoder Control");
-        mode2_init();
-        break;
-    case 3:
-        // SerialBT.println("Mode: Servo/Solenoid/Switch Control");
-        mode3_init();
-        break;
-    case 4:
-        // SerialBT.println("Mode: Servo/Solenoid/Switch + Encoder Control");
-        mode4_init();
-        break;
-    default:;
-        ;
-        // SerialBT.println("Unknown Mode");
-    }
-}
-
-void loop() {
-    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-    vTaskDelay(1);
-}
-
-void ENC_Read_Task(void *pvParameters) {
-    while (1) {
-        // SerialBT.println("Reading encoders...");
-        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
-        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
-
-        // デバッグ用
-        // if (received_data[0] == 1) {
-        //     SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
-        // }
-
-        msg.data.size = 4;
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        RCCHECK(rcl_publish(&publisher, &msg, NULL));
-
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
-    }
 }
 
 void MD_Output_Task(void *pvParameters) {
@@ -384,6 +376,64 @@ void MD_Output_Task(void *pvParameters) {
         ledcWrite(MD6P, abs(received_data[6]));
         ledcWrite(MD7P, abs(received_data[7]));
         ledcWrite(MD8P, abs(received_data[8]));
+
+        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+    }
+}
+
+void ENC_Read_Task(void *pvParameters) {
+    while (1) {
+        // SerialBT.println("Reading encoders...");
+        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
+        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
+        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
+        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
+
+        // デバッグ用
+        // if (received_data[0] == 1) {
+        //     SerialBT.printf("%d, %d, %d, %d\n", count[0], count[1], count[2], count[3]);
+        // }
+
+        msg.data.size = 8;
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        RCCHECK(rcl_publish(&publisher, &msg, NULL));
+
+        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+    }
+}
+
+void ENC_SW_Read_Publish_Task(void *pvParameters) {
+    while (1) {
+
+        // パルスカウンタの値を取得
+        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
+        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
+        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
+        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
+
+        // スイッチの状態を取得
+        sw_state[0] = (digitalRead(SW1) == HIGH);
+        sw_state[1] = (digitalRead(SW2) == HIGH);
+        sw_state[2] = (digitalRead(SW3) == HIGH);
+        sw_state[3] = (digitalRead(SW4) == HIGH);
+
+        msg.data.size = 8;
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        msg.data.data[4] = sw_state[0];
+        msg.data.data[5] = sw_state[1];
+        msg.data.data[6] = sw_state[2];
+        msg.data.data[7] = sw_state[3];
+
+        // Publish
+        if (MODE != 0) {
+            RCCHECK(rcl_publish(&publisher, &msg, NULL));
+        }
 
         vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
     }
@@ -479,13 +529,13 @@ void Servo_Output_Task(void *pvParameters) {
 void SV_Task(void *pvParameters) {
     while (1) {
 
-        digitalWrite(SV1, received_data[18] ? HIGH : LOW);
-        digitalWrite(SV2, received_data[19] ? HIGH : LOW);
-        digitalWrite(SV3, received_data[20] ? HIGH : LOW);
-        digitalWrite(SV4, received_data[21] ? HIGH : LOW);
-        digitalWrite(SV5, received_data[22] ? HIGH : LOW);
-        digitalWrite(SV6, received_data[23] ? HIGH : LOW);
-        digitalWrite(SV7, received_data[24] ? HIGH : LOW);
+        digitalWrite(SV1, received_data[17] ? HIGH : LOW);
+        digitalWrite(SV2, received_data[18] ? HIGH : LOW);
+        digitalWrite(SV3, received_data[19] ? HIGH : LOW);
+        digitalWrite(SV4, received_data[20] ? HIGH : LOW);
+        digitalWrite(SV5, received_data[21] ? HIGH : LOW);
+        digitalWrite(SV6, received_data[22] ? HIGH : LOW);
+        digitalWrite(SV7, received_data[23] ? HIGH : LOW);
 
         vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
     }
@@ -672,12 +722,6 @@ void enc_init() {
 }
 
 // 各モードの初期化関数
-void mode0_init() {
-    // デバッグ・テスト用の初期化
-    // SerialBT.println("Debug/Test Mode Initialized");
-    // そのうち書く
-}
-
 void mode1_init() {
     // モード1用の初期化
     // SerialBT.println("Mode 1 Initialized");
@@ -709,20 +753,35 @@ void mode2_init() {
     // エンコーダの初期化
     enc_init();
 
-    // エンコーダ取得のスレッド（タスク）の作成
-    xTaskCreateUniversal(
-        ENC_Read_Task,
-        "ENC_Read_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
+    // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
+    pinMode(SW1, INPUT_PULLUP);
+    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
 
-    // スイッチ取得のスレッド（タスク）の作成
+    // // エンコーダ取得のスレッド（タスク）の作成
+    // xTaskCreateUniversal(
+    //     ENC_Read_Task,
+    //     "ENC_Read_Task",
+    //     4096,
+    //     NULL,
+    //     2, // 優先度、最大25？
+    //     NULL,
+    //     APP_CPU_NUM);
+
+    // // スイッチ取得のスレッド（タスク）の作成
+    // xTaskCreateUniversal(
+    //     SW_Task,
+    //     "SW_Task",
+    //     4096,
+    //     NULL,
+    //     2, // 優先度、最大25？
+    //     NULL,
+    //     APP_CPU_NUM);
+
     xTaskCreateUniversal(
-        SW_Task,
-        "SW_Task",
+        ENC_SW_Read_Publish_Task,
+        "ENC_SW_Read_Publish_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
@@ -751,11 +810,6 @@ void mode3_init() {
     pinMode(SV5, OUTPUT);
     pinMode(SV6, OUTPUT);
     pinMode(SV7, OUTPUT);
-
-    pinMode(SW1, INPUT_PULLUP);
-    pinMode(SW2, INPUT_PULLUP);
-    pinMode(SW3, INPUT_PULLUP);
-    pinMode(SW4, INPUT_PULLUP);
 
     // 内蔵プルアップを有効化
     // gpio_set_pull_mode((gpio_num_t)SV1, GPIO_PULLUP_ONLY);
@@ -790,7 +844,7 @@ void mode3_init() {
 void mode4_init() {
     // モード4用の初期化
     // SerialBT.println("Mode 4 Initialized");
-    // エンコーダとIO操作が同時にできるようになってから実装する予定
+    // Pub,Subを同時にしたときの遅延問題が解決できていないため未使用
     // とりあえず書いておく
 
     // エンコーダの初期化
@@ -862,4 +916,110 @@ void mode4_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
+}
+
+// テストモード　※実機で「絶対」に実行するな！
+// シリアルモニターからEnterが押されるまで待機する
+void mode0_init() {
+    // デバッグ・テスト用の初期化
+    Serial.println("Debug/Test Mode Initialized.");
+    Serial.println("Press Enter to continue...");
+    // そのうち書く
+
+    // テストモードの安全装置
+    while (1) {
+        if (Serial.available() > 0) {
+            char c = Serial.read();
+            if (c == '\n' || c == '\r') { // Enterが押されたら抜ける
+                break;
+            }
+        }
+    }
+
+    switch (MODE) {
+    case 0:
+        // なにもしない
+        Serial.println("MODE_DUMMY");
+        while (1) {
+            ;
+        }
+        break;
+    case 1:
+        // MDのテスト
+        Serial.println("MD_TEST");
+        mode1_init();
+        while (1) {
+            Serial.println("MD:20%");
+            for (int i = 1; i <= 8; i++) {
+                received_data[i] = 20;
+            }
+            delay(1000);
+
+            Serial.println("MD:0%");
+            for (int i = 1; i <= 8; i++) {
+                received_data[i] = 0;
+            }
+            delay(1000);
+
+            Serial.println("MD:-20%");
+            for (int i = 1; i <= 8; i++) {
+                received_data[i] = -20;
+            }
+            delay(1000);
+        }
+        break;
+    case 2:
+        // エンコーダ、スイッチのテスト
+        Serial.println("ENC/SW_TEST");
+        enc_init();
+        mode2_init();
+        while (1) {
+            for (int i = 0; i < 4; i++) {
+                Serial.print("count[");
+                Serial.print(i);
+                Serial.print("] = ");
+                Serial.print(count[i]);
+                Serial.print("\t sw_state[");
+                Serial.print(i);
+                Serial.print("] = ");
+                Serial.println(sw_state[i]);
+            }
+            Serial.println("------");
+        }
+        break;
+    case 3:
+        // サーボ、ソレノイドのテスト
+        Serial.println("SERVO/SV_TEST");
+        mode3_init();
+        while (1) {
+            for (int i = 9; i <= 16; i++) {
+                Serial.print("SERVO");
+                Serial.print(i - 8);
+                Serial.println(" Sweep");
+                for (int angle = 0; angle <= 180; angle += 10) {
+                    received_data[i] = angle;
+                    delay(500);
+                }
+                for (int angle = 180; angle >= 0; angle -= 10) {
+                    received_data[i] = angle;
+                    delay(500);
+                }
+            }
+            for (int i = 17; i <= 23; i++) {
+                Serial.print("SV");
+                Serial.print(i - 16);
+                Serial.println(" ON");
+                received_data[i] = 1;
+                delay(1000);
+                Serial.print("SV");
+                Serial.print(i - 16);
+                Serial.println(" OFF");
+                received_data[i] = 0;
+                delay(1000);
+            }
+        }
+        break;
+    default:;
+        ;
+    }
 }
