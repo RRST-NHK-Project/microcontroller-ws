@@ -83,7 +83,7 @@ GPTくんに書いてもらいました！便利！
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **MODE 0でのテスト内容変更** //
-#define TEST_MODE 3
+#define TEST_MODE 2
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 // microROS関連
@@ -305,7 +305,7 @@ void setup() {
     // MODEに応じた初期化
     switch (MODE) {
     case 0:
-        Serial.begin(9600);
+        Serial.begin(115200);
         mode0_init();
         break;
     case 1:
