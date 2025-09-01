@@ -7,9 +7,57 @@ Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除�
 */
 
 /*
-To Do
-dataのインデックスを確認、ROS側と合わせる
-関数名もっと分かりやすく
+ToDo
+未使用関数の削除
+デバッグモードの動作テスト
+*/
+
+/*
+フローチャート（全体構造）
+
+ ┌───────────────┐
+ │    setup()    │
+ └─────┬─────────┘
+       │
+       ▼
+ ┌─────────────────────────────┐
+ │ MODEごとに初期化処理を分岐 │
+ │ case 0: mode0_init()        │
+ │ case 1: ros_init()+mode1_init() │
+ │ case 2: ros_init()+mode2_init() │
+ │ case 3: ros_init()+mode3_init() │
+ │ case 4: ros_init()+mode4_init() │
+ └─────────────────────────────┘
+       │
+       ▼
+ ┌───────────────┐
+ │    loop()     │
+ └─────┬─────────┘
+       │ MODE != 0 ?
+       ▼
+ ┌──────────────────────────┐
+ │ rclc_executor_spin_some()│
+ │ vTaskDelay(1)            │
+ └──────────────────────────┘
+       │
+       └───→ 繰り返し
+
+================================================
+
+補助タスク（xTaskCreateUniversalで並列実行されるもの）
+
+- MD_Output_Task(): モータードライバPWM出力
+- ENC_Read_Task(): エンコーダ値読み取り → Publish
+- ENC_SW_Read_Publish_Task(): エンコーダ＋スイッチ値読み取り → Publish
+- Servo_Output_Task(): サーボ角度をPWM出力
+- SV_Task(): ソレノイドON/OFF制御
+- SW_Task(): スイッチ状態読み取り → Publish
+
+================================================
+
+エラー処理
+- RCCHECK() マクロで失敗すると error_loop() に入り無限ループ
+GPTくんに書いてもらいました！便利！
 */
 
 #include <Arduino.h>
@@ -1019,7 +1067,11 @@ void mode0_init() {
             }
         }
         break;
-    default:;
-        ;
+    default:
+        Serial.println("Invalid MODE for Test Mode. Enter 0, 1, 2, or 3.");
+        while (1) {
+            ;
+        }
+        break;
     }
 }
