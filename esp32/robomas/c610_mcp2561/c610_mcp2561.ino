@@ -27,8 +27,8 @@ float limit = 19520;
 float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
-float pos_setpoint = 720.0; //目標角度
-float pos_input = 0.0; //現在のエンコーダの値
+float target_angle = 720.0; //目標角度
+float angle = 0.0; //現在のエンコーダの値
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
 float pos_output = 0;            // 角度PID出力（目標速度）
@@ -67,6 +67,8 @@ void send_cur(float cur) {
 
   uint8_t send_data[8] = {};
 
+
+  //電流のデータ送信
   send_data[(motor_id - 1) * 2] = (transmit_val >> 8) & 0xFF;
   send_data[(motor_id - 1) * 2 + 1] = transmit_val & 0xFF;
   CAN.beginPacket(0x200);
@@ -150,12 +152,12 @@ void loop() {
 
             last_encoder_count = encoder_count;
             total_encoder_count = rotation_count * ENCODER_MAX + encoder_count;
-            pos_input = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
+            angle = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
             vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
         }
         packetSize = CAN.parsePacket(); // 次の受信も処理
     }
-float pos_output = pid(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
     //float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
     motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
     //motor_output_current_A = 0.3;
@@ -163,11 +165,12 @@ float pos_output = pid(pos_setpoint, pos_input, pos_error_prev, pos_integral, kp
   send_cur(motor_output_current_A);
 
   // 3. デバッグ出力
-  //Serial.print("pos:\t"); Serial.println(pos_input);
-  Serial.println(pos_setpoint-pos_input);
+  //Serial.print("pos:\t"); Serial.println(angle);
+  Serial.println(target_angle - angle);
 
   delay(1);
 }
+
 
 float pid(float setpoint, float input, float &error_prev, float &integral,
           float kp, float ki, float kd, float dt)
