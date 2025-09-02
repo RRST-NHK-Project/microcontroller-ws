@@ -127,8 +127,8 @@ ToDo
 #define SERVO8 25
 
 //ロボマスモータ
-#define rx = 5;
-#define tx = 4;
+#define ROBOMAS_CAN_RX  5;
+#define ROBOMAS_CAN_TX  4;
 
 // ソレノイドバルブ
 #define SV1 2
@@ -264,6 +264,37 @@ void subscription_callback(const void *msgin) {
   received_size = len;
 }
 
+//ロボマスモータの定義
+const int ENCODER_MAX = 8192; //エンコーダの最大
+  const int HALF_ENCODER = ENCODER_MAX / 2;
+  constexpr float gear_ratio = 36.0f; // 減速比
+  constexpr int motor_id = 1; //モータID
+  int16_t encoder_count = 0;
+  int16_t rpm = 0;
+  int16_t last_encoder_count = -1;     // 前回の角度（0〜8191）
+  int32_t rotation_count = 0;     // 回転数（±）
+  int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
+  int32_t current_position = 0; // 累積角度カウント
+  float motor_output_current_A = 0.0;
+  float limit = 19520;
+  float current_limit_A = 10.0f; // 最大出力電流（例：5A）
+
+  float target_angle = 720.0; //目標角度
+  float angle = 0.0; //現在のエンコーダの値
+  float pos_error_prev = 0.0;        // 前回の角度誤差
+  float pos_integral = 0.0;          // 角度積分項
+  float pos_output = 0;            // 角度PID出力（目標速度）
+
+  unsigned long lastPidTime = 0; // PID制御の時間計測用
+
+  float kp_pos = 0.8;//0.4;
+  float ki_pos = 0.01;
+  float kd_pos = 0.02;//0.02;
+  bool offset_ok = false;
+  int encoder_offset = 0;
+  float vel_input = 0.0; //現在の速度
+//
+
 void setup() {
   // SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
 
@@ -310,7 +341,7 @@ void setup() {
 
 void loop() {
   if (MODE != 0) {
-    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
+    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(6)));
     vTaskDelay(1);
   }
 }
@@ -553,36 +584,7 @@ void Servo_Output_Task(void *pvParameters) {
   }
 }
 
-void robomas_Task(void *pvParameters) {
-  while (1) {
-  const int ENCODER_MAX = 8192; //エンコーダの最大
-  const int HALF_ENCODER = ENCODER_MAX / 2;
-  constexpr float gear_ratio = 36.0f; // 減速比
-  constexpr int motor_id = 1; //モータID
-  int16_t encoder_count = 0;
-  int16_t rpm = 0;
-  int16_t last_encoder_count = -1;     // 前回の角度（0〜8191）
-  int32_t rotation_count = 0;     // 回転数（±）
-  int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
-  int32_t current_position = 0; // 累積角度カウント
-  float motor_output_current_A = 0.0;
-  float limit = 19520;
-  float current_limit_A = 10.0f; // 最大出力電流（例：5A）
-
-  float target_angle = 720.0; //目標角度
-  float angle = 0.0; //現在のエンコーダの値
-  float pos_error_prev = 0.0;        // 前回の角度誤差
-  float pos_integral = 0.0;          // 角度積分項
-  float pos_output = 0;            // 角度PID出力（目標速度）
-
-  unsigned long lastPidTime = 0; // PID制御の時間計測用
-
-  float kp_pos = 0.8;//0.4;
-  float ki_pos = 0.01;
-  float kd_pos = 0.02;//0.02;
-
-  
-  void send_cur(float cur) {
+void send_cur(float cur) {
   constexpr float MAX_CUR = 10;
   constexpr int MAX_CUR_VAL = 10000;
 
@@ -620,6 +622,9 @@ float constrain_double(float val, float min_val, float max_val)
     return val;
 }
 
+
+void robomas_Task(void *pvParameters) {
+  while (1) {
   unsigned long now = millis();
     float dt = (now - lastPidTime) / 1000.0;
     if(dt <= 0) dt = 0.000001f; // dtが0にならないようにする
