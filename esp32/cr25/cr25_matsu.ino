@@ -25,7 +25,7 @@ ToDo
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 5
+#define MODE 0
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと
 1:MD専用
@@ -38,7 +38,7 @@ ToDo
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **MODE 0でのテスト内容変更** //
-#define TEST_MODE 0
+#define TEST_MODE 4
 /*
 0:何もせず待機
 1:MDテスト
@@ -284,7 +284,7 @@ float motor_output_current_A = 0.0;
 float limit = 19520;
 float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
-int target_angle = received_data[24]; //目標角度
+float target_angle; //目標角度
 float angle = 0.0; //現在のエンコーダの値
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
@@ -633,7 +633,7 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
 void robomas_Task(void *pvParameters) {
   //ロボマスモータの制御タスク
   //要修正
-
+float target_angle = received_data[24]; //目標角度
   while (1) {
   unsigned long now = millis();
     float dt = (now - lastPidTime) / 1000.0;
@@ -1090,7 +1090,7 @@ void mode4_init() {
 void mode5_init() {
   // モード5用の初期化
   // SerialBT.println("Mode 5 Initialized");
-  
+  target_angle=0;
   xTaskCreateUniversal(
     robomas_Task,
     "robomas_Task",

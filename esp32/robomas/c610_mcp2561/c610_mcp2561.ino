@@ -28,7 +28,7 @@ float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
 float target_angle = 720.0; //目標角度
-float angle = 0.0; //現在のエンコーダの値
+//float encoder_count = 0.0; //現在のエンコーダの値
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
 float pos_output = 0;            // 角度PID出力（目標速度）
@@ -103,7 +103,7 @@ void setup() {
   while (!Serial)
     ;
 
-  CAN.setPins(5, 4);//rx.tx
+  CAN.setPins(4, 5);//rx.tx
   if (!CAN.begin(1000E3)) {
     Serial.println("Starting CAN failed!");
     while (1)
