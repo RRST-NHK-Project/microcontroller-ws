@@ -9,8 +9,7 @@ Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除�
 
 /*
 ToDo
-未使用関数の削除
-デバッグモードの動作テスト
+CANの統合
 */
 
 #include <Arduino.h>
@@ -36,7 +35,7 @@ ToDo
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **MODE 0でのテスト内容変更** //
-#define TEST_MODE 0
+#define TEST_MODE 5
 /*
 0:何もせず待機
 1:MDテスト
@@ -1274,6 +1273,7 @@ void mode0_init() {
             delay(1);
         }
         break;
+        
     default:
         Serial.println("Invalid MODE for Test Mode. Enter 0, 1, 2, or 3.");
         while (1) {
