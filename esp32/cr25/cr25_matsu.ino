@@ -5,6 +5,7 @@ ESP32用microROSプログラム。ROSノードからのマイコンIO操作を�
 ボードマネージャーはesp32 by Espressif Systemsを選択
 Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定　→　2025/09/01削除済み)
 2025, NHK-Project, RRST
+松枝チーム用に改変
 */
 
 /*
@@ -24,13 +25,14 @@ ToDo
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 0
+#define MODE 5
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと
 1:MD専用
 2:エンコーダー・スイッチ
 3:サーボ・ソレノイドバルブ
 4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー（Pub,Subを同時にしたときの遅延問題が解決できていないため未実装）
+5:ロボマス
 */
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
@@ -127,8 +129,8 @@ ToDo
 #define SERVO8 25
 
 //ロボマスモータ
-#define ROBOMAS_CAN_RX  5;
-#define ROBOMAS_CAN_TX  4;
+#define ROBOMAS_CAN_RX  5
+#define ROBOMAS_CAN_TX  4
 
 // ソレノイドバルブ
 #define SV1 2
@@ -198,6 +200,12 @@ ToDo
 #define SERVO8_MIN_DEG 0
 #define SERVO8_MAX_DEG 180
 
+//ロボマスの定義
+#define ENCODER_MAX  8192 //エンコーダの最大
+#define HALF_ENCODER  ENCODER_MAX / 2
+#define gear_ratio  36.0 // 減速比
+
+
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
 // rcl_timer_t timer;
@@ -265,34 +273,31 @@ void subscription_callback(const void *msgin) {
 }
 
 //ロボマスモータの定義
-const int ENCODER_MAX = 8192; //エンコーダの最大
-  const int HALF_ENCODER = ENCODER_MAX / 2;
-  constexpr float gear_ratio = 36.0f; // 減速比
-  constexpr int motor_id = 1; //モータID
-  int16_t encoder_count = 0;
-  int16_t rpm = 0;
-  int16_t last_encoder_count = -1;     // 前回の角度（0〜8191）
-  int32_t rotation_count = 0;     // 回転数（±）
-  int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
-  int32_t current_position = 0; // 累積角度カウント
-  float motor_output_current_A = 0.0;
-  float limit = 19520;
-  float current_limit_A = 10.0f; // 最大出力電流（例：5A）
+constexpr int motor_id = 1; //モータID
+int16_t encoder_count = 0;
+int16_t rpm = 0;
+int16_t last_encoder_count = -1;     // 前回の角度（0〜8191）
+int32_t rotation_count = 0;     // 回転数（±）
+int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
+int32_t current_position = 0; // 累積角度カウント
+float motor_output_current_A = 0.0;
+float limit = 19520;
+float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
-  float target_angle = 720.0; //目標角度
-  float angle = 0.0; //現在のエンコーダの値
-  float pos_error_prev = 0.0;        // 前回の角度誤差
-  float pos_integral = 0.0;          // 角度積分項
-  float pos_output = 0;            // 角度PID出力（目標速度）
+int target_angle = received_data[24]; //目標角度
+float angle = 0.0; //現在のエンコーダの値
+float pos_error_prev = 0.0;        // 前回の角度誤差
+float pos_integral = 0.0;          // 角度積分項
+float pos_output = 0;            // 角度PID出力（目標速度）
 
-  unsigned long lastPidTime = 0; // PID制御の時間計測用
+unsigned long lastPidTime = 0; // PID制御の時間計測用
 
-  float kp_pos = 0.8;//0.4;
-  float ki_pos = 0.01;
-  float kd_pos = 0.02;//0.02;
-  bool offset_ok = false;
-  int encoder_offset = 0;
-  float vel_input = 0.0; //現在の速度
+float kp_pos = 0.8;//0.4;
+float ki_pos = 0.01;
+float kd_pos = 0.02;//0.02;
+bool offset_ok = false;
+int encoder_offset = 0;
+//float vel_input = 0.0; //現在の速度
 //
 
 void setup() {
@@ -331,7 +336,7 @@ void setup() {
   while (!Serial)
     ;
 
-  CAN.setPins(5, 4);//rx.tx
+  CAN.setPins(ROBOMAS_CAN_RX, ROBOMAS_CAN_TX);//rx.tx
   if (!CAN.begin(1000E3)) {
     Serial.println("Starting CAN failed!");
     while (1)
@@ -585,6 +590,7 @@ void Servo_Output_Task(void *pvParameters) {
 }
 
 void send_cur(float cur) {
+  //ロボマスモータの電流指令
   constexpr float MAX_CUR = 10;
   constexpr int MAX_CUR_VAL = 10000;
 
@@ -607,6 +613,7 @@ void send_cur(float cur) {
 float pid(float setpoint, float input, float &error_prev, float &integral,
           float kp, float ki, float kd, float dt)
 {
+  // PID制御
     float error = setpoint - input;
     integral += ((error + error_prev) * dt / 2.0f); // 台形積分
     float derivative = (error - error_prev) / dt;
@@ -615,22 +622,25 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
     return kp * error + ki * integral + kd * derivative;
 }
 
-float constrain_double(float val, float min_val, float max_val)
-{
-    if(val < min_val) return min_val;
-    if(val > max_val) return max_val;
-    return val;
-}
+// float constrain_double(float val, float min_val, float max_val)
+// {
+//     if(val < min_val) return min_val;
+//     if(val > max_val) return max_val;
+//     return val;
+// }
 
 
 void robomas_Task(void *pvParameters) {
+  //ロボマスモータの制御タスク
+  //要修正
+
   while (1) {
   unsigned long now = millis();
     float dt = (now - lastPidTime) / 1000.0;
     if(dt <= 0) dt = 0.000001f; // dtが0にならないようにする
     lastPidTime = now;
 
-  // 1. CAN受信
+  // CAN受信
   int packetSize = CAN.parsePacket();
     while (packetSize) {  // 複数パケットも処理
         if (CAN.packetId() == 0x201) { // モータID=1
@@ -663,22 +673,20 @@ void robomas_Task(void *pvParameters) {
             last_encoder_count = encoder_count;
             total_encoder_count = rotation_count * ENCODER_MAX + encoder_count;
             angle = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
-            vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
+          //  vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
         }
         packetSize = CAN.parsePacket(); // 次の受信も処理
     }
 float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
     //float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
-    motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+    //motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
     //motor_output_current_A = 0.3;
-  // 2. コマンド送信
-  send_cur(motor_output_current_A);
+  // コマンド送信
+  send_cur(pos_output);
 
-  // 3. デバッグ出力
+  // デバッグ出力
   //Serial.print("pos:\t"); Serial.println(angle);
   Serial.println(target_angle - angle);
-
-    //ロボマスモータの制御
 
     vTaskDelay(1);  // ウォッチドッグタイマのリセット(必須)
   }
@@ -1079,8 +1087,10 @@ void mode4_init() {
     APP_CPU_NUM);
 }
 
-void mode4_init() {
-
+void mode5_init() {
+  // モード5用の初期化
+  // SerialBT.println("Mode 5 Initialized");
+  
   xTaskCreateUniversal(
     robomas_Task,
     "robomas_Task",
@@ -1192,8 +1202,24 @@ void mode0_init() {
         }
       }
       break;
+    case 4:
+      // ロボマスモータのテスト
+      Serial.println("ROBOMAS_TEST");
+      mode5_init();
+      while (1) {
+        Serial.println("Target Angle: 90 deg");
+        target_angle = 90.0f;
+        delay(5000);
+        Serial.println("Target Angle: -90 deg");
+        target_angle = -90.0f;
+        delay(5000);
+        Serial.println("Target Angle: 0 deg");
+        target_angle = 0.0f;
+        delay(5000);
+      }
+      break;
     default:
-      Serial.println("Invalid MODE for Test Mode. Enter 0, 1, 2, or 3.");
+      Serial.println("Invalid MODE for Test Mode. Enter 0, 1, 2, 3, 4.");
       while (1) {
         ;
       }
@@ -1209,15 +1235,14 @@ void mode0_init() {
  └─────┬─────────┘
        │
        ▼
- ┌─────────────────────────────┐
- │ MODEごとに初期化処理を分岐 │
- │ case 0: mode0_init()        │
+ ┌─────────────────────────────────┐
+ │ MODEごとに初期化処理を分岐      　　|
+ │ case 0: mode0_init()            │
  │ case 1: ros_init()+mode1_init() │
  │ case 2: ros_init()+mode2_init() │
  │ case 3: ros_init()+mode3_init() │
- │ case 4: ros_init()+mode4_init() 
- │
- └─────────────────────────────┘
+ │ case 4: ros_init()+mode4_init() |
+ └─────────────────────────────────┘
        │
        ▼
  ┌───────────────┐
@@ -1242,7 +1267,7 @@ void mode0_init() {
 - Servo_Output_Task(): サーボ角度をPWM出力
 - SV_Task(): ソレノイドON/OFF制御
 - SW_Task(): スイッチ状態読み取り → Publish
-
+- robomas_Task(): ロボマスモータ制御
 ================================================
 
 エラー処理
