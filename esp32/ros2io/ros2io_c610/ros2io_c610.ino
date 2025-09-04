@@ -664,6 +664,70 @@ void SW_Task(void *pvParameters) {
     }
 }
 
+void CAN_Task(void *pvParameters) {
+    while (1) {
+        unsigned long now = millis();
+        float dt = (now - lastPidTime) / 1000.0;
+        if (dt <= 0)
+            dt = 0.000001f; // dtが0にならないようにする
+        lastPidTime = now;
+
+        // 1. CAN受信
+        int packetSize = CAN.parsePacket();
+        while (packetSize) {               // 複数パケットも処理
+            if (CAN.packetId() == 0x201) { // モータID=1
+                uint8_t rx[8];
+                for (int i = 0; i < 8; i++)
+                    rx[i] = CAN.read();
+                encoder_count = (rx[0] << 8) | rx[1];
+                rpm = (rx[2] << 8) | rx[3];
+
+                // --- 初回オフセット設定 --- //
+                if (!offset_ok) {
+                    encoder_offset = encoder_count;
+                    last_encoder_count = -1;
+                    rotation_count = 0;
+                    total_encoder_count = 0;
+                    pos_integral = 0;
+                    pos_error_prev = 0;
+                    offset_ok = true;
+                    // Serial.println("Offset set!");
+                }
+
+                int enc_relative = encoder_count - encoder_offset;
+                if (enc_relative < 0)
+                    enc_relative += ENCODER_MAX; // wrap-around補正
+
+                if (last_encoder_count != -1) {
+                    int diff = encoder_count - last_encoder_count;
+                    if (diff > HALF_ENCODER)
+                        rotation_count--;
+                    else if (diff < -HALF_ENCODER)
+                        rotation_count++;
+                }
+
+                last_encoder_count = encoder_count;
+                total_encoder_count = rotation_count * ENCODER_MAX + encoder_count;
+                angle = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
+                vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
+            }
+            packetSize = CAN.parsePacket(); // 次の受信も処理
+        }
+        float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+        // float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
+        motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+        // motor_output_current_A = 0.3;
+        // 2. コマンド送信
+        send_cur(motor_output_current_A);
+
+        // 3. デバッグ出力
+        // Serial.print("pos:\t"); Serial.println(angle);
+        // Serial.println(target_angle - angle);
+
+        delay(1);
+    }
+}
+
 void enc_init() {
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
@@ -1020,6 +1084,28 @@ void mode4_init() {
         APP_CPU_NUM);
 }
 
+void mode5_init() {
+    Serial.begin(115200);
+    while (!Serial)
+        ;
+
+    CAN.setPins(4, 5); // rx.tx
+    if (!CAN.begin(1000E3)) {
+        Serial.println("Starting CAN failed!");
+        while (1)
+            ;
+    }
+
+    xTaskCreateUniversal(
+        CAN_Task,
+        "CAN_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+}
+
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
 void mode0_init() {
@@ -1119,6 +1205,73 @@ void mode0_init() {
                 received_data[i] = 0;
                 delay(1000);
             }
+        }
+        break;
+
+    case 5:
+        // サーボ、ソレノイドのテスト
+        Serial.println("CAN_TEST");
+        mode5_init();
+        while (1) {
+            unsigned long now = millis();
+            float dt = (now - lastPidTime) / 1000.0;
+            if (dt <= 0)
+                dt = 0.000001f; // dtが0にならないようにする
+            lastPidTime = now;
+
+            // 1. CAN受信
+            int packetSize = CAN.parsePacket();
+            while (packetSize) {               // 複数パケットも処理
+                if (CAN.packetId() == 0x201) { // モータID=1
+                    uint8_t rx[8];
+                    for (int i = 0; i < 8; i++)
+                        rx[i] = CAN.read();
+                    encoder_count = (rx[0] << 8) | rx[1];
+                    rpm = (rx[2] << 8) | rx[3];
+
+                    // --- 初回オフセット設定 --- //
+                    if (!offset_ok) {
+                        encoder_offset = encoder_count;
+                        last_encoder_count = -1;
+                        rotation_count = 0;
+                        total_encoder_count = 0;
+                        pos_integral = 0;
+                        pos_error_prev = 0;
+                        offset_ok = true;
+                        Serial.println("Offset set!");
+                    }
+
+                    int enc_relative = encoder_count - encoder_offset;
+                    if (enc_relative < 0)
+                        enc_relative += ENCODER_MAX; // wrap-around補正
+
+                    if (last_encoder_count != -1) {
+                        int diff = encoder_count - last_encoder_count;
+                        if (diff > HALF_ENCODER)
+                            rotation_count--;
+                        else if (diff < -HALF_ENCODER)
+                            rotation_count++;
+                    }
+
+                    last_encoder_count = encoder_count;
+                    total_encoder_count = rotation_count * ENCODER_MAX + encoder_count;
+                    angle = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
+                    vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
+                }
+                packetSize = CAN.parsePacket(); // 次の受信も処理
+            }
+            float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+            // float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
+            motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+            // motor_output_current_A = 0.3;
+            // 2. コマンド送信
+            send_cur(motor_output_current_A);
+
+            // 3. デバッグ出力
+            // Serial.print("pos:\t"); Serial.println(angle);
+            Serial.println(target_angle - angle);
+
+            delay(1);
         }
         break;
     default:
