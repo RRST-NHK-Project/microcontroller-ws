@@ -14,6 +14,7 @@ ToDo
 */
 
 #include <Arduino.h>
+#include <CAN.h>
 #include <esp32-hal-ledc.h>
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
@@ -190,6 +191,98 @@ ToDo
 #define SERVO8_MAX_US 2500
 #define SERVO8_MIN_DEG 0
 #define SERVO8_MAX_DEG 180
+
+// *********以下CAN関連********* //
+
+//---------定義--------//
+const int ENCODER_MAX = 8192; // エンコーダの最大
+const int HALF_ENCODER = ENCODER_MAX / 2;
+constexpr float gear_ratio = 36.0f; // 減速比
+constexpr int motor_id = 1;         // モータID
+// constexpr int   CAN_ID_TX = 0x200 + 2;             // 1〜4にまとめて送るグループID
+// constexpr int   CAN_ID_RX = 0x200 + MOTOR_ID;      // C610フィードバック
+
+//-----状態量-----//
+int16_t encoder_count = 0;
+int16_t rpm = 0;
+int16_t last_encoder_count = -1; // 前回の角度（0〜8191）
+int32_t rotation_count = 0;      // 回転数（±）
+int32_t total_encoder_count = 0; // 累積カウント（8192カウント/回転）
+float angle = 0.0f;              // 出力軸角度
+float vel = 0.0f;                // 出力速度
+bool offset_ok = false;
+int encoder_offset = 0;
+
+int32_t current_position = 0; // 累積角度カウント
+float motor_output_current_A = 0.0;
+float limit = 19520;
+float current_limit_A = 10.0f; // 最大出力電流（例：5A）
+
+//------設定値-----//
+float target_angle = 720.0; // 目標角度
+// float encoder_count = 0.0; //現在のエンコーダの値
+float pos_error_prev = 0.0; // 前回の角度誤差
+float pos_integral = 0.0;   // 角度積分項
+float pos_output = 0;       // 角度PID出力（目標速度）
+
+float vel_input = 0.0;      // 現在の速度
+float vel_error_prev = 0.0; // 前回の速度誤差
+float vel_integral = 0.0;   // 速度積分項
+float vel_output = 0;       // 速度PID出力
+
+unsigned long lastPidTime = 0; // PID制御の時間計測用
+
+//------------PIDゲイン-----------//
+float kp_pos = 0.8; // 0.4;
+float ki_pos = 0.01;
+float kd_pos = 0.02; // 0.02;
+
+// float kp_vel = 1.0;
+// float ki_vel = 0.01;
+// float kd_vel = 0.05;
+
+//------------関数の定義-----------//
+
+void send_cur(float cur) {
+    constexpr float MAX_CUR = 10;
+    constexpr int MAX_CUR_VAL = 10000;
+
+    float val = cur * (MAX_CUR_VAL / MAX_CUR);
+    if (val < -MAX_CUR_VAL)
+        val = -MAX_CUR_VAL;
+    else if (val > MAX_CUR_VAL)
+        val = MAX_CUR_VAL;
+    int16_t transmit_val = val;
+
+    uint8_t send_data[8] = {};
+
+    // 電流のデータ送信
+    send_data[(motor_id - 1) * 2] = (transmit_val >> 8) & 0xFF;
+    send_data[(motor_id - 1) * 2 + 1] = transmit_val & 0xFF;
+    CAN.beginPacket(0x200);
+    CAN.write(send_data, 8);
+    CAN.endPacket();
+}
+
+float pid(float setpoint, float input, float &error_prev, float &integral,
+          float kp, float ki, float kd, float dt) {
+    float error = setpoint - input;
+    integral += ((error + error_prev) * dt / 2.0f); // 台形積分
+    float derivative = (error - error_prev) / dt;
+    error_prev = error;
+
+    return kp * error + ki * integral + kd * derivative;
+}
+
+float constrain_double(float val, float min_val, float max_val) {
+    if (val < min_val)
+        return min_val;
+    if (val > max_val)
+        return max_val;
+    return val;
+}
+
+// *********CAN関連ここまで********* //
 
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
