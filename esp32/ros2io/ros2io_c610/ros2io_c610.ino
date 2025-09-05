@@ -54,6 +54,11 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 */
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+// ROSとの接続にはエージェントが必要です。下記コマンドでエージェント立ち上げを行ってください。USBポートは適宜変更してください。
+// sudo docker run -it --rm -v /dev:/dev --privileged --net=host microros/micro-ros-agent:jazzy serial --dev /dev/ttyUSB0 -v6
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
 // microROS関連
 #include <micro_ros_arduino.h>
 #include <rcl/error_handling.h>
