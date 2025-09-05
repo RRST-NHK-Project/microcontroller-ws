@@ -23,7 +23,7 @@ CANの統合
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 0
+#define MODE 5
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:MD専用
@@ -249,47 +249,6 @@ float kd_pos = 0.02; // 0.02;
 // float kp_vel = 1.0;
 // float ki_vel = 0.01;
 // float kd_vel = 0.05;
-
-//------------関数の定義-----------//
-
-void send_cur(float cur) {
-    constexpr float MAX_CUR = 10;
-    constexpr int MAX_CUR_VAL = 10000;
-
-    float val = cur * (MAX_CUR_VAL / MAX_CUR);
-    if (val < -MAX_CUR_VAL)
-        val = -MAX_CUR_VAL;
-    else if (val > MAX_CUR_VAL)
-        val = MAX_CUR_VAL;
-    int16_t transmit_val = val;
-
-    uint8_t send_data[8] = {};
-
-    // 電流のデータ送信
-    send_data[(motor_id - 1) * 2] = (transmit_val >> 8) & 0xFF;
-    send_data[(motor_id - 1) * 2 + 1] = transmit_val & 0xFF;
-    CAN.beginPacket(0x200);
-    CAN.write(send_data, 8);
-    CAN.endPacket();
-}
-
-float pid(float setpoint, float input, float &error_prev, float &integral,
-          float kp, float ki, float kd, float dt) {
-    float error = setpoint - input;
-    integral += ((error + error_prev) * dt / 2.0f); // 台形積分
-    float derivative = (error - error_prev) / dt;
-    error_prev = error;
-
-    return kp * error + ki * integral + kd * derivative;
-}
-
-float constrain_double(float val, float min_val, float max_val) {
-    if (val < min_val)
-        return min_val;
-    if (val > max_val)
-        return max_val;
-    return val;
-}
 
 // *********CAN関連ここまで********* //
 
@@ -674,6 +633,48 @@ void SW_Task(void *pvParameters) {
 }
 
 void CAN_Task(void *pvParameters) {
+
+    //------------関数の定義-----------//
+
+    void send_cur(float cur) {
+        constexpr float MAX_CUR = 10;
+        constexpr int MAX_CUR_VAL = 10000;
+
+        float val = cur * (MAX_CUR_VAL / MAX_CUR);
+        if (val < -MAX_CUR_VAL)
+            val = -MAX_CUR_VAL;
+        else if (val > MAX_CUR_VAL)
+            val = MAX_CUR_VAL;
+        int16_t transmit_val = val;
+
+        uint8_t send_data[8] = {};
+
+        // 電流のデータ送信
+        send_data[(motor_id - 1) * 2] = (transmit_val >> 8) & 0xFF;
+        send_data[(motor_id - 1) * 2 + 1] = transmit_val & 0xFF;
+        CAN.beginPacket(0x200);
+        CAN.write(send_data, 8);
+        CAN.endPacket();
+    }
+
+    float pid(float setpoint, float input, float &error_prev, float &integral,
+              float kp, float ki, float kd, float dt) {
+        float error = setpoint - input;
+        integral += ((error + error_prev) * dt / 2.0f); // 台形積分
+        float derivative = (error - error_prev) / dt;
+        error_prev = error;
+
+        return kp * error + ki * integral + kd * derivative;
+    }
+
+    float constrain_double(float val, float min_val, float max_val) {
+        if (val < min_val)
+            return min_val;
+        if (val > max_val)
+            return max_val;
+        return val;
+    }
+
     while (1) {
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
