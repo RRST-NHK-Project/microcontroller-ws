@@ -1103,6 +1103,9 @@ void mode4_init() {
 }
 
 void mode5_init() {
+
+    ros_init();
+
     Serial.begin(115200);
     while (!Serial)
         ;
