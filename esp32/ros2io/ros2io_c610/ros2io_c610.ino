@@ -228,7 +228,7 @@ float limit = 19520;
 float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
-float target_angle = 720.0; // 目標角度
+float target_angle = 0; // 目標角度
 // float encoder_count = 0.0; //現在のエンコーダの値
 float pos_error_prev = 0.0; // 前回の角度誤差
 float pos_integral = 0.0;   // 角度積分項
@@ -676,6 +676,9 @@ void CAN_Task(void *pvParameters) {
     }
 
     while (1) {
+
+        target_angle = received_data[1]; // 目標角度の更新
+
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
         if (dt <= 0)
