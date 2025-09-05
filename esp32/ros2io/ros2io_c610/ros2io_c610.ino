@@ -389,6 +389,10 @@ void setup() {
         ros_init();
         mode4_init();
         break;
+    case 5:
+        ros_init();
+        mode5_init();
+        break;
     default:;
         ;
     }
@@ -1103,8 +1107,6 @@ void mode4_init() {
 }
 
 void mode5_init() {
-
-    ros_init();
 
     Serial.begin(115200);
     while (!Serial)
