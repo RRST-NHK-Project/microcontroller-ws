@@ -103,7 +103,7 @@ void setup() {
   while (!Serial)
     ;
 
-  CAN.setPins(4, 5);//rx.tx
+  CAN.setPins(5, 4);//rx.tx
   if (!CAN.begin(1000E3)) {
     Serial.println("Starting CAN failed!");
     while (1)
@@ -189,5 +189,4 @@ float constrain_double(float val, float min_val, float max_val)
     if(val > max_val) return max_val;
     return val;
 }
-
 

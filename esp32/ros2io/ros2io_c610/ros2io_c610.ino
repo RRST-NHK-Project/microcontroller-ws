@@ -153,6 +153,9 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SW3 32
 #define SW4 33
 
+//ロボマス
+#define CAN_RX 5
+#define CAN_TX 4
 // PWM関連の設定値を定義
 // MD用
 #define MD_PWM_FREQ 20000   // MDのPWM周波数
@@ -1112,7 +1115,7 @@ void mode5_init() {
     while (!Serial)
         ;
 
-    CAN.setPins(4, 5); // rx.tx
+    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
         Serial.println("Starting CAN failed!");
         while (1)
