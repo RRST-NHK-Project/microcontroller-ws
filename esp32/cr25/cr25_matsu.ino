@@ -232,8 +232,11 @@ struct Motor {
   // PID用
   float pos_error_prev = 0.0f;
   float pos_integral = 0.0f;
+  float vel_prop_prev = 0.0f;
+  float vel_output = 0.0f;
   float target_angle = 0.0f;
   float output_current = 0.0f;
+
 };
 
 Motor motors[NUM_MOTORS];
@@ -261,7 +264,7 @@ float pos_integral = 0.0;   // 角度積分項
 float pos_output = 0;       // 角度PID出力（目標速度）
 
 float vel_input = 0.0;      // 現在の速度
-float vel_error_prev = 0.0; // 前回の速度誤差
+float vel_prop_prev = 0.0; // 前回の速度誤差
 float vel_integral = 0.0;   // 速度積分項
 float vel_output = 0;       // 速度PID出力
 
@@ -273,7 +276,7 @@ float ki_pos = 0.01;
 float kd_pos = 0.02; // 0.02;
 
 float kp_vel = 1.0;
-float ki_vel = 0.01;
+float ki_vel = 0.0;
 float kd_vel = 0.05;
 
 //------------関数の定義-----------//
@@ -312,6 +315,19 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
 
     return kp * error + ki * integral + kd * derivative;
 }
+float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, float &output,
+          float kp, float ki, float kd, float dt){
+            float error = setpoint - input;
+            float prop = error - error_prev;
+            float deriv = prop - prop_prev;
+            float du = kp * prop + ki * error * dt + kd * deriv;
+            output += du;
+
+            prop_prev = prop;
+            error_prev = error;
+
+            return output;
+        }
 
 float constrain_double(float val, float min_val, float max_val) {
     if (val < min_val)
@@ -741,8 +757,8 @@ void CAN_Task(void *pvParameters) {
                     motors[idx].total_encoder = 0;
                     motors[idx].pos_integral = 0;
                     motors[idx].pos_error_prev = 0;
-                    //motors[idx].vel_integral = 0;
-                    //motors[idx].vel_error_prev = 0;
+                    motors[idx].vel_output = 0;
+                    motors[idx].vel_prop_prev = 0;
                     motors[idx].offset_ok = true;
                    // Serial.printf("Motor %d Offset set!\n", idx+1);
                 }
@@ -774,11 +790,13 @@ void CAN_Task(void *pvParameters) {
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
   }
-  float vel_out = pid(motors[2].target_angle, motors[2].vel,
-                        motors[2].pos_error_prev, motors[2].pos_integral,
+  float vel_out = pid_vel(motors[2].target_angle, motors[2].vel,
+                        motors[2].pos_error_prev,motors[2].vel_prop_prev, motors[2].vel_output,
                         kp_vel, ki_vel, kd_vel, dt);
     motors[2].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
     cur_cmd[2] = motors[2].output_current;
+    if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
+    cur_cmd[2] = 0;
 
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
