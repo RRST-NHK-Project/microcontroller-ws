@@ -1,16 +1,23 @@
+
 /*
-For NHK-Robocon-2026
-"ros2io Rev.2"
-ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
-ライブラリのインストールが必要(https://github.com/micro-ROS/micro_ros_arduino)
-ボードマネージャーはesp32 by Espressif Systemsを選択
-Bluetooth経由でのワイヤレスデバッグ機能付き(重いから削除予定　→　2025/09/01削除済み)
-2025, NHK-Project, RRST
+
+                                 /$$$$$$  /$$                 /$$$$$$$                        /$$$$$$
+                                /$$__  $$|__/                | $$__  $$                      /$$__  $$
+   /$$$$$$   /$$$$$$   /$$$$$$$|__/  \ $$ /$$  /$$$$$$       | $$  \ $$  /$$$$$$  /$$    /$$|__/  \ $$
+  /$$__  $$ /$$__  $$ /$$_____/  /$$$$$$/| $$ /$$__  $$      | $$$$$$$/ /$$__  $$|  $$  /$$/  /$$$$$$/
+ | $$  \__/| $$  \ $$|  $$$$$$  /$$____/ | $$| $$  \ $$      | $$__  $$| $$$$$$$$ \  $$/$$/  /$$____/
+ | $$      | $$  | $$ \____  $$| $$      | $$| $$  | $$      | $$  \ $$| $$_____/  \  $$$/  | $$
+ | $$      |  $$$$$$/ /$$$$$$$/| $$$$$$$$| $$|  $$$$$$/      | $$  | $$|  $$$$$$$   \  $//$$| $$$$$$$$
+ |__/       \______/ |_______/ |________/|__/ \______/       |__/  |__/ \_______/    \_/|__/|________/
+
 */
 
 /*
-ToDo
-CANの統合
+For NHK-Robocon-2026
+ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
+ライブラリのインストールが必要(https://github.com/micro-ROS/micro_ros_arduino)
+ボードマネージャーはesp32 by Espressif Systemsを選択
+2025, NHK-Project, RRST
 */
 
 #include <Arduino.h>
@@ -24,7 +31,7 @@ CANの統合
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 5
+#define MODE 0
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:MD専用
@@ -100,7 +107,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 
 // ピンの定義 //
 
-//状態表示LED
+// 状態表示LED
 #define LED 0
 
 // エンコーダ
@@ -162,7 +169,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SW7 14
 #define SW8 15
 
-//ロボマス
+// ロボマス
 #define CAN_RX 5
 #define CAN_TX 4
 // PWM関連の設定値を定義
@@ -379,6 +386,8 @@ void subscription_callback(const void *msgin) {
 void setup() {
     // SerialBT.begin("ESP32_" + String(ID, DEC)); // Bluetoothの初期化
 
+    pinMode(LED, OUTPUT);
+
     // MODEに応じた初期化
     switch (MODE) {
     case 0:
@@ -427,6 +436,7 @@ void ros_init() {
     // Agentと接続できるまでリトライ
     while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
         // SerialBT.println("Waiting for agent...");
+        digitalWrite(LED, !digitalRead(LED));
         delay(1000); // 1秒待つ
     }
 
@@ -691,6 +701,15 @@ void SW_Task(void *pvParameters) {
         RCCHECK(rcl_publish(&publisher, &msg, NULL));
 
         vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+    }
+}
+
+void LED_Task(void *pvParameters) {
+    while (1) {
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
+        delay(100);
     }
 }
 
@@ -1147,7 +1166,15 @@ void mode0_init() {
     // デバッグ・テスト用の初期化
     Serial.println("Debug/Test Mode Initialized.");
     Serial.println("Press Enter to continue...");
-    // そのうち書く
+
+    xTaskCreateUniversal(
+        LED_Task,
+        "LED_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
 
     // テストモードの安全装置
     while (1) {
