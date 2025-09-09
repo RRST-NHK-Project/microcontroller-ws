@@ -5,7 +5,8 @@ const int ENCODER_MAX = 8192;
 const int HALF_ENCODER = ENCODER_MAX / 2;
 constexpr float gear_ratio = 36.0f;
 
-const int NUM_MOTORS = 2;  // 使用するモータの台数（最大4台）
+const int NUM_MOTORS = 4
+;  // 使用するモータの台数（最大4台）
 
 // モータ状態
 struct Motor {
@@ -40,7 +41,7 @@ unsigned long lastPidTime = 0;
 //--------------関数-------------//
 float pid(float setpoint, float input, float &error_prev, float &integral, float kp, float ki, float kd, float dt);
 float constrain_double(float val, float min_val, float max_val);
-void send_cur(float cur1, float cur2);
+void send_cur(float cur[NUM_MOTORS]);
 
 void setup() {
   Serial.begin(115200);
@@ -54,7 +55,10 @@ void setup() {
 
   // 目標角度設定
   motors[0].target_angle = 720;   // モータ1 → 2回転
-  motors[1].target_angle = -360;  // モータ2 → -1回転
+  motors[1].target_angle = 720;  // モータ2 → -1回転
+  motors[2].target_angle = 720;   // モータ1 → 2回転
+  motors[3].target_angle = 720;  // モータ2 → -1回転
+
 }
 
 void loop() {
@@ -102,17 +106,18 @@ void loop() {
     }
     packetSize = CAN.parsePacket();
   }
-
+  float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定 ---
   for (int i=0; i<NUM_MOTORS; i++) {
     float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
+    cur_cmd[i] = motors[i].output_current;
   }
 
   // --- 電流指令送信（2台分まとめて） ---
-  send_cur(motors[0].output_current, motors[1].output_current);
+  send_cur(cur_cmd);
 
   // --- デバッグ出力 ---
   Serial.printf("M1: %.2f/%.2f, M2: %.2f/%.2f\n",
@@ -122,8 +127,8 @@ void loop() {
   delay(1);
 }
 
-// --- 電流送信（2台分） ---
-void send_cur(float cur1, float cur2) {
+// --- 電流送信（4台分） ---
+void send_cur(float cur[NUM_MOTORS]) {
   constexpr float MAX_CUR = 10;
   constexpr int MAX_CUR_VAL = 10000;
 
@@ -134,14 +139,13 @@ void send_cur(float cur1, float cur2) {
     return (int16_t)val;
   };
 
-  int16_t t1 = conv(cur1);
-  int16_t t2 = conv(cur2);
-
   uint8_t send_data[8] = {};
-  send_data[0] = (t1 >> 8) & 0xFF;
-  send_data[1] = t1 & 0xFF;
-  send_data[2] = (t2 >> 8) & 0xFF;
-  send_data[3] = t2 & 0xFF;
+  for (int i=0; i<NUM_MOTORS; i++) {
+    int16_t t = conv(cur[i]);
+    send_data[i*2]     = (t >> 8) & 0xFF;
+    send_data[i*2 + 1] = t & 0xFF;
+  }
+
 
   CAN.beginPacket(0x200);
   CAN.write(send_data, 8);
