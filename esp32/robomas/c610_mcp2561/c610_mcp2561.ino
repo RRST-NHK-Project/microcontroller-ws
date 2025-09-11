@@ -159,14 +159,14 @@ void loop() {
     }
 float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
     //float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
-    motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
+    motor_output_current_A = 0;//constrain_double(pos_output, -current_limit_A, current_limit_A);
     //motor_output_current_A = 0.3;
   // 2. コマンド送信
   send_cur(motor_output_current_A);
 
   // 3. デバッグ出力
   //Serial.print("pos:\t"); Serial.println(angle);
-  Serial.println(target_angle - angle);
+  Serial.println(angle);
 
   delay(1);
 }
