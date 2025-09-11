@@ -172,7 +172,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO1_MIN_US 500
 #define SERVO1_MAX_US 2500
 #define SERVO1_MIN_DEG 0
-#define SERVO1_MAX_DEG 180
+#define SERVO1_MAX_DEG 270
 
 #define SERVO2_MIN_US 500
 #define SERVO2_MAX_US 2500
@@ -221,6 +221,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 struct Motor {
   int16_t encoder = 0;
   int16_t rpm = 0;
+  int16_t current = 0;
   int16_t last_encoder = -1;
   int32_t rotation_count = 0;
   int32_t total_encoder = 0;
@@ -876,7 +877,7 @@ void CAN_Task(void *pvParameters) {
         }
        float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定(最大は1) ---
-  for (int i=0; i<1; i++) {
+  for (int i=0; i<2; i++) {
     float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
@@ -893,6 +894,14 @@ void CAN_Task(void *pvParameters) {
 
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
+    int angle1 = motors[2].angle/9;
+        if (angle1 < SERVO1_MIN_DEG)
+            angle1 = SERVO1_MIN_DEG;
+        if (angle1 > SERVO1_MAX_DEG)
+            angle1 = SERVO1_MAX_DEG;
+        int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
+        int duty1 = (int)(us1 * SERVO_PWM_SCALE);
+        ledcWrite(SERVO1, duty1);
 
         // 3. デバッグ出力
         // Serial.print("pos:\t"); Serial.println(angle);
@@ -1259,7 +1268,9 @@ void mode4_init() {
 }
 
 void mode5_init() {
-
+    // サーボのPWMの初期化
+    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    
     Serial.begin(115200);
     while (!Serial)
         ;
