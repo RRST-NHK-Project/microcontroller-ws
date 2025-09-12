@@ -687,6 +687,7 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         msg.data.data[17] = motors[1].current;
         msg.data.data[18] = motors[2].current;
         msg.data.data[19] = motors[3].current;
+        
         // Publish
         if (MODE != 0) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
@@ -839,7 +840,7 @@ void CAN_Task(void *pvParameters) {
         motors[1].corrected_angle = received_out_data[2];
         motors[2].corrected_angle = received_out_data[3];
 
-        int MANUALMODE = received_out_data[7];
+        bool MANUALMODE = received_data[7];
 
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
@@ -893,7 +894,9 @@ void CAN_Task(void *pvParameters) {
         }
        float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定(最大は1) ---
-  if (MANUALMODE == 0){
+
+  if (MANUALMODE == false){
+    
   for (int i=0; i<NUM_MOTORS; i++) {
     float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
@@ -901,7 +904,8 @@ void CAN_Task(void *pvParameters) {
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
   }
-  }else if(MANUALMODE == 1){
+
+  }else if(MANUALMODE == true){
 
   for(int i=0; i<NUM_MOTORS; i++) {
   float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
@@ -912,6 +916,8 @@ void CAN_Task(void *pvParameters) {
     // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
     // cur_cmd[2] = 0;
   }
+   
+  
   }
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
