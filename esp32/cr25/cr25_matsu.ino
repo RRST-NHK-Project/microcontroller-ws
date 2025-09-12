@@ -226,9 +226,11 @@ struct Motor {
   int32_t rotation_count = 0;
   int32_t total_encoder = 0;
   float angle = 0.0f;
+  float corrected_angle = 0;
   float vel = 0.0f;
   bool offset_ok = false;
   int encoder_offset = 0;
+
 
   // PID用
   float pos_error_prev = 0.0f;
@@ -360,6 +362,10 @@ int32_t buffer[MAX_ARRAY_SIZE];
 // 受信データ格納用
 volatile int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 volatile size_t received_size = 0;              // 受信データのサイズ
+
+volatile int32_t received_out_data[MAX_ARRAY_SIZE]; // 受信データ
+volatile size_t received_size = 0;              // 受信データのサイズ
+
 
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
@@ -825,6 +831,11 @@ void CAN_Task(void *pvParameters) {
         motors[1].target_angle = received_data[2];
         motors[2].target_angle = received_data[3];
         
+        motors[0].corrected_angle = received_out_data[1];
+        motors[1].corrected_angle = received_out_data[2];
+        motors[2].corrected_angle = received_out_data[3];
+   
+
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
         if (dt <= 0)
@@ -896,7 +907,7 @@ void CAN_Task(void *pvParameters) {
   send_cur(cur_cmd);
   
   //サーボ--------
-    int angle1 = motors[2].angle / 9 + 135;
+    int angle1 = (motors[2].angle * 15 / 142) + 135;
         if (angle1 < SERVO1_MIN_DEG)
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
