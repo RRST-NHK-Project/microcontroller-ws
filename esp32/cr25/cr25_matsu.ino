@@ -894,7 +894,9 @@ void CAN_Task(void *pvParameters) {
 
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
-    int angle1 = motors[2].angle/9;
+  
+  //サーボ--------
+    int angle1 = motors[2].angle / 9 + 135;
         if (angle1 < SERVO1_MIN_DEG)
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
@@ -902,8 +904,9 @@ void CAN_Task(void *pvParameters) {
         int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
         int duty1 = (int)(us1 * SERVO_PWM_SCALE);
         ledcWrite(SERVO1, duty1);
+    //-----------
 
-        // 3. デバッグ出力
+        
         // Serial.print("pos:\t"); Serial.println(angle);
         // Serial.println(target_angle - angle);
 
