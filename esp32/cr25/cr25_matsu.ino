@@ -238,6 +238,7 @@ struct Motor {
   float vel_prop_prev = 0.0f;
   float vel_output = 0.0f;
   float target_angle = 0.0f;
+  float target_rpm = 0.0f;
   float output_current = 0.0f;
 
 };
@@ -364,7 +365,6 @@ volatile int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 volatile size_t received_size = 0;              // 受信データのサイズ
 
 volatile int32_t received_out_data[MAX_ARRAY_SIZE]; // 受信データ
-volatile size_t received_size = 0;              // 受信データのサイズ
 
 
 // エンコーダのカウント格納用
@@ -829,12 +829,17 @@ void CAN_Task(void *pvParameters) {
 
         motors[0].target_angle = received_data[1]; // 目標角度の更新
         motors[1].target_angle = received_data[2];
-        motors[2].target_angle = received_data[3];
-        
+        motors[2].target_angle = received_data[3]*142/15;
+        motors[0].target_rpm = received_data[4];     
+        motors[1].target_rpm = received_data[5];
+        motors[2].target_rpm = received_data[6];
+
+
         motors[0].corrected_angle = received_out_data[1];
         motors[1].corrected_angle = received_out_data[2];
         motors[2].corrected_angle = received_out_data[3];
-   
+
+        int MANUALMODE = received_out_data[7];
 
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
@@ -888,21 +893,26 @@ void CAN_Task(void *pvParameters) {
         }
        float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定(最大は1) ---
-  for (int i=0; i<2; i++) {
+  if (MANUALMODE == 0){
+  for (int i=0; i<NUM_MOTORS; i++) {
     float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
   }
-  float vel_out = pid_vel(motors[2].target_angle, motors[2].vel,
-                        motors[2].pos_error_prev,motors[2].vel_prop_prev, motors[2].vel_output,
-                        kp_vel, ki_vel, kd_vel, dt);
-    motors[2].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
-    cur_cmd[2] = motors[2].output_current;
-    if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
-    cur_cmd[2] = 0;
+  }else if(MANUALMODE == 1){
 
+  for(int i=0; i<NUM_MOTORS; i++) {
+  float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
+                        motors[i].pos_error_prev,motors[i].vel_prop_prev, motors[i].vel_output,
+                        kp_vel, ki_vel, kd_vel, dt);
+    motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+    cur_cmd[i] = motors[i].output_current;
+    // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
+    // cur_cmd[2] = 0;
+  }
+  }
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
   
