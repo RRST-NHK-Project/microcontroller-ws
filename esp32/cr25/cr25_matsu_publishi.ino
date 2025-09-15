@@ -18,7 +18,7 @@ CANの統合
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **複数のESPを使用する場合はIDを変更** //
-#define ID 0
+#define ID 1
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
@@ -27,7 +27,7 @@ CANの統合
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:MD専用
-2:エンコーダー・スイッチ
+2:ロボマス関連データ
 3:サーボ・ソレノイドバルブ
 4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー（Pub,Subを同時にしたときの遅延問題が解決できていないため未実装）
 5:ロボマス制御
@@ -139,11 +139,11 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO8 25
 
 // ソレノイドバルブ
-#define SV1 2
+#define SV1 13
 #define SV2 4
 #define SV3 5
 #define SV4 12
-#define SV5 13
+#define SV5 2
 #define SV6 14
 #define SV7 15
 
@@ -172,7 +172,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO1_MIN_US 500
 #define SERVO1_MAX_US 2500
 #define SERVO1_MIN_DEG 0
-#define SERVO1_MAX_DEG 180
+#define SERVO1_MAX_DEG 270
 
 #define SERVO2_MIN_US 500
 #define SERVO2_MAX_US 2500
@@ -226,9 +226,11 @@ struct Motor {
   int32_t rotation_count = 0;
   int32_t total_encoder = 0;
   float angle = 0.0f;
+  float corrected_angle = 0;
   float vel = 0.0f;
   bool offset_ok = false;
   int encoder_offset = 0;
+
 
   // PID用
   float pos_error_prev = 0.0f;
@@ -236,6 +238,7 @@ struct Motor {
   float vel_prop_prev = 0.0f;
   float vel_output = 0.0f;
   float target_angle = 0.0f;
+  float target_rpm = 0.0f;
   float output_current = 0.0f;
 
 };
@@ -275,6 +278,10 @@ unsigned long lastPidTime = 0; // PID制御の時間計測用
 float kp_pos = 0.4; // 0.4;
 float ki_pos = 0.01;
 float kd_pos = 0.04; // 0.02;
+
+float kp_th = 0.4; // 0.4;
+float ki_th = 0.01;
+float kd_th = 0.04; // 0.02;
 
 float kp_vel = 1.0;
 float ki_vel = 0.0;
@@ -360,6 +367,9 @@ int32_t buffer[MAX_ARRAY_SIZE];
 // 受信データ格納用
 volatile int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 volatile size_t received_size = 0;              // 受信データのサイズ
+
+volatile int32_t received_out_data[MAX_ARRAY_SIZE]; // 受信データ
+
 
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
@@ -485,6 +495,7 @@ void ros_init() {
     RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
 
     // Executorにサービスを追加
+
     //subscするときには必要
     //RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     
@@ -615,7 +626,6 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         sw_state[2] = (digitalRead(SW3) == HIGH);
         sw_state[3] = (digitalRead(SW4) == HIGH);
 
-        
         // 1. CAN受信
         int packetSize = CAN.parsePacket();
         while (packetSize) {
@@ -629,7 +639,6 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
                 motors[idx].rpm = (rx[2] << 8) | rx[3];
                 motors[idx].current = (rx[4] << 8) | rx[5];
 
-                
                 // 初回オフセット設定
                 if (!motors[idx].offset_ok) {
                     motors[idx].encoder_offset = motors[idx].encoder;
@@ -662,7 +671,7 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
             }
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
-        
+      
 
 
         msg.data.data[0] = count[0];
@@ -685,6 +694,7 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         msg.data.data[17] = motors[1].current;
         msg.data.data[18] = motors[2].current;
         msg.data.data[19] = motors[3].current;
+        
         // Publish
         if (MODE != 0) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
@@ -827,8 +837,20 @@ void CAN_Task(void *pvParameters) {
 
         motors[0].target_angle = received_data[1]; // 目標角度の更新
         motors[1].target_angle = received_data[2];
-        motors[2].target_angle = received_data[3];
-        
+        motors[2].target_angle = received_data[3]*142/15;
+        motors[0].target_rpm = received_data[4];     
+        motors[1].target_rpm = received_data[5];
+        motors[2].target_rpm = received_data[6];
+
+
+        bool zlimit = received_out_data[1];
+        bool rlimit = received_out_data[2];
+        motors[0].corrected_angle = received_out_data[3];
+
+        bool MANUALMODE = received_data[7];
+        bool last_zlimit = false;
+        bool last_rlimit = false;
+
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
         if (dt <= 0)
@@ -881,25 +903,72 @@ void CAN_Task(void *pvParameters) {
         }
        float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定(最大は1) ---
-  for (int i=0; i<1; i++) {
+
+  if (MANUALMODE == false){
+
+  //差動の制御  
+  for (int i=0; i<2; i++) {
     float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
   }
-  float vel_out = pid_vel(motors[2].target_angle, motors[2].vel,
-                        motors[2].pos_error_prev,motors[2].vel_prop_prev, motors[2].vel_output,
-                        kp_vel, ki_vel, kd_vel, dt);
-    motors[2].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+  //θの制御
+  float th_out = pid(motors[2].target_angle, motors[0].corrected_angle,
+                        motors[2].pos_error_prev, motors[2].pos_integral,
+                        kp_th, ki_th, kd_th, dt);
+    motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
     cur_cmd[2] = motors[2].output_current;
-    if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
-    cur_cmd[2] = 0;
 
+  }else if(MANUALMODE == true){
+
+
+for(int i=0; i<2; i++) {
+        if(zlimit && !last_zlimit ){
+            motors[i].target_rpm = -50;
+        }else{
+            motors[i].target_rpm = received_data[i+4];
+        }
+        zlimit = last_zlimit;
+        if(rlimit == 1){
+            motors[i].target_rpm = -50/motors[i].target_rpm;
+        }else{
+            motors[i].target_rpm = received_data[i+4];   
+        }
+        rlimit = last_rlimit; 
+    }
+  for(int i=0; i<NUM_MOTORS; i++) {
+  float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
+                        motors[i].pos_error_prev,motors[i].vel_prop_prev, motors[i].vel_output,
+                        kp_vel, ki_vel, kd_vel, dt);
+    motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+    cur_cmd[i] = motors[i].output_current;
+    
+    // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
+    // cur_cmd[2] = 0;
+  }
+   
+  
+  }
   // --- 電流指令送信（2台分まとめて） ---
   send_cur(cur_cmd);
+  
+  //サーボ--------
+    int angle1 = (motors[2].angle * 15 / 142) + 135;
+        if (angle1 < SERVO1_MIN_DEG)
+            angle1 = SERVO1_MIN_DEG;
+        if (angle1 > SERVO1_MAX_DEG)
+            angle1 = SERVO1_MAX_DEG;
+        if (motors[2].angle * 15 / 142 > -100 && motors[2].angle * 15 / 142 < -80)
+            angle1 = 135;
 
-        // 3. デバッグ出力
+        int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
+        int duty1 = (int)(us1 * SERVO_PWM_SCALE);
+        ledcWrite(SERVO1, duty1);
+    //-----------
+
+        
         // Serial.print("pos:\t"); Serial.println(angle);
         // Serial.println(target_angle - angle);
 
@@ -1093,25 +1162,13 @@ void mode2_init() {
     // SerialBT.println("Mode 2 Initialized");
 
     // エンコーダの初期化
-    //enc_init();
+    enc_init();
 
     // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
     pinMode(SW1, INPUT_PULLUP);
     pinMode(SW2, INPUT_PULLUP);
     pinMode(SW3, INPUT_PULLUP);
     pinMode(SW4, INPUT_PULLUP);
-
-    Serial.begin(115200);
-    while (!Serial)
-        ;
-
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
-        while (1)
-            ;
-    }
-
 
     // // エンコーダ取得のスレッド（タスク）の作成
     // xTaskCreateUniversal(
@@ -1276,7 +1333,11 @@ void mode4_init() {
 }
 
 void mode5_init() {
+    // サーボのPWMの初期化
+    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    pinMode(SV1, OUTPUT);
 
+    
     Serial.begin(115200);
     while (!Serial)
         ;
@@ -1291,6 +1352,16 @@ void mode5_init() {
     xTaskCreateUniversal(
         CAN_Task,
         "CAN_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+
+    // ソレノイド操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        SV_Task,
+        "SV_Task",
         4096,
         NULL,
         2, // 優先度、最大25？

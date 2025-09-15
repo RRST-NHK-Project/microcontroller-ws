@@ -18,7 +18,7 @@ CANの統合
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **複数のESPを使用する場合はIDを変更** //
-#define ID 1
+#define ID 0
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
@@ -279,6 +279,10 @@ float kp_pos = 0.4; // 0.4;
 float ki_pos = 0.01;
 float kd_pos = 0.04; // 0.02;
 
+float kp_th = 0.4; // 0.4;
+float ki_th = 0.01;
+float kd_th = 0.04; // 0.02;
+
 float kp_vel = 1.0;
 float ki_vel = 0.0;
 float kd_vel = 0.05;
@@ -491,7 +495,7 @@ void ros_init() {
     RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
 
     // Executorにサービスを追加
-    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+    //RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
     // RCCHECK(rclc_executor_add_timer(&executor, &timer));
 }
 
@@ -836,11 +840,13 @@ void CAN_Task(void *pvParameters) {
         motors[2].target_rpm = received_data[6];
 
 
-        motors[0].corrected_angle = received_out_data[1];
-        motors[1].corrected_angle = received_out_data[2];
-        motors[2].corrected_angle = received_out_data[3];
+        bool zlimit = received_out_data[1];
+        bool rlimit = received_out_data[2];
+        motors[0].corrected_angle = received_out_data[3];
 
         bool MANUALMODE = received_data[7];
+        bool last_zlimit = false;
+        bool last_rlimit = false;
 
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
@@ -896,23 +902,46 @@ void CAN_Task(void *pvParameters) {
   // --- PID計算 & 電流決定(最大は1) ---
 
   if (MANUALMODE == false){
-    
-  for (int i=0; i<NUM_MOTORS; i++) {
-    float pos_out = pid(motors[i].target_angle, motors[i].corrected_angle,
+
+  //差動の制御  
+  for (int i=0; i<2; i++) {
+    float pos_out = pid(motors[i].target_angle, motors[i].angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
   }
+  //θの制御
+  float th_out = pid(motors[2].target_angle, motors[0].corrected_angle,
+                        motors[2].pos_error_prev, motors[2].pos_integral,
+                        kp_th, ki_th, kd_th, dt);
+    motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
+    cur_cmd[2] = motors[2].output_current;
 
   }else if(MANUALMODE == true){
 
+
+for(int i=0; i<2; i++) {
+        if(zlimit && !last_zlimit ){
+            motors[i].target_rpm = -50;
+        }else{
+            motors[i].target_rpm = received_data[i+4];
+        }
+        zlimit = last_zlimit;
+        if(rlimit == 1){
+            motors[i].target_rpm = -50/motors[i].target_rpm;
+        }else{
+            motors[i].target_rpm = received_data[i+4];   
+        }
+        rlimit = last_rlimit; 
+    }
   for(int i=0; i<NUM_MOTORS; i++) {
   float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
                         motors[i].pos_error_prev,motors[i].vel_prop_prev, motors[i].vel_output,
                         kp_vel, ki_vel, kd_vel, dt);
     motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
     cur_cmd[i] = motors[i].output_current;
+    
     // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
     // cur_cmd[2] = 0;
   }
