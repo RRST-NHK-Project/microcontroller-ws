@@ -18,7 +18,7 @@ CANの統合
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **複数のESPを使用する場合はIDを変更** //
-#define ID 0
+#define ID 1
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
@@ -27,7 +27,7 @@ CANの統合
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:MD専用
-2:エンコーダー・スイッチ
+2:ロボマス関連データ
 3:サーボ・ソレノイドバルブ
 4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー（Pub,Subを同時にしたときの遅延問題が解決できていないため未実装）
 5:ロボマス制御
@@ -139,11 +139,11 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO8 25
 
 // ソレノイドバルブ
-#define SV1 2
+#define SV1 13
 #define SV2 4
 #define SV3 5
 #define SV4 12
-#define SV5 13
+#define SV5 2
 #define SV6 14
 #define SV7 15
 
@@ -898,7 +898,7 @@ void CAN_Task(void *pvParameters) {
   if (MANUALMODE == false){
     
   for (int i=0; i<NUM_MOTORS; i++) {
-    float pos_out = pid(motors[i].target_angle, motors[i].angle,
+    float pos_out = pid(motors[i].target_angle, motors[i].corrected_angle,
                         motors[i].pos_error_prev, motors[i].pos_integral,
                         kp_pos, ki_pos, kd_pos, dt);
     motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
@@ -928,6 +928,9 @@ void CAN_Task(void *pvParameters) {
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
             angle1 = SERVO1_MAX_DEG;
+        if (motors[2].angle * 15 / 142 > -100 && motors[2].angle * 15 / 142 < -80)
+            angle1 = 135;
+
         int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
         int duty1 = (int)(us1 * SERVO_PWM_SCALE);
         ledcWrite(SERVO1, duty1);
@@ -1300,6 +1303,8 @@ void mode4_init() {
 void mode5_init() {
     // サーボのPWMの初期化
     ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    pinMode(SV1, OUTPUT);
+
     
     Serial.begin(115200);
     while (!Serial)
@@ -1315,6 +1320,16 @@ void mode5_init() {
     xTaskCreateUniversal(
         CAN_Task,
         "CAN_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+
+    // ソレノイド操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        SV_Task,
+        "SV_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
