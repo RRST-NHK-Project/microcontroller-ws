@@ -169,8 +169,8 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SW8 15
 
 // ロボマス
-#define CAN_RX 5
-#define CAN_TX 4
+#define CAN_RX 4
+#define CAN_TX 5
 // PWM関連の設定値を定義
 // MD用
 #define MD_PWM_FREQ 20000   // MDのPWM周波数
