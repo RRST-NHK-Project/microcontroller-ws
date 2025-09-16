@@ -129,11 +129,11 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define MD8D 19
 
 // サーボ
-#define SERVO1 16
+#define SERVO1 21
 #define SERVO2 17
 #define SERVO3 18
 #define SERVO4 19
-#define SERVO5 21
+#define SERVO5 16
 #define SERVO6 22
 #define SERVO7 23
 #define SERVO8 25
@@ -240,7 +240,7 @@ struct Motor {
   float target_angle = 0.0f;
   float target_rpm = 0.0f;
   float output_current = 0.0f;
-
+  float change = 0.0f;
 };
 
 Motor motors[NUM_MOTORS];
@@ -495,7 +495,10 @@ void ros_init() {
     RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
 
     // Executorにサービスを追加
-    //RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+
+    //subscするときには必要
+    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+    
     // RCCHECK(rclc_executor_add_timer(&executor, &timer));
 }
 
@@ -829,22 +832,50 @@ void SW_Task(void *pvParameters) {
 }
 
 void CAN_Task(void *pvParameters) {
+    //static変数追加（前回値を記録するため）
+    // static int last_corrected_angle = 0;
+     static bool last_MANUALMODE = false;  // 前回のモードを保存
+        static  bool last_change = false;
 
     while (1) {
+        bool MANUALMODE = received_data[7];
+        // ---- MANUALモードのとき ----
+        
+        motors[0].target_rpm   = received_data[4];     
+        motors[1].target_rpm   = received_data[5];
+        motors[2].target_rpm   = received_data[6];
+    
+    // ---- AUTOモードのとき ----
+        motors[0].change = received_data[1]; 
+        motors[1].change = received_data[2];
 
-        motors[0].target_angle = received_data[1]; // 目標角度の更新
-        motors[1].target_angle = received_data[2];
-        motors[2].target_angle = received_data[3]*142/15;
-        motors[0].target_rpm = received_data[4];     
-        motors[1].target_rpm = received_data[5];
-        motors[2].target_rpm = received_data[6];
 
+        motors[2].change = received_data[3] * 142 / 15;
 
+        bool change = received_data[8];
+       
+        bool last_sw = false;
         bool zlimit = received_out_data[1];
         bool rlimit = received_out_data[2];
-        motors[0].corrected_angle = received_out_data[3];
+        bool sw = received_out_data[3];
+        
+if (last_change == false && change == true) {
+        // MANUAL → AUTO(位置制御) に変わった瞬間
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            motors[i].target_angle = motors[i].target_angle + motors[i].change; 
+            
+        }
+}
+last_change = change;  // 状態更新
 
-        bool MANUALMODE = received_data[7];
+ 
+
+        
+        
+
+        // モード切り替え検出
+        
+
         bool last_zlimit = false;
         bool last_rlimit = false;
 
@@ -895,13 +926,37 @@ void CAN_Task(void *pvParameters) {
                 motors[idx].total_encoder = motors[idx].rotation_count * ENCODER_MAX + motors[idx].encoder;
                 motors[idx].angle = motors[idx].total_encoder * (360.0 / (8192.0 * gear_ratio));
                 motors[idx].vel = (motors[idx].rpm / gear_ratio);
-            }
+                  
+                 
+
+                   // 原点補正処理
+            if (sw != last_sw) {
+                // motors[2]の角度をゼロに補正
+                motors[2].encoder_offset = motors[2].encoder;
+                motors[2].rotation_count = 0;
+                motors[2].total_encoder = 0;
+                motors[2].angle = 0.0;
+
+            last_sw = sw; 
+}
+                }
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
        float cur_cmd[NUM_MOTORS];
   // --- PID計算 & 電流決定(最大は1) ---
 
+if (last_MANUALMODE == true && MANUALMODE == false) {
+        // MANUAL → AUTO(位置制御) に変わった瞬間
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            motors[i].target_angle = motors[i].angle;  // 現在位置を目標にする
+            motors[i].pos_integral = 0;                // PID積分リセット
+            motors[i].pos_error_prev = 0;              // 誤差リセット
+        }
+}
+last_MANUALMODE = MANUALMODE;  // 状態更新
+
   if (MANUALMODE == false){
+     
 
   //差動の制御  
   for (int i=0; i<2; i++) {
@@ -912,7 +967,7 @@ void CAN_Task(void *pvParameters) {
     cur_cmd[i] = motors[i].output_current;
   }
   //θの制御
-  float th_out = pid(motors[2].target_angle, motors[0].corrected_angle,
+  float th_out = pid(motors[2].target_angle, motors[2].angle,
                         motors[2].pos_error_prev, motors[2].pos_integral,
                         kp_th, ki_th, kd_th, dt);
     motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
