@@ -129,26 +129,26 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define MD8D 19
 
 // サーボ
-#define SERVO1 21
+#define SERVO1 16
 #define SERVO2 17
 #define SERVO3 18
 #define SERVO4 19
-#define SERVO5 16
+#define SERVO5 21
 #define SERVO6 22
 #define SERVO7 23
 #define SERVO8 25
 
 // ソレノイドバルブ
-#define SV1 13
+#define SV1 2
 #define SV2 4
 #define SV3 5
 #define SV4 12
-#define SV5 2
+#define SV5 13
 #define SV6 14
 #define SV7 15
 
 // スイッチ
-#define SW1 26
+#define SW1 26 
 #define SW2 27
 #define SW3 32
 #define SW4 33
