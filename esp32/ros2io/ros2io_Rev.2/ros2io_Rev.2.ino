@@ -225,7 +225,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO8_MAX_DEG 180
 
 // *********以下CAN関連********* //
-// 一旦グローバル変数で定義、そのうち整理する。
+
 //---------定義--------//
 const int ENCODER_MAX = 8192; // エンコーダの最大
 const int HALF_ENCODER = ENCODER_MAX / 2;
@@ -527,98 +527,6 @@ void ENC_SW_Read_Publish_Task(void *pvParameters) {
     }
 }
 
-void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
-    while (1) {
-
-        // パルスカウンタの値を取得
-        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
-        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
-
-        // スイッチの状態を取得
-        sw_state[0] = (digitalRead(SW1) == HIGH);
-        sw_state[1] = (digitalRead(SW2) == HIGH);
-        sw_state[2] = (digitalRead(SW3) == HIGH);
-        sw_state[3] = (digitalRead(SW4) == HIGH);
-
-        // 1. CAN受信
-        int packetSize = CAN.parsePacket();
-        while (packetSize) {
-            int id = CAN.packetId(); // 複数パケットも処理
-            if (id >= 0x201 && id < 0x201 + NUM_MOTORS) {
-                int idx = id - 0x201; // モータ番号(0から)
-                uint8_t rx[8];
-                for (int i = 0; i < 8; i++)
-                    rx[i] = CAN.read();
-
-                motors[idx].encoder = (rx[0] << 8) | rx[1];
-                motors[idx].rpm = (rx[2] << 8) | rx[3];
-                motors[idx].current = (rx[4] << 8) | rx[5];
-
-                // 初回オフセット設定
-                if (!motors[idx].offset_ok) {
-                    motors[idx].encoder_offset = motors[idx].encoder;
-                    motors[idx].last_encoder = -1;
-                    motors[idx].rotation_count = 0;
-                    motors[idx].total_encoder = 0;
-                    motors[idx].pos_integral = 0;
-                    motors[idx].pos_error_prev = 0;
-                    motors[idx].vel_output = 0;
-                    motors[idx].vel_prop_prev = 0;
-                    motors[idx].offset_ok = true;
-                    // Serial.printf("Motor %d Offset set!\n", idx+1);
-                }
-
-                int enc_relative = motors[idx].encoder - motors[idx].encoder_offset;
-                if (enc_relative < 0)
-                    enc_relative += ENCODER_MAX;
-
-                if (motors[idx].last_encoder != -1) {
-                    int diff = motors[idx].encoder - motors[idx].last_encoder;
-                    if (diff > HALF_ENCODER) {
-                        motors[idx].rotation_count--;
-                    } else if (diff < -HALF_ENCODER) {
-                        motors[idx].rotation_count++;
-                    }
-                }
-                motors[idx].last_encoder = motors[idx].encoder;
-                motors[idx].total_encoder = motors[idx].rotation_count * ENCODER_MAX + motors[idx].encoder;
-                motors[idx].angle = motors[idx].total_encoder * (360.0 / (8192.0 * gear_ratio));
-                motors[idx].vel = (motors[idx].rpm / gear_ratio);
-            }
-            packetSize = CAN.parsePacket(); // 次の受信も処理
-        }
-
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        msg.data.data[4] = sw_state[0];
-        msg.data.data[5] = sw_state[1];
-        msg.data.data[6] = sw_state[2];
-        msg.data.data[7] = sw_state[3];
-        msg.data.data[8] = motors[0].angle;
-        msg.data.data[9] = motors[1].angle;
-        msg.data.data[10] = motors[2].angle;
-        msg.data.data[11] = motors[3].angle;
-        msg.data.data[12] = motors[0].rpm;
-        msg.data.data[13] = motors[1].rpm;
-        msg.data.data[14] = motors[2].rpm;
-        msg.data.data[15] = motors[3].rpm;
-        msg.data.data[16] = motors[0].current;
-        msg.data.data[17] = motors[1].current;
-        msg.data.data[18] = motors[2].current;
-        msg.data.data[19] = motors[3].current;
-        // Publish
-        if (MODE != 0) {
-            RCCHECK(rcl_publish(&publisher, &msg, NULL));
-        }
-
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
-    }
-}
-
 void Servo_Output_Task(void *pvParameters) {
     // for文で書きかえたいところ、、、
     while (1) {
@@ -752,8 +660,7 @@ void CAN_Task(void *pvParameters) {
                 encoder_count = (rx[0] << 8) | rx[1];
                 rpm = (rx[2] << 8) | rx[3];
 
-                // これいる？↓
-                //  --- 初回オフセット設定 --- //
+                // --- 初回オフセット設定 --- //
                 if (!offset_ok) {
                     encoder_offset = encoder_count;
                     last_encoder_count = -1;
@@ -998,14 +905,14 @@ void mode2_init() {
     msg.data.size = 20;
     msg.data.capacity = 20;
 
-    xTaskCreateUniversal(
-        ROBOMAS_ENC_SW_Read_Publish_Task,
-        "ROBOMAS_ENC_SW_Read_Publish_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
+    // xTaskCreateUniversal(
+    //     ROBOMAS_ENC_SW_Read_Publish_Task,
+    //     "ROBOMAS_ENC_SW_Read_Publish_Task",
+    //     4096,
+    //     NULL,
+    //     2, // 優先度、最大25？
+    //     NULL,
+    //     APP_CPU_NUM);
 }
 
 void mode3_init() {
