@@ -629,7 +629,16 @@ void SV_Task(void *pvParameters) {
     }
 }
 
-void LED_Task(void *pvParameters) {
+void LED_Blink100_Task(void *pvParameters) {
+    while (1) {
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
+        delay(100);
+    }
+}
+
+void LED_PWM_Task(void *pvParameters) {
     while (1) {
         digitalWrite(LED, HIGH);
         delay(100);
@@ -890,13 +899,8 @@ void mode2_init() {
     pinMode(SW3, INPUT_PULLUP);
     pinMode(SW4, INPUT_PULLUP);
 
-    Serial.begin(115200);
-    while (!Serial)
-        ;
-
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
         while (1)
             ;
     }
@@ -1020,13 +1024,8 @@ void mode4_init() {
 
 void mode5_init() {
 
-    Serial.begin(115200);
-    while (!Serial)
-        ;
-
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
         while (1)
             ;
     }
@@ -1049,8 +1048,8 @@ void mode0_init() {
     Serial.println("Press Enter to continue...");
 
     xTaskCreateUniversal(
-        LED_Task,
-        "LED_Task",
+        LED_Blink100_Task,
+        "LED_Blink100_Task",
         2048,
         NULL,
         1, // 優先度、最大25？
@@ -1181,7 +1180,7 @@ void mode0_init() {
                         pos_integral = 0;
                         pos_error_prev = 0;
                         offset_ok = true;
-                        Serial.println("Offset set!");
+                        // Serial.println("Offset set!");
                     }
 
                     int enc_relative = encoder_count - encoder_offset;
