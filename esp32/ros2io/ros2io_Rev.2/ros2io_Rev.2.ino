@@ -795,7 +795,7 @@ void CAN_Task(void *pvParameters) {
         // Serial.print("pos:\t"); Serial.println(angle);
         // Serial.println(target_angle - angle);
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        delay(1);
     }
 }
 
@@ -998,14 +998,14 @@ void mode2_init() {
     msg.data.size = 20;
     msg.data.capacity = 20;
 
-    // xTaskCreateUniversal(
-    //     ROBOMAS_ENC_SW_Read_Publish_Task,
-    //     "ROBOMAS_ENC_SW_Read_Publish_Task",
-    //     4096,
-    //     NULL,
-    //     2, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
+    xTaskCreateUniversal(
+        ROBOMAS_ENC_SW_Read_Publish_Task,
+        "ROBOMAS_ENC_SW_Read_Publish_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
 }
 
 void mode3_init() {
@@ -1307,7 +1307,7 @@ void mode0_init() {
             // Serial.print("pos:\t"); Serial.println(angle);
             Serial.println(target_angle - angle);
 
-            vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+            delay(1);
         }
         break;
 
