@@ -1186,6 +1186,15 @@ void mode5_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);
 }
 
 // テストモード　※実機で「絶対」に実行するな！
