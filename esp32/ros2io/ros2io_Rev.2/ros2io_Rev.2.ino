@@ -375,6 +375,10 @@ void subscription_callback(const void *msgin) {
   received_size = len;
 }
 
+// ===== タスクハンドルのグローバル変数 =====
+TaskHandle_t led_blink100_handle = NULL;
+TaskHandle_t led_pwm_handle      = NULL;
+
 void setup() {
 
   pinMode(LED, OUTPUT);
@@ -424,9 +428,17 @@ void ros_init() {
   set_microros_transports();
   allocator = rcl_get_default_allocator();
 
+    xTaskCreateUniversal(
+    LED_Blink100_Task,
+    "LED_Blink100_Task",
+    2048,
+    NULL,
+    1,  // 優先度、最大25？
+    &led_blink100_handle,
+    APP_CPU_NUM);
+
   // Agentと接続できるまでリトライ
   while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
-    digitalWrite(LED, !digitalRead(LED));
     delay(1000);  // 1秒待つ
   }
 
@@ -456,6 +468,10 @@ void ros_init() {
 
   // Executorにサービスを追加
   RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+
+  vTaskDelete(led_blink100_handle);
+  led_blink100_handle = NULL;
+
 }
 
 void MD_Output_Task(void *pvParameters) {
@@ -928,7 +944,7 @@ void mode2_init() {
     2048,
     NULL,
     1,  // 優先度、最大25？
-    NULL,
+    &led_pwm_handle,
     APP_CPU_NUM);
 }
 
