@@ -1245,7 +1245,7 @@ void mode0_init() {
         break;
 
     case 5:
-        // CANのテスト
+        // サーボ、ソレノイドのテスト
         Serial.println("CAN_TEST");
         mode5_init();
         while (1) {
@@ -1307,7 +1307,7 @@ void mode0_init() {
             // Serial.print("pos:\t"); Serial.println(angle);
             Serial.println(target_angle - angle);
 
-            vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+            delay(1);
         }
         break;
 
