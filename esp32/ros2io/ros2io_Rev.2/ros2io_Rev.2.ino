@@ -52,7 +52,7 @@ FIXME:Pub、Subの同時使用時の遅延問題
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
-#define MODE 5
+#define MODE 4
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:MD専用
@@ -778,7 +778,7 @@ void LED_PWM_Task(void *pvParameters) {
     }
 }
 
-void CAN_Task(void *pvParameters) {
+void C610_Task(void *pvParameters) {
     while (1) {
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
@@ -849,6 +849,106 @@ void CAN_Task(void *pvParameters) {
 
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
+
+        delay(1);
+    }
+}
+
+void C610_FB_Task(void *pvParameters) {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        last_encoder[i] = -1;
+    }
+    while (1) {
+        unsigned long now = millis();
+        float dt = (now - lastPidTime) / 1000.0f;
+        if (dt <= 0)
+            dt = 0.000001f; // dtが0にならないよう補正
+        lastPidTime = now;
+
+        // -------- 目標角度の更新 -------- //
+        // received_data[1]～[4] にモータ1～4の目標角度が入っている前提
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            target_angle[i] = received_data[i + 1];
+        }
+
+        // -------- CAN受信処理 -------- //
+        int packetSize = CAN.parsePacket();
+        while (packetSize) {
+            int id = CAN.packetId();
+            if (id >= 0x201 && id < 0x201 + NUM_MOTORS) {
+                int motor_index = id - 0x201;
+                uint8_t rx[8];
+                for (int i = 0; i < 8; i++)
+                    rx[i] = CAN.read();
+
+                // エンコーダ・速度・電流取得
+                encoders[motor_index] = (rx[0] << 8) | rx[1];
+                rpms[motor_index] = (rx[2] << 8) | rx[3];
+                currents[motor_index] = (rx[4] << 8) | rx[5];
+
+                // 初回オフセット設定
+                if (!offset_ok[motor_index]) {
+                    encoder_offset[motor_index] = encoders[motor_index];
+                    last_encoder[motor_index] = -1;
+                    rotation_count[motor_index] = 0;
+                    total_encoder[motor_index] = 0;
+                    pos_integral[motor_index] = 0;
+                    pos_error_prev[motor_index] = 0;
+                    offset_ok[motor_index] = true;
+                }
+
+                // エンコーダ差分とラップ補正
+                int enc_relative = encoders[motor_index] - encoder_offset[motor_index];
+                if (enc_relative < 0)
+                    enc_relative += ENCODER_MAX;
+
+                if (last_encoder[motor_index] != -1) {
+                    int diff = encoders[motor_index] - last_encoder[motor_index];
+                    if (diff > HALF_ENCODER)
+                        rotation_count[motor_index]--;
+                    else if (diff < -HALF_ENCODER)
+                        rotation_count[motor_index]++;
+                }
+
+                last_encoder[motor_index] = encoders[motor_index];
+                total_encoder[motor_index] = rotation_count[motor_index] * ENCODER_MAX + encoders[motor_index];
+                angles[motor_index] = total_encoder[motor_index] * (360.0f / (ENCODER_MAX * gear_ratio));
+                vels[motor_index] = (rpms[motor_index] / gear_ratio) * 360.0f / 60.0f;
+            }
+
+            packetSize = CAN.parsePacket(); // 次の受信も処理
+        }
+
+        // -------- PID制御（全モータ） -------- //
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            pos_output[i] = pid(target_angle[i], angles[i], pos_error_prev[i], pos_integral[i],
+                                kp_pos, ki_pos, kd_pos, dt);
+            motor_output_current[i] = constrain_double(pos_output[i], -current_limit_A, current_limit_A);
+        }
+
+        // -------- CAN送信（全モータ） -------- //
+        send_cur_all(motor_output_current);
+
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        msg.data.data[4] = sw_state[0];
+        msg.data.data[5] = sw_state[1];
+        msg.data.data[6] = sw_state[2];
+        msg.data.data[7] = sw_state[3];
+        msg.data.data[8] = angles[0];
+        msg.data.data[9] = angles[1];
+        msg.data.data[10] = angles[2];
+        msg.data.data[11] = angles[3];
+        msg.data.data[12] = rpms[0];
+        msg.data.data[13] = rpms[1];
+        msg.data.data[14] = rpms[2];
+        msg.data.data[15] = rpms[3];
+        msg.data.data[16] = currents[0];
+        msg.data.data[17] = currents[1];
+        msg.data.data[18] = currents[2];
+        msg.data.data[19] = currents[3];
 
         delay(1);
     }
@@ -1115,6 +1215,35 @@ void mode4_init() {
     // SerialBT.println("Mode 4 Initialized");
     // Pub,Subを同時にしたときの遅延問題が解決できていないため未使用
     // とりあえず書いておく
+
+    // エンコーダの初期化
+    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+    if (!CAN.begin(1000E3)) {
+        while (1)
+            ;
+    }
+
+    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
+    msg.data.size = 20;
+    msg.data.capacity = 20;
+
+    xTaskCreateUniversal(
+        C610_FB_Task,
+        "C610_FB_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);
 }
 
 void mode5_init() {
@@ -1126,8 +1255,8 @@ void mode5_init() {
     }
 
     xTaskCreateUniversal(
-        CAN_Task,
-        "CAN_Task",
+        C610_Task,
+        "C610_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
