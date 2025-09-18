@@ -1115,59 +1115,6 @@ void mode4_init() {
     // SerialBT.println("Mode 4 Initialized");
     // Pub,Subを同時にしたときの遅延問題が解決できていないため未使用
     // とりあえず書いておく
-
-    // エンコーダの初期化
-    enc_init();
-
-    // サーボのPWMの初期化
-    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO2, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO3, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO5, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO6, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO8, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-
-    pinMode(SV1, OUTPUT);
-    pinMode(SV2, OUTPUT);
-    pinMode(SV3, OUTPUT);
-    pinMode(SV4, OUTPUT);
-    pinMode(SV5, OUTPUT);
-    pinMode(SV6, OUTPUT);
-    pinMode(SV7, OUTPUT);
-
-    // ここにタスク系を列挙する
-
-    // // サーボ操作のスレッド（タスク）の作成
-    // xTaskCreateUniversal(
-    //     Servo_Output_Task,
-    //     "Servo_Output_Task",
-    //     4096,
-    //     NULL,
-    //     2, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
-
-    // // ソレノイド操作のスレッド（タスク）の作成
-    // xTaskCreateUniversal(
-    //     SV_Task,
-    //     "SV_Task",
-    //     4096,
-    //     NULL,
-    //     2, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
-
-    // // エンコーダーとスイッチの読み取りとPublishのスレッド（タスク）の作成
-    // xTaskCreateUniversal(
-    //     ENC_SW_Read_Publish_Task,
-    //     "ENC_SW_Read_Publish_Task",
-    //     4096,
-    //     NULL,
-    //     2, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
 }
 
 void mode5_init() {
