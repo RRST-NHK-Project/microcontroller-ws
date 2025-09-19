@@ -805,17 +805,11 @@ void CAN_Task(void *pvParameters) {
 
         
     static bool last_MANUALMODE = false;// 前回の制御モード記憶用
+    
     while (1) {
         //-------MANUALMODEの習得-------
         bool MANUALMODE = received_data[0]; // true:速度制御、false:角度制御
-        
-
-        unsigned long now = millis();
-        float dt = (now - lastPidTime) / 1000.0f;
-        if (dt <= 0)
-            dt = 0.000001f; // dtが0にならないよう補正
-        lastPidTime = now;
-
+    
         // -------- 目標角度の更新 -------- //
         // received_data[1]～[4] にモータ1～4の目標角度が入っている前提
         for (int i = 0; i < NUM_MOTORS; i++) {
@@ -827,6 +821,13 @@ void CAN_Task(void *pvParameters) {
         }
 
         
+
+         unsigned long now = millis();
+        float dt = (now - lastPidTime) / 1000.0f;
+        if (dt <= 0)
+            dt = 0.000001f; // dtが0にならないよう補正
+        lastPidTime = now;
+
         // -------- CAN受信処理 -------- //
         int packetSize = CAN.parsePacket();
         while (packetSize) {
@@ -877,6 +878,7 @@ void CAN_Task(void *pvParameters) {
 
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
+        float motor_output_current[NUM_MOTORS]; // 出力電流
 
         if (last_MANUALMODE == true && MANUALMODE == false) {
         // MANUAL → AUTO(位置制御) に変わった瞬間
