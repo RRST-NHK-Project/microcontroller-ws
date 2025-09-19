@@ -891,7 +891,7 @@ void CAN_Task(void *pvParameters) {
         last_MANUALMODE = MANUALMODE;  // 状態更新
 
 
-        if(MANUALMODE == false){
+        if(MANUALMODE == true){
             //自動pos_integral
 
         // -------- 角度PID制御（全モータ） -------- //
@@ -900,7 +900,7 @@ void CAN_Task(void *pvParameters) {
                                 kp_pos, ki_pos, kd_pos, dt);
             motor_output_current[i] = constrain_double(pos_output[i], -current_limit_A, current_limit_A);
         }
-        }else if(MANUALMODE == true){
+        }else if(MANUALMODE == false){
         //手動
         // -------- 速度PID制御（全モータ） -------- //
         for (int i = 0; i < NUM_MOTORS; i++) {
