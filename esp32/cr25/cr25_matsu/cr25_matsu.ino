@@ -129,31 +129,31 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define MD8D 19
 
 // サーボ
-#define SERVO1 16
+#define SERVO1 21
 #define SERVO2 17
 #define SERVO3 18
 #define SERVO4 19
-#define SERVO5 21
+#define SERVO5 16
 #define SERVO6 22
 #define SERVO7 23
 #define SERVO8 25
 
 // ソレノイドバルブ
-#define SV1 2
+#define SV1 13
 #define SV2 4
 #define SV3 5
 #define SV4 12
-#define SV5 13
+#define SV5 2
 #define SV6 14
 #define SV7 15
 
 // スイッチ
-#define SW1 26 
+#define SW1 26
 #define SW2 27
 #define SW3 32
 #define SW4 33
 
-//ロボマス
+// ロボマス
 #define CAN_RX 4
 #define CAN_TX 5
 // PWM関連の設定値を定義
@@ -212,35 +212,34 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 // *********以下CAN関連********* //
 
 //---------定義--------//
-#define ENCODER_MAX  8192// エンコーダの最大
+#define ENCODER_MAX 8192  // エンコーダの最大
 #define HALF_ENCODER 4096 //= ENCODER_MAX / 2;
-#define gear_ratio 36.0 // 減速比
-#define NUM_MOTORS 4 // 使用するモータの台数（最大4台）
+#define gear_ratio 36.0   // 減速比
+#define NUM_MOTORS 4      // 使用するモータの台数（最大4台）
 
 //-----状態量-----//
 struct Motor {
-  int16_t encoder = 0;
-  int16_t rpm = 0;
-  int16_t current = 0;
-  int16_t last_encoder = -1;
-  int32_t rotation_count = 0;
-  int32_t total_encoder = 0;
-  float angle = 0.0f;
-  float corrected_angle = 0;
-  float vel = 0.0f;
-  bool offset_ok = false;
-  int encoder_offset = 0;
+    int16_t encoder = 0;
+    int16_t rpm = 0;
+    int16_t current = 0;
+    int16_t last_encoder = -1;
+    int32_t rotation_count = 0;
+    int32_t total_encoder = 0;
+    float angle = 0.0f;
+    float corrected_angle = 0;
+    float vel = 0.0f;
+    bool offset_ok = false;
+    int encoder_offset = 0;
 
-
-  // PID用
-  float pos_error_prev = 0.0f;
-  float pos_integral = 0.0f;
-  float vel_prop_prev = 0.0f;
-  float vel_output = 0.0f;
-  float target_angle = 0.0f;
-  float target_rpm = 0.0f;
-  float output_current = 0.0f;
-  float change = 0.0f;
+    // PID用
+    float pos_error_prev = 0.0f;
+    float pos_integral = 0.0f;
+    float vel_prop_prev = 0.0f;
+    float vel_output = 0.0f;
+    float target_angle = 0.0f;
+    float target_rpm = 0.0f;
+    float output_current = 0.0f;
+    float change = 0.0f;
 };
 
 Motor motors[NUM_MOTORS];
@@ -261,16 +260,16 @@ float limit = 19520;
 float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
-float target_angle = 0; // 目標角度
-float target_rpm = 0.0; //現在のエンコーダの値
+float target_angle = 0;     // 目標角度
+float target_rpm = 0.0;     // 現在のエンコーダの値
 float pos_error_prev = 0.0; // 前回の角度誤差
 float pos_integral = 0.0;   // 角度積分項
 float pos_output = 0;       // 角度PID出力（目標速度）
 
-float vel_input = 0.0;      // 現在の速度
+float vel_input = 0.0;     // 現在の速度
 float vel_prop_prev = 0.0; // 前回の速度誤差
-float vel_integral = 0.0;   // 速度積分項
-float vel_output = 0;       // 速度PID出力
+float vel_integral = 0.0;  // 速度積分項
+float vel_output = 0;      // 速度PID出力
 
 unsigned long lastPidTime = 0; // PID制御の時間計測用
 
@@ -291,23 +290,25 @@ float kd_vel = 0.05;
 
 void send_cur(float cur[NUM_MOTORS]) {
     constexpr float MAX_CUR = 10;
-    constexpr int MAX_CUR_VAL = 1000;//10000;
+    constexpr int MAX_CUR_VAL = 10000;
 
     auto conv = [&](float c) {
-    float val = c * (MAX_CUR_VAL / MAX_CUR);
-    if (val < -MAX_CUR_VAL) val = -MAX_CUR_VAL;
-    else if (val > MAX_CUR_VAL) val = MAX_CUR_VAL;
-    return (int16_t)val;
-  };
+        float val = c * (MAX_CUR_VAL / MAX_CUR);
+        if (val < -MAX_CUR_VAL)
+            val = -MAX_CUR_VAL;
+        else if (val > MAX_CUR_VAL)
+            val = MAX_CUR_VAL;
+        return (int16_t)val;
+    };
 
     uint8_t send_data[8] = {};
 
     // 電流のデータ送信
-    for (int i=0; i<NUM_MOTORS; i++) {
-    int16_t transmit_val = conv(cur[i]);
-    send_data[i*2]     = (transmit_val >> 8) & 0xFF;
-    send_data[i*2 + 1] = transmit_val & 0xFF;
-  }
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        int16_t transmit_val = conv(cur[i]);
+        send_data[i * 2] = (transmit_val >> 8) & 0xFF;
+        send_data[i * 2 + 1] = transmit_val & 0xFF;
+    }
 
     CAN.beginPacket(0x200);
     CAN.write(send_data, 8);
@@ -323,19 +324,19 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
 
     return kp * error + ki * integral + kd * derivative;
 }
-float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, float &output,
-          float kp, float ki, float kd, float dt){
-            float error = setpoint - input;
-            float prop = error - error_prev;
-            float deriv = prop - prop_prev;
-            float du = kp * prop + ki * error * dt + kd * deriv;
-            output += du;
+float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
+              float kp, float ki, float kd, float dt) {
+    float error = setpoint - input;
+    float prop = error - error_prev;
+    float deriv = prop - prop_prev;
+    float du = kp * prop + ki * error * dt + kd * deriv;
+    output += du;
 
-            prop_prev = prop;
-            error_prev = error;
+    prop_prev = prop;
+    error_prev = error;
 
-            return output;
-        }
+    return output;
+}
 
 float constrain_double(float val, float min_val, float max_val) {
     if (val < min_val)
@@ -369,7 +370,6 @@ volatile int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 volatile size_t received_size = 0;              // 受信データのサイズ
 
 volatile int32_t received_out_data[MAX_ARRAY_SIZE]; // 受信データ
-
 
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
@@ -496,9 +496,9 @@ void ros_init() {
 
     // Executorにサービスを追加
 
-    //subscするときには必要
+    // subscするときには必要
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-    
+
     // RCCHECK(rclc_executor_add_timer(&executor, &timer));
 }
 
@@ -629,11 +629,12 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         // 1. CAN受信
         int packetSize = CAN.parsePacket();
         while (packetSize) {
-            int id = CAN.packetId();               // 複数パケットも処理
+            int id = CAN.packetId(); // 複数パケットも処理
             if (id >= 0x201 && id < 0x201 + NUM_MOTORS) {
                 int idx = id - 0x201; // モータ番号(0から)
                 uint8_t rx[8];
-                for (int i=0;i<8;i++) rx[i] = CAN.read();
+                for (int i = 0; i < 8; i++)
+                    rx[i] = CAN.read();
 
                 motors[idx].encoder = (rx[0] << 8) | rx[1];
                 motors[idx].rpm = (rx[2] << 8) | rx[3];
@@ -650,18 +651,19 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
                     motors[idx].vel_output = 0;
                     motors[idx].vel_prop_prev = 0;
                     motors[idx].offset_ok = true;
-                   // Serial.printf("Motor %d Offset set!\n", idx+1);
+                    // Serial.printf("Motor %d Offset set!\n", idx+1);
                 }
 
                 int enc_relative = motors[idx].encoder - motors[idx].encoder_offset;
-                if (enc_relative < 0) enc_relative += ENCODER_MAX;
+                if (enc_relative < 0)
+                    enc_relative += ENCODER_MAX;
 
                 if (motors[idx].last_encoder != -1) {
                     int diff = motors[idx].encoder - motors[idx].last_encoder;
                     if (diff > HALF_ENCODER) {
                         motors[idx].rotation_count--;
-                    }else if (diff < -HALF_ENCODER){
-                     motors[idx].rotation_count++;
+                    } else if (diff < -HALF_ENCODER) {
+                        motors[idx].rotation_count++;
                     }
                 }
                 motors[idx].last_encoder = motors[idx].encoder;
@@ -671,8 +673,6 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
             }
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
-      
-
 
         msg.data.data[0] = count[0];
         msg.data.data[1] = count[1];
@@ -694,7 +694,7 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         msg.data.data[17] = motors[1].current;
         msg.data.data[18] = motors[2].current;
         msg.data.data[19] = motors[3].current;
-        
+
         // Publish
         if (MODE != 0) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
@@ -703,7 +703,6 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
         vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
     }
 }
-
 
 void Servo_Output_Task(void *pvParameters) {
     // for文で書きかえたいところ、、、
@@ -832,48 +831,44 @@ void SW_Task(void *pvParameters) {
 }
 
 void CAN_Task(void *pvParameters) {
-    //static変数追加（前回値を記録するため）
-    // static int last_corrected_angle = 0;
-     static bool last_MANUALMODE = false;  // 前回のモードを保存
-    
-       //static bool last_sw = false;
-       static bool last_zlimit = false;
-       static bool last_rlimit = false;
+    // static変数追加（前回値を記録するため）
+    //  static int last_corrected_angle = 0;
+    static bool last_MANUALMODE = false; // 前回のモードを保存
+    static bool last_change = false;
 
     while (1) {
-        bool MANUALMODE = received_data[0];
+        bool MANUALMODE = received_data[7];
         // ---- MANUALモードのとき ----
-        
-        motors[0].target_rpm   = received_data[5];     
-        motors[1].target_rpm   = received_data[6];
-        motors[2].target_rpm   = received_data[7];
-    
-    // ---- AUTOモードのとき ----
-        motors[0].change = received_data[1]; 
-        motors[1].change = received_data[2];
 
+        motors[0].target_rpm = received_data[4];
+        motors[1].target_rpm = received_data[5];
+        motors[2].target_rpm = received_data[6];
+
+        // ---- AUTOモードのとき ----
+        motors[0].change = received_data[1];
+        motors[1].change = received_data[2];
 
         motors[2].change = received_data[3] * 142 / 15;
 
         bool change = received_data[8];
-       static  bool last_change = false;
-        
+
+        bool last_sw = false;
         bool zlimit = received_out_data[1];
         bool rlimit = received_out_data[2];
-        bool re_count = received_out_data[3];
-        
-if (last_change != change && change == true) {
-        // MANUAL → AUTO(位置制御) に変わった瞬間
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            motors[i].target_angle = motors[i].target_angle + motors[i].change; 
-            
-        }
-}
-last_change = change;  // 状態更新
+        bool sw = received_out_data[3];
 
-       
+        if (last_change == false && change == true) {
+            // MANUAL → AUTO(位置制御) に変わった瞬間
+            for (int i = 0; i < NUM_MOTORS; i++) {
+                motors[i].target_angle = motors[i].target_angle + motors[i].change;
+            }
+        }
+        last_change = change; // 状態更新
+
         // モード切り替え検出
-        
+
+        bool last_zlimit = false;
+        bool last_rlimit = false;
 
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0;
@@ -884,11 +879,12 @@ last_change = change;  // 状態更新
         // 1. CAN受信
         int packetSize = CAN.parsePacket();
         while (packetSize) {
-            int id = CAN.packetId();               // 複数パケットも処理
+            int id = CAN.packetId(); // 複数パケットも処理
             if (id >= 0x201 && id < 0x201 + NUM_MOTORS) {
                 int idx = id - 0x201; // モータ番号(0から)
                 uint8_t rx[8];
-                for (int i=0;i<8;i++) rx[i] = CAN.read();
+                for (int i = 0; i < 8; i++)
+                    rx[i] = CAN.read();
 
                 motors[idx].encoder = (rx[0] << 8) | rx[1];
                 motors[idx].rpm = (rx[2] << 8) | rx[3];
@@ -904,100 +900,113 @@ last_change = change;  // 状態更新
                     motors[idx].vel_output = 0;
                     motors[idx].vel_prop_prev = 0;
                     motors[idx].offset_ok = true;
-                   // Serial.printf("Motor %d Offset set!\n", idx+1);
+                    // Serial.printf("Motor %d Offset set!\n", idx+1);
                 }
 
                 int enc_relative = motors[idx].encoder - motors[idx].encoder_offset;
-                if (enc_relative < 0) enc_relative += ENCODER_MAX;
+                if (enc_relative < 0)
+                    enc_relative += ENCODER_MAX;
 
                 if (motors[idx].last_encoder != -1) {
                     int diff = motors[idx].encoder - motors[idx].last_encoder;
                     if (diff > HALF_ENCODER) {
                         motors[idx].rotation_count--;
-                    }else if (diff < -HALF_ENCODER){
-                     motors[idx].rotation_count++;
+                    } else if (diff < -HALF_ENCODER) {
+                        motors[idx].rotation_count++;
                     }
-                    motors[2].rotation_count = motors[2].rotation_count* ((re_count + 1)%2);
                 }
                 motors[idx].last_encoder = motors[idx].encoder;
                 motors[idx].total_encoder = motors[idx].rotation_count * ENCODER_MAX + motors[idx].encoder;
                 motors[idx].angle = motors[idx].total_encoder * (360.0 / (8192.0 * gear_ratio));
                 motors[idx].vel = (motors[idx].rpm / gear_ratio);
-                  
-                 
 
-                   // 原点補正処理
-           
+                // 原点補正処理
+                if (sw != last_sw) {
+                    // motors[2]の角度をゼロに補正
+                    motors[2].encoder_offset = motors[2].encoder;
+                    motors[2].rotation_count = 0;
+                    motors[2].total_encoder = 0;
+                    motors[2].angle = 0.0;
+
+                    last_sw = sw;
                 }
-                
+            }
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
-       float cur_cmd[NUM_MOTORS];
-  // --- PID計算 & 電流決定(最大は1) ---
-    
-if (last_MANUALMODE == true && MANUALMODE == false) {
-        // MANUAL → AUTO(位置制御) に変わった瞬間
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            motors[i].target_angle = motors[i].angle;  // 現在位置を目標にする
-            motors[i].pos_integral = 0;                // PID積分リセット
-            motors[i].pos_error_prev = 0;              // 誤差リセット
+        float cur_cmd[NUM_MOTORS];
+        // --- PID計算 & 電流決定(最大は1) ---
+
+        if (last_MANUALMODE == true && MANUALMODE == false) {
+            // MANUAL → AUTO(位置制御) に変わった瞬間
+            for (int i = 0; i < NUM_MOTORS; i++) {
+                motors[i].target_angle = motors[i].angle; // 現在位置を目標にする
+                motors[i].pos_integral = 0;               // PID積分リセット
+                motors[i].pos_error_prev = 0;             // 誤差リセット
+            }
         }
-}
-last_MANUALMODE = MANUALMODE;  // 状態更新
+        last_MANUALMODE = MANUALMODE; // 状態更新
 
-  if (MANUALMODE == false){
-     
+        if (MANUALMODE == false) {
 
-  //差動の制御  
-  for (int i=0; i<2; i++) {
-    float pos_out = pid(motors[i].target_angle, motors[i].angle,
-                        motors[i].pos_error_prev, motors[i].pos_integral,
-                        kp_pos, ki_pos, kd_pos, dt);
-    motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
-    cur_cmd[i] = motors[i].output_current;
-  }
-  //θの制御
-  float th_out = pid(motors[2].target_angle, motors[2].angle,
-                        motors[2].pos_error_prev, motors[2].pos_integral,
-                        kp_th, ki_th, kd_th, dt);
-    motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
-    cur_cmd[2] = motors[2].output_current;
+            // 差動の制御
+            for (int i = 0; i < 2; i++) {
+                float pos_out = pid(motors[i].target_angle, motors[i].angle,
+                                    motors[i].pos_error_prev, motors[i].pos_integral,
+                                    kp_pos, ki_pos, kd_pos, dt);
+                motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
+                cur_cmd[i] = motors[i].output_current;
+            }
+            // θの制御
+            float th_out = pid(motors[2].target_angle, motors[2].angle,
+                               motors[2].pos_error_prev, motors[2].pos_integral,
+                               kp_th, ki_th, kd_th, dt);
+            motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
+            cur_cmd[2] = motors[2].output_current;
 
-  }else if(MANUALMODE == true){
+        } else if (MANUALMODE == true) {
 
+            for (int i = 0; i < 2; i++) {
+                if (zlimit && !last_zlimit) {
+                    motors[i].target_rpm = -50;
+                } else {
+                    motors[i].target_rpm = received_data[i + 4];
+                }
+                zlimit = last_zlimit;
+                if (rlimit == 1) {
+                    motors[i].target_rpm = -50 / motors[i].target_rpm;
+                } else {
+                    motors[i].target_rpm = received_data[i + 4];
+                }
+                rlimit = last_rlimit;
+            }
+            for (int i = 0; i < NUM_MOTORS; i++) {
+                float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
+                                        motors[i].pos_error_prev, motors[i].vel_prop_prev, motors[i].vel_output,
+                                        kp_vel, ki_vel, kd_vel, dt);
+                motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+                cur_cmd[i] = motors[i].output_current;
 
+                // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
+                // cur_cmd[2] = 0;
+            }
+        }
+        // --- 電流指令送信（2台分まとめて） ---
+        send_cur(cur_cmd);
 
-  for(int i=0; i<NUM_MOTORS; i++) {
-  float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
-                        motors[i].pos_error_prev,motors[i].vel_prop_prev, motors[i].vel_output,
-                        kp_vel, ki_vel, kd_vel, dt);
-    motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
-    cur_cmd[i] = motors[i].output_current;
-    
-    // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
-    // cur_cmd[2] = 0;
-  }
-   
-  
-  }
-  // --- 電流指令送信（2台分まとめて） ---
-  send_cur(cur_cmd);
-  
-  //サーボ--------
-    int angle1 = 90;//(motors[2].angle *15/142) ;
+        // サーボ--------
+        int angle1 = (motors[2].angle * 15 / 142) + 135;
         if (angle1 < SERVO1_MIN_DEG)
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
             angle1 = SERVO1_MAX_DEG;
-        if (motors[2].angle * 15 / 142 > -20 && motors[2].angle * 15 / 142 < 20)
+        if (motors[2].angle * 15 / 142 > -100 && motors[2].angle * 15 / 142 < -80)
             angle1 = 135;
 
         int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
         int duty1 = (int)(us1 * SERVO_PWM_SCALE);
         ledcWrite(SERVO1, duty1);
-    //-----------
+        //-----------
 
-        
         // Serial.print("pos:\t"); Serial.println(angle);
         // Serial.println(target_angle - angle);
 
@@ -1199,18 +1208,6 @@ void mode2_init() {
     pinMode(SW3, INPUT_PULLUP);
     pinMode(SW4, INPUT_PULLUP);
 
-
-    Serial.begin(115200);
-    while (!Serial)
-        ;
-
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
-        while (1)
-            ;
-    }
-
     // // エンコーダ取得のスレッド（タスク）の作成
     // xTaskCreateUniversal(
     //     ENC_Read_Task,
@@ -1378,7 +1375,6 @@ void mode5_init() {
     ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
     pinMode(SV1, OUTPUT);
 
-    
     Serial.begin(115200);
     while (!Serial)
         ;
@@ -1569,7 +1565,7 @@ void mode0_init() {
             motor_output_current_A = constrain_double(pos_output, -current_limit_A, current_limit_A);
             // motor_output_current_A = 0.3;
             // 2. コマンド送信
-            //send_cur(cur_cmd]);
+            // send_cur(cur_cmd]);
 
             // 3. デバッグ出力
             // Serial.print("pos:\t"); Serial.println(angle);
