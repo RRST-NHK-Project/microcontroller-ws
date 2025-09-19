@@ -971,6 +971,8 @@ void CR25_Task(void *pvParameters) {
         int duty1 = (int)(us1 * SERVO_PWM_SCALE);
         ledcWrite(SERVO1, duty1);
 
+        digitalWrite(SV1, received_data[17] ? HIGH : LOW);
+
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
         if (dt <= 0)
