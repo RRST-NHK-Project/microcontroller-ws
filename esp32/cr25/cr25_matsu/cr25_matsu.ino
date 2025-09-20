@@ -1,4 +1,6 @@
 /*
+キャチロボ用完成コード
+
 For NHK-Robocon-2026??
 ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
 ライブラリのインストールが必要(https://github.com/micro-ROS/micro_ros_arduino)
