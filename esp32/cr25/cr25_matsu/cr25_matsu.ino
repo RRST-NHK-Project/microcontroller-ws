@@ -1,5 +1,5 @@
 /*
-キャチロボ用完成コード
+kyachi-micro-ROS-cr25_matsu
 
 For NHK-Robocon-2026??
 ESP32用microROSプログラム。ROSノードからのマイコンIO操作を行う。
