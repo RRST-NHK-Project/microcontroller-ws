@@ -129,21 +129,21 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define MD8D 19
 
 // サーボ
-#define SERVO1 21
+#define SERVO1 16
 #define SERVO2 17
 #define SERVO3 18
 #define SERVO4 19
-#define SERVO5 16
+#define SERVO5 21
 #define SERVO6 22
 #define SERVO7 23
 #define SERVO8 25
 
 // ソレノイドバルブ
-#define SV1 13
+#define SV1 2
 #define SV2 4
 #define SV3 5
 #define SV4 12
-#define SV5 2
+#define SV5 13
 #define SV6 14
 #define SV7 15
 
@@ -172,7 +172,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #define SERVO1_MIN_US 500
 #define SERVO1_MAX_US 2500
 #define SERVO1_MIN_DEG 0
-#define SERVO1_MAX_DEG 270
+#define SERVO1_MAX_DEG 180
 
 #define SERVO2_MIN_US 500
 #define SERVO2_MAX_US 2500
@@ -848,23 +848,26 @@ void CAN_Task(void *pvParameters) {
         motors[0].change = received_data[1];
         motors[1].change = received_data[2];
 
-        motors[2].change = received_data[3] * 142 / 15;
+        motors[2].target_angle = received_data[3]* 142 / 15;
 
         bool change = received_data[8];
+        // bool last_sw = false;
+        // bool zlimit = received_out_data[1];
+        // bool rlimit = received_out_data[2];
+        // bool sw = received_data[0];
 
-        bool last_sw = false;
-        bool zlimit = received_out_data[1];
-        bool rlimit = received_out_data[2];
-        bool sw = received_out_data[3];
-
+        
         if (last_change == false && change == true) {
             // MANUAL → AUTO(位置制御) に変わった瞬間
-            for (int i = 0; i < NUM_MOTORS; i++) {
+            for (int i = 0; i < 2; i++) {
                 motors[i].target_angle = motors[i].target_angle + motors[i].change;
             }
         }
         last_change = change; // 状態更新
-
+        
+     
+         //motors[2].target_angle = sw*motors[2]._angle
+    
         // モード切り替え検出
 
         bool last_zlimit = false;
@@ -921,15 +924,15 @@ void CAN_Task(void *pvParameters) {
                 motors[idx].vel = (motors[idx].rpm / gear_ratio);
 
                 // 原点補正処理
-                if (sw != last_sw) {
-                    // motors[2]の角度をゼロに補正
-                    motors[2].encoder_offset = motors[2].encoder;
-                    motors[2].rotation_count = 0;
-                    motors[2].total_encoder = 0;
-                    motors[2].angle = 0.0;
+                // if (sw != last_sw) {
+                //     // motors[2]の角度をゼロに補正
+                //     motors[2].encoder_offset = motors[2].encoder;
+                //     motors[2].rotation_count = 0;
+                //     motors[2].total_encoder = 0;
+                //     motors[2].angle = 0.0;
 
-                    last_sw = sw;
-                }
+                //     last_sw = sw;
+                // }
             }
             packetSize = CAN.parsePacket(); // 次の受信も処理
         }
@@ -939,7 +942,7 @@ void CAN_Task(void *pvParameters) {
         if (last_MANUALMODE == true && MANUALMODE == false) {
             // MANUAL → AUTO(位置制御) に変わった瞬間
             for (int i = 0; i < NUM_MOTORS; i++) {
-                motors[i].target_angle = motors[i].angle; // 現在位置を目標にする
+              //  motors[i].target_angle = motors[i].angle; // 現在位置を目標にする
                 motors[i].pos_integral = 0;               // PID積分リセット
                 motors[i].pos_error_prev = 0;             // 誤差リセット
             }
@@ -960,47 +963,48 @@ void CAN_Task(void *pvParameters) {
             float th_out = pid(motors[2].target_angle, motors[2].angle,
                                motors[2].pos_error_prev, motors[2].pos_integral,
                                kp_th, ki_th, kd_th, dt);
-            motors[2].output_current = constrain_double(th_out, -current_limit_A, current_limit_A);
+            motors[2].output_current = constrain_double(th_out, -0.8, 0.8);
             cur_cmd[2] = motors[2].output_current;
 
         } else if (MANUALMODE == true) {
 
             for (int i = 0; i < 2; i++) {
-                if (zlimit && !last_zlimit) {
-                    motors[i].target_rpm = -50;
-                } else {
-                    motors[i].target_rpm = received_data[i + 4];
-                }
-                zlimit = last_zlimit;
-                if (rlimit == 1) {
-                    motors[i].target_rpm = -50 / motors[i].target_rpm;
-                } else {
-                    motors[i].target_rpm = received_data[i + 4];
-                }
-                rlimit = last_rlimit;
-            }
-            for (int i = 0; i < NUM_MOTORS; i++) {
-                float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
-                                        motors[i].pos_error_prev, motors[i].vel_prop_prev, motors[i].vel_output,
-                                        kp_vel, ki_vel, kd_vel, dt);
-                motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+                float pos_out = pid(motors[i].target_angle, motors[i].angle,
+                                    motors[i].pos_error_prev, motors[i].pos_integral,
+                                    kp_pos, ki_pos, kd_pos, dt);
+                motors[i].output_current = constrain_double(pos_out, -current_limit_A, current_limit_A);
                 cur_cmd[i] = motors[i].output_current;
-
-                // if (cur_cmd[2]<=0.03 && cur_cmd[2]>=-0.03)
-                // cur_cmd[2] = 0;
             }
+            // θの制御
+            float th_out = pid(motors[2].target_angle, motors[2].angle,
+                               motors[2].pos_error_prev, motors[2].pos_integral,
+                               kp_th, ki_th, kd_th, dt);
+            motors[2].output_current = constrain_double(th_out, -0.8, 0.8);
+            cur_cmd[2] = motors[2].output_current;
+
+
+            // for (int i = 0; i < NUM_MOTORS; i++) {
+            //     float vel_out = pid_vel(motors[i].target_rpm, motors[i].vel,
+            //                             motors[i].pos_error_prev, motors[i].vel_prop_prev, motors[i].vel_output,
+            //                             kp_vel, ki_vel, kd_vel, dt);
+            //     motors[i].output_current = constrain_double(vel_out, -current_limit_A, current_limit_A);
+            //     cur_cmd[i] = motors[i].output_current;
+
+            //     // if (cur_cmd[2]<=0.1 && cur_cmd[2]>=-0.1)
+            //     //  cur_cmd[2] = 0;
+            // }
         }
         // --- 電流指令送信（2台分まとめて） ---
         send_cur(cur_cmd);
 
         // サーボ--------
-        int angle1 = (motors[2].angle * 15 / 142) + 135;
+        int angle1 = received_data[3] + received_data[9] ;
         if (angle1 < SERVO1_MIN_DEG)
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
             angle1 = SERVO1_MAX_DEG;
-        if (motors[2].angle * 15 / 142 > -100 && motors[2].angle * 15 / 142 < -80)
-            angle1 = 135;
+        if (motors[2].angle * 15 / 142 > -10 && motors[2].angle * 15 / 142 < 10)
+            angle1 = 0;
 
         int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
         int duty1 = (int)(us1 * SERVO_PWM_SCALE);
