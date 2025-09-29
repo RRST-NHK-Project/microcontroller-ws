@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Output_Task.h>
 #include <pin_defs.h>
 
