@@ -1,8 +1,8 @@
 
-/*
-ros2io Rev.2
+/*<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+ros2io Rev.3
 Copyright © 2025 RRST-NHK-Project. All rights reserved.
-*/
+<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>*/
 
 /*
 For NHK-Robocon-2026
@@ -16,23 +16,6 @@ TODO:ROSからのモード選択機能の実装（保留中）
 TODO:定数定義の統一
 FIXME:Pub、Subの同時使用時の遅延問題
 */
-
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
-//***********キャチロボ応急処置適用中***********/
 
 #include <Arduino.h>
 #include <CAN.h>
@@ -92,147 +75,9 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
-// 各アクチュエータの総数を定義
-#define MD 8
-#define SERVO 8
-#define SV 7
-
-// 受信配列の要素数を定義
-#define MAX_ARRAY_SIZE 25
-/*
-0:モード選択
-1~8:MD
-9~16:サーボ
-17~23:ソレノイドバルブ
-24:予備
-*/
-
-// パルスカウンタの上限・下限の定義
-#define COUNTER_H_LIM 32767
-#define COUNTER_L_LIM -32768
-#define PCNT_FILTER_VALUE 1023 // 0~1023, 1 = 12.5ns
-
-// MD出力の上限値
-#define MD_PWM_MAX 255
-
-// ピンの定義 //
-// 状態表示LED
-#define LED 0
-
-// エンコーダ
-#define ENC1_A 12
-#define ENC1_B 13
-#define ENC2_A 14
-#define ENC2_B 15
-#define ENC3_A 21
-#define ENC3_B 22
-#define ENC4_A 23
-#define ENC4_B 25
-
-// MD PWM
-#define MD1P 21
-#define MD2P 22
-#define MD3P 23
-#define MD4P 25
-#define MD5P 26
-#define MD6P 27
-#define MD7P 2
-#define MD8P 4
-
-// MD DIR
-#define MD1D 12
-#define MD2D 13
-#define MD3D 14
-#define MD4D 15
-#define MD5D 32
-#define MD6D 33
-#define MD7D 5
-#define MD8D 19
-
-// サーボ
-#define SERVO1 16
-#define SERVO2 17
-#define SERVO3 18
-#define SERVO4 19
-#define SERVO5 21
-#define SERVO6 22
-#define SERVO7 23
-#define SERVO8 25
-
-// ソレノイドバルブ
-#define SV1 2
-#define SV2 4
-#define SV3 5
-#define SV4 12
-#define SV5 13
-#define SV6 14
-#define SV7 15
-
-// スイッチ
-#define SW1 26
-#define SW2 27
-#define SW3 32
-#define SW4 33
-#define SW5 2
-#define SW6 19
-#define SW7 14
-#define SW8 15
-
-// ロボマス
-#define CAN_RX 4
-#define CAN_TX 5
-// PWM関連の設定値を定義
-// MD用
-#define MD_PWM_FREQ 20000   // MDのPWM周波数
-#define MD_PWM_RESOLUTION 8 // MDのPWM分解能（8ビット）
-
-// サーボ用
-#define SERVO_PWM_FREQ 50       // サーボPWM周波数
-#define SERVO_PWM_RESOLUTION 16 // サーボPWM分解能（16ビット）
-
-#define SERVO_PWM_PERIOD_US (1000000.0 / SERVO_PWM_FREQ) // 周波数から周期を計算
-#define SERVO_PWM_MAX_DUTY ((1 << SERVO_PWM_RESOLUTION) - 1)
-#define SERVO_PWM_SCALE (SERVO_PWM_MAX_DUTY / SERVO_PWM_PERIOD_US)
-
-#define SERVO1_MIN_US 500
-#define SERVO1_MAX_US 2500
-#define SERVO1_MIN_DEG 0
-#define SERVO1_MAX_DEG 180
-
-#define SERVO2_MIN_US 500
-#define SERVO2_MAX_US 2500
-#define SERVO2_MIN_DEG 0
-#define SERVO2_MAX_DEG 180
-
-#define SERVO3_MIN_US 500
-#define SERVO3_MAX_US 2500
-#define SERVO3_MIN_DEG 0
-#define SERVO3_MAX_DEG 180
-
-#define SERVO4_MIN_US 500
-#define SERVO4_MAX_US 2500
-#define SERVO4_MIN_DEG 0
-#define SERVO4_MAX_DEG 180
-
-#define SERVO5_MIN_US 500
-#define SERVO5_MAX_US 2500
-#define SERVO5_MIN_DEG 0
-#define SERVO5_MAX_DEG 180
-
-#define SERVO6_MIN_US 500
-#define SERVO6_MAX_US 2500
-#define SERVO6_MIN_DEG 0
-#define SERVO6_MAX_DEG 180
-
-#define SERVO7_MIN_US 500
-#define SERVO7_MAX_US 2500
-#define SERVO7_MIN_DEG 0
-#define SERVO7_MAX_DEG 180
-
-#define SERVO8_MIN_US 500
-#define SERVO8_MAX_US 2500
-#define SERVO8_MIN_DEG 0
-#define SERVO8_MAX_DEG 180
+// 　自作ライブラリ（関数・定数をまとめてる）
+#include "io_tasks.h"
+#include "pin_defs.h"
 
 // ********* CAN関連 ********* //
 
@@ -331,8 +176,8 @@ String subscriber_topic_name = "to_esp32_" + String(ID, DEC);
 int32_t buffer[MAX_ARRAY_SIZE];
 
 // 受信データ格納用
-volatile int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
-volatile size_t received_size = 0;              // 受信データのサイズ
+int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
+size_t received_size = 0;              // 受信データのサイズ //2025/09/29: volatileを削除
 
 // エンコーダのカウント格納用
 int16_t count[4] = {0};
@@ -406,10 +251,6 @@ void setup() {
         ros_init();
         mode5_init();
         break;
-    case 6:
-        ros_init();
-        mode6_init();
-        break;
     default:;
         ;
     }
@@ -472,42 +313,6 @@ void ros_init() {
 
     vTaskDelete(led_blink100_handle);
     led_blink100_handle = NULL;
-}
-
-void MD_Output_Task(void *pvParameters) {
-    while (1) {
-
-        // MD出力の制限
-        received_data[1] = constrain(received_data[1], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[5] = constrain(received_data[5], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[6] = constrain(received_data[6], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[7] = constrain(received_data[7], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[8] = constrain(received_data[8], -MD_PWM_MAX, MD_PWM_MAX);
-
-        // ピンの操作
-        digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
-        digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
-        digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
-        digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
-        digitalWrite(MD5D, received_data[5] > 0 ? HIGH : LOW);
-        digitalWrite(MD6D, received_data[6] > 0 ? HIGH : LOW);
-        digitalWrite(MD7D, received_data[7] > 0 ? HIGH : LOW);
-        digitalWrite(MD8D, received_data[8] > 0 ? HIGH : LOW);
-
-        ledcWrite(MD1P, abs(received_data[1]));
-        ledcWrite(MD2P, abs(received_data[2]));
-        ledcWrite(MD3P, abs(received_data[3]));
-        ledcWrite(MD4P, abs(received_data[4]));
-        ledcWrite(MD5P, abs(received_data[5]));
-        ledcWrite(MD6P, abs(received_data[6]));
-        ledcWrite(MD7P, abs(received_data[7]));
-        ledcWrite(MD8P, abs(received_data[8]));
-
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
-    }
 }
 
 void ENC_SW_Read_Publish_Task(void *pvParameters) {
@@ -951,94 +756,6 @@ void C610_FB_Task(void *pvParameters) {
     }
 }
 
-void CR25_Task(void *pvParameters) {
-    while (1) {
-
-        // サーボ1
-        int angle1 = received_data[9];
-        if (angle1 < SERVO1_MIN_DEG)
-            angle1 = SERVO1_MIN_DEG;
-        if (angle1 > SERVO1_MAX_DEG)
-            angle1 = SERVO1_MAX_DEG;
-        int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
-        int duty1 = (int)(us1 * SERVO_PWM_SCALE);
-        ledcWrite(SERVO1, duty1);
-
-        digitalWrite(SV1, received_data[17] ? HIGH : LOW);
-
-        unsigned long now = millis();
-        float dt = (now - lastPidTime) / 1000.0f;
-        if (dt <= 0)
-            dt = 0.000001f; // dtが0にならないよう補正
-        lastPidTime = now;
-
-        // -------- 目標角度の更新 -------- //
-        // received_data[1]～[4] にモータ1～4の目標角度が入っている前提
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            target_angle[i] = received_data[i + 1];
-        }
-
-        // -------- CAN受信処理 -------- //
-        int packetSize = CAN.parsePacket();
-        while (packetSize) {
-            int id = CAN.packetId();
-            if (id >= 0x201 && id < 0x201 + NUM_MOTORS) {
-                int motor_index = id - 0x201;
-                uint8_t rx[8];
-                for (int i = 0; i < 8; i++)
-                    rx[i] = CAN.read();
-
-                // エンコーダ・速度・電流取得
-                encoders[motor_index] = (rx[0] << 8) | rx[1];
-                rpms[motor_index] = (rx[2] << 8) | rx[3];
-                currents[motor_index] = (rx[4] << 8) | rx[5];
-
-                // 初回オフセット設定
-                if (!offset_ok[motor_index]) {
-                    encoder_offset[motor_index] = encoders[motor_index];
-                    last_encoder[motor_index] = -1;
-                    rotation_count[motor_index] = 0;
-                    total_encoder[motor_index] = 0;
-                    pos_integral[motor_index] = 0;
-                    pos_error_prev[motor_index] = 0;
-                    offset_ok[motor_index] = true;
-                }
-
-                // エンコーダ差分とラップ補正
-                int enc_relative = encoders[motor_index] - encoder_offset[motor_index];
-                if (enc_relative < 0)
-                    enc_relative += ENCODER_MAX;
-
-                if (last_encoder[motor_index] != -1) {
-                    int diff = encoders[motor_index] - last_encoder[motor_index];
-                    if (diff > HALF_ENCODER)
-                        rotation_count[motor_index]--;
-                    else if (diff < -HALF_ENCODER)
-                        rotation_count[motor_index]++;
-                }
-
-                last_encoder[motor_index] = encoders[motor_index];
-                total_encoder[motor_index] = rotation_count[motor_index] * ENCODER_MAX + encoders[motor_index];
-                angles[motor_index] = total_encoder[motor_index] * (360.0f / (ENCODER_MAX * gear_ratio));
-                vels[motor_index] = (rpms[motor_index] / gear_ratio) * 360.0f / 60.0f;
-            }
-
-            packetSize = CAN.parsePacket(); // 次の受信も処理
-        }
-        // -------- PID制御（全モータ） -------- //
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            pos_output[i] = pid(target_angle[i], angles[i], pos_error_prev[i], pos_integral[i],
-                                kp_pos, ki_pos, kd_pos, dt);
-            motor_output_current[i] = constrain_double(pos_output[i], -current_limit_A, current_limit_A);
-        }
-
-        // -------- CAN送信（全モータ） -------- //
-        send_cur_all(motor_output_current);
-
-        delay(1);
-    }
-}
-
 void enc_init() {
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
@@ -1345,36 +1062,6 @@ void mode5_init() {
         4096,
         NULL,
         2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
-}
-
-void mode6_init() {
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        while (1)
-            ;
-    }
-
-    // サーボのPWMの初期化
-    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    pinMode(SV1, OUTPUT);
-
-    xTaskCreateUniversal(
-        CR25_Task,
-        "CR25_Task",
-        8192,
-        NULL,
-        20, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
 
