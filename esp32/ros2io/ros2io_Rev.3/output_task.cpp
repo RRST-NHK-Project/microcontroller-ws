@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include <Output_Task.h>
-#include <pin_defs.h>
+#include <output_task.h>
+#include <defs.h>
+#include <esp32-hal-ledc.h>
 
 // 受信データ格納用
 extern int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ

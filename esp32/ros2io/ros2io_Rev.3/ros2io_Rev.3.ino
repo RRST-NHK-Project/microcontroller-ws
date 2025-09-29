@@ -21,49 +21,6 @@ FIXME:Pub、Subの同時使用時の遅延問題
 #include <CAN.h>
 #include <esp32-hal-ledc.h>
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-// **複数のESPを使用する場合はIDを変更** //
-#define ID 0
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-// **使用する基板に合わせてモードを変更** //
-#define MODE 6
-/*
-0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
-1:MD専用
-2:センサ類（エンコーダー・スイッチ・C610からのフィードバック）
-3:その他アクチュエータ（サーボ・ソレノイドバルブ）
-4:サーボ・ソレノイドバルブ・スイッチ＋エンコーダー（Pub,Subを同時にしたときの遅延問題が解決できていないため未実装）
-5:ロボマス制御
-*/
-// **テスト内容変更** //
-#define TEST_MODE 0
-/*
-0:何もせず待機
-1:MDテスト
-2:ENC/SWテスト
-3:SERVO/SVテスト
-4:未実装
-5:CANテスト
-*/
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-//**テストモード(MODE 0)について** //
-/*
-テストモードはROSと接続せずに基板のテストやデバッグを行うためのモードです。
-MODEを0に変更することで有効化され、TEST_MODEを変更することでテスト内容を変更します。
-書き込み後シリアルモニターでEnterキーを押すとテストモードの動作が開始します。
-テスト内容によっては機体の暴走や破損につながるので機体搭載時には「絶対」に実行しないでください。
-*/
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-// ROSとの接続にはエージェントが必要です。下記コマンドでエージェント立ち上げを行ってください（Dockerのインストールが必要）。USBポートは適宜変更すること。
-// sudo docker run -it --rm -v /dev:/dev --privileged --net=host microros/micro-ros-agent:jazzy serial --dev /dev/ttyUSB0 -v6
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
 // microROS関連
 #include <micro_ros_arduino.h>
 #include <rcl/error_handling.h>
@@ -75,9 +32,12 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
-// 　自作ライブラリ（関数・定数をまとめてる）
-#include "Output_Task.h"
-#include "pin_defs.h"
+// 自作ヘッダーファイル
+#include "config.h"      //モードやIDを管理
+#include "defs.h"        //定数を管理
+#include "input_task.h"  //入力系のタスクを管理
+#include "output_task.h" //出力系のタスクを管理
+#include "ros_defs.h"    //microROS関連を管理
 
 // ********* CAN関連 ********* //
 
@@ -158,69 +118,6 @@ float constrain_double(float val, float min_val, float max_val) {
 
 // ********* CAN関連ここまで ********* //
 
-rcl_subscription_t subscriber;
-rcl_publisher_t publisher;
-// rcl_timer_t timer;
-std_msgs__msg__Int32MultiArray msg;
-rclc_executor_t executor;
-rclc_support_t support;
-rcl_allocator_t allocator;
-rcl_node_t node;
-
-// ノード名とトピック名の定義（ID付き）
-String node_name = "esp32node_" + String(ID, DEC);
-String publisher_topic_name = "from_esp32_" + String(ID, DEC);
-String subscriber_topic_name = "to_esp32_" + String(ID, DEC);
-
-// 受信データ格納用のバッファ
-int32_t buffer[MAX_ARRAY_SIZE];
-
-// 受信データ格納用
-int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
-size_t received_size = 0;              // 受信データのサイズ //2025/09/29: volatileを削除
-
-// エンコーダのカウント格納用
-int16_t count[4] = {0};
-
-// スイッチの状態格納用
-bool sw_state[4] = {false};
-
-// 詳細デバッグ
-#define RCCHECK(fn)                                                                           \
-    do {                                                                                      \
-        rcl_ret_t temp_rc = fn;                                                               \
-        if ((temp_rc) != RCL_RET_OK) {                                                        \
-            /* デバッグ出力 */                                                                \
-            /* SerialBT.printf("RCL error at %s:%d -> %d\n", __FILE__, __LINE__, temp_rc); */ \
-            error_loop();                                                                     \
-        }                                                                                     \
-    } while (0)
-
-// エラー発生時のループ
-void error_loop() {
-    while (1) {
-        // このエラーが表示される場合は、シリアルモニターを閉じているか確認
-        delay(1000);
-    }
-}
-
-// コールバック内でグローバル変数にコピー
-void subscription_callback(const void *msgin) {
-    const std_msgs__msg__Int32MultiArray *msg = (const std_msgs__msg__Int32MultiArray *)msgin;
-    size_t len = msg->data.size;
-    if (len > MAX_ARRAY_SIZE)
-        len = MAX_ARRAY_SIZE;
-
-    for (size_t i = 0; i < len; i++) {
-        received_data[i] = msg->data.data[i];
-    }
-    received_size = len;
-}
-
-// ===== タスクハンドルのグローバル変数 =====
-TaskHandle_t led_blink100_handle = NULL;
-TaskHandle_t led_pwm_handle = NULL;
-
 void setup() {
 
     pinMode(LED, OUTPUT);
@@ -260,91 +157,6 @@ void loop() {
     if (MODE != 0) {
         RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
         vTaskDelay(1);
-    }
-}
-
-// micro-ROSの初期化
-void ros_init() {
-    delay(2000);
-
-    set_microros_transports();
-    allocator = rcl_get_default_allocator();
-
-    xTaskCreateUniversal(
-        LED_Blink100_Task,
-        "LED_Blink100_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_blink100_handle,
-        APP_CPU_NUM);
-
-    // Agentと接続できるまでリトライ
-    while (rclc_support_init(&support, 0, NULL, &allocator) != RCL_RET_OK) {
-        delay(1000); // 1秒待つ
-    }
-
-    // Nodeの初期化
-    RCCHECK(rclc_node_init_default(&node, node_name.c_str(), "", &support));
-
-    // Subscriberの初期化
-    RCCHECK(rclc_subscription_init_default(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        subscriber_topic_name.c_str()));
-
-    // Publisherの初期化
-    RCCHECK(rclc_publisher_init_default(
-        &publisher,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        publisher_topic_name.c_str()));
-
-    std_msgs__msg__Int32MultiArray__init(&msg);
-    msg.data.data = buffer;
-    msg.data.size = 0;
-    msg.data.capacity = MAX_ARRAY_SIZE;
-
-    RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator)); // 以下のサービスの数でexecutorのサイズを変える。
-
-    // Executorにサービスを追加
-    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
-
-    vTaskDelete(led_blink100_handle);
-    led_blink100_handle = NULL;
-}
-
-void ENC_SW_Read_Publish_Task(void *pvParameters) {
-    while (1) {
-
-        // パルスカウンタの値を取得
-        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
-        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
-
-        // スイッチの状態を取得
-        sw_state[0] = (digitalRead(SW1) == HIGH);
-        sw_state[1] = (digitalRead(SW2) == HIGH);
-        sw_state[2] = (digitalRead(SW3) == HIGH);
-        sw_state[3] = (digitalRead(SW4) == HIGH);
-
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        msg.data.data[4] = sw_state[0];
-        msg.data.data[5] = sw_state[1];
-        msg.data.data[6] = sw_state[2];
-        msg.data.data[7] = sw_state[3];
-
-        // Publish
-        if (MODE != 0) {
-            RCCHECK(rcl_publish(&publisher, &msg, NULL));
-        }
-
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
     }
 }
 
@@ -629,152 +441,6 @@ void C610_FB_Task(void *pvParameters) {
 
         delay(1);
     }
-}
-
-void enc_init() {
-    // プルアップを有効化
-    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
-
-    // パルスカウンタの設定
-    pcnt_config_t pcnt_config1 = {};
-    pcnt_config1.pulse_gpio_num = ENC1_A;
-    pcnt_config1.ctrl_gpio_num = ENC1_B;
-    pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config1.pos_mode = PCNT_COUNT_INC;
-    pcnt_config1.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config1.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config1.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config1.unit = PCNT_UNIT_0;
-    pcnt_config1.channel = PCNT_CHANNEL_0;
-
-    pcnt_config_t pcnt_config2 = {};
-    pcnt_config2.pulse_gpio_num = ENC1_B;
-    pcnt_config2.ctrl_gpio_num = ENC1_A;
-    pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config2.pos_mode = PCNT_COUNT_INC;
-    pcnt_config2.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config2.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config2.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config2.unit = PCNT_UNIT_0;
-    pcnt_config2.channel = PCNT_CHANNEL_1;
-
-    pcnt_config_t pcnt_config3 = {};
-    pcnt_config3.pulse_gpio_num = ENC2_A;
-    pcnt_config3.ctrl_gpio_num = ENC2_B;
-    pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config3.pos_mode = PCNT_COUNT_INC;
-    pcnt_config3.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config3.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config3.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config3.unit = PCNT_UNIT_1;
-    pcnt_config3.channel = PCNT_CHANNEL_0;
-
-    pcnt_config_t pcnt_config4 = {};
-    pcnt_config4.pulse_gpio_num = ENC2_B;
-    pcnt_config4.ctrl_gpio_num = ENC2_A;
-    pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config4.pos_mode = PCNT_COUNT_INC;
-    pcnt_config4.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config4.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config4.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config4.unit = PCNT_UNIT_1;
-    pcnt_config4.channel = PCNT_CHANNEL_1;
-
-    pcnt_config_t pcnt_config5 = {};
-    pcnt_config5.pulse_gpio_num = ENC3_A;
-    pcnt_config5.ctrl_gpio_num = ENC3_B;
-    pcnt_config5.lctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config5.hctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config5.pos_mode = PCNT_COUNT_INC;
-    pcnt_config5.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config5.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config5.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config5.unit = PCNT_UNIT_2;
-    pcnt_config5.channel = PCNT_CHANNEL_0;
-
-    pcnt_config_t pcnt_config6 = {};
-    pcnt_config6.pulse_gpio_num = ENC3_B;
-    pcnt_config6.ctrl_gpio_num = ENC3_A;
-    pcnt_config6.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config6.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config6.pos_mode = PCNT_COUNT_INC;
-    pcnt_config6.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config6.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config6.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config6.unit = PCNT_UNIT_2;
-    pcnt_config6.channel = PCNT_CHANNEL_1;
-
-    pcnt_config_t pcnt_config7 = {};
-    pcnt_config7.pulse_gpio_num = ENC4_A;
-    pcnt_config7.ctrl_gpio_num = ENC4_B;
-    pcnt_config7.lctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config7.hctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config7.pos_mode = PCNT_COUNT_INC;
-    pcnt_config7.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config7.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config7.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config7.unit = PCNT_UNIT_3;
-    pcnt_config7.channel = PCNT_CHANNEL_0;
-
-    pcnt_config_t pcnt_config8 = {};
-    pcnt_config8.pulse_gpio_num = ENC4_B;
-    pcnt_config8.ctrl_gpio_num = ENC4_A;
-    pcnt_config8.lctrl_mode = PCNT_MODE_REVERSE;
-    pcnt_config8.hctrl_mode = PCNT_MODE_KEEP;
-    pcnt_config8.pos_mode = PCNT_COUNT_INC;
-    pcnt_config8.neg_mode = PCNT_COUNT_DEC;
-    pcnt_config8.counter_h_lim = COUNTER_H_LIM;
-    pcnt_config8.counter_l_lim = COUNTER_L_LIM;
-    pcnt_config8.unit = PCNT_UNIT_3;
-    pcnt_config8.channel = PCNT_CHANNEL_1;
-
-    // パルスカウンタの初期化
-    pcnt_unit_config(&pcnt_config1);
-    pcnt_unit_config(&pcnt_config2);
-    pcnt_unit_config(&pcnt_config3);
-    pcnt_unit_config(&pcnt_config4);
-    pcnt_unit_config(&pcnt_config5);
-    pcnt_unit_config(&pcnt_config6);
-    pcnt_unit_config(&pcnt_config7);
-    pcnt_unit_config(&pcnt_config8);
-
-    pcnt_counter_pause(PCNT_UNIT_0);
-    pcnt_counter_pause(PCNT_UNIT_1);
-    pcnt_counter_pause(PCNT_UNIT_2);
-    pcnt_counter_pause(PCNT_UNIT_3);
-
-    pcnt_counter_clear(PCNT_UNIT_0);
-    pcnt_counter_clear(PCNT_UNIT_1);
-    pcnt_counter_clear(PCNT_UNIT_2);
-    pcnt_counter_clear(PCNT_UNIT_3);
-
-    pcnt_counter_resume(PCNT_UNIT_0);
-    pcnt_counter_resume(PCNT_UNIT_1);
-    pcnt_counter_resume(PCNT_UNIT_2);
-    pcnt_counter_resume(PCNT_UNIT_3);
-
-    // チャタリング防止のフィルターを有効化
-    pcnt_filter_enable(PCNT_UNIT_0);
-    pcnt_filter_enable(PCNT_UNIT_1);
-    pcnt_filter_enable(PCNT_UNIT_2);
-    pcnt_filter_enable(PCNT_UNIT_3);
-
-    // フィルター値を設定
-    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_2, PCNT_FILTER_VALUE);
-    pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
 }
 
 // 各モードの初期化関数
