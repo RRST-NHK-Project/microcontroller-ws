@@ -37,7 +37,7 @@ void MD_Output_Task(void *pvParameters) {
         ledcWrite(MD7P, abs(received_data[7]));
         ledcWrite(MD8P, abs(received_data[8]));
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1); // WDTのリセット(必須)
     }
 }
 
@@ -124,7 +124,7 @@ void Servo_Output_Task(void *pvParameters) {
         int duty8 = (int)(us8 * SERVO_PWM_SCALE);
         ledcWrite(SERVO8, duty8);
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1); // WDTのリセット(必須)
     }
 }
 
@@ -139,7 +139,7 @@ void SV_Task(void *pvParameters) {
         digitalWrite(SV6, received_data[22] ? HIGH : LOW);
         digitalWrite(SV7, received_data[23] ? HIGH : LOW);
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1); // WDTのリセット(必須)
     }
 }
 
