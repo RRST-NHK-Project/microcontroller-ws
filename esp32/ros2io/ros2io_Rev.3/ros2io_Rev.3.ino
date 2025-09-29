@@ -60,7 +60,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-// ROSとの接続にはエージェントが必要です。下記コマンドでエージェント立ち上げを行ってください。USBポートは適宜変更してください。Dockerのインストールが必要です。
+// ROSとの接続にはエージェントが必要です。下記コマンドでエージェント立ち上げを行ってください（Dockerのインストールが必要）。USBポートは適宜変更すること。
 // sudo docker run -it --rm -v /dev:/dev --privileged --net=host microros/micro-ros-agent:jazzy serial --dev /dev/ttyUSB0 -v6
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
@@ -76,7 +76,7 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 #include "driver/pcnt.h"
 
 // 　自作ライブラリ（関数・定数をまとめてる）
-#include "io_tasks.h"
+#include "Output_Task.h"
 #include "pin_defs.h"
 
 // ********* CAN関連 ********* //
