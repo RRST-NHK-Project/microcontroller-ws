@@ -1,8 +1,8 @@
-#include <Arduino.h>
 #include "input_task.h"
 #include "defs.h"
-#include "ros_defs.h"
 #include "output_task.h"
+#include "ros_defs.h"
+#include <Arduino.h>
 
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
@@ -36,7 +36,7 @@ void ENC_SW_Read_Publish_Task(void *pvParameters) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
         }
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1); // WDTのリセット(必須)
     }
 }
 
