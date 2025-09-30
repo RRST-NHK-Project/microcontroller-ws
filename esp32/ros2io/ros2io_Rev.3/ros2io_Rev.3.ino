@@ -1,4 +1,3 @@
-
 /*<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 ros2io Rev.3
 Copyright © 2025 RRST-NHK-Project. All rights reserved.
