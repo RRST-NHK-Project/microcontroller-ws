@@ -9,6 +9,7 @@ For NHK-Robocon-2026
 ESP32用microROSプログラム。ROSメッセージからマイコンのIOを操作する。
 ライブラリはros2io/librariesに格納。修正済みのライブラリを使用しているため同梱のZipを使用すること。
 ボードマネージャーはesp32 by Espressif Systemsを選択
+config.hでIDとMODEを設定する。
 */
 
 /*
