@@ -39,9 +39,9 @@ extern float motor_output_current[NUM_MOTORS]; // 出力電流
 extern unsigned long lastPidTime; // PID制御用タイマー
 
 // -------- PIDゲイン -------- //
-extern float kp_pos; // 角度比例ゲイン
-extern float ki_pos; // 角度積分ゲイン
-extern float kd_pos; // 角度微分ゲイン
+extern float kp_vel; // 角度比例ゲイン
+extern float ki_vel; // 角度積分ゲイン
+extern float kd_vel; // 角度微分ゲイン
 
 // 複数モータ対応CAN送信関数
 void send_cur_all(float cur_array[NUM_MOTORS]);
@@ -49,6 +49,11 @@ void send_cur_all(float cur_array[NUM_MOTORS]);
 // PID計算関数（単独モータ用だが複数モータでループ使用可能）
 float pid(float setpoint, float input, float &error_prev, float &integral,
           float kp, float ki, float kd, float dt);
+
+//速度制御用PID(普通のPIDだったら振動しているのでこれ推奨)
+float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, float &output,
+          float kp, float ki, float kd, float dt);
+
 
 // 値制限関数
 float constrain_double(float val, float min_val, float max_val);
