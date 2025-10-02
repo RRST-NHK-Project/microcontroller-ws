@@ -67,7 +67,7 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
     return kp * error + ki * integral + kd * derivative;
 }
 
-// 値制限関数
+// 値制限関数(正直これはいらんかも)
 float constrain_double(float val, float min_val, float max_val) {
     if (val < min_val)
         return min_val;
