@@ -62,6 +62,6 @@ float constrain_double(float val, float min_val, float max_val);
 
 void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters);
 
-void C610_Task(void *pvParameters);
+void C610_vel_Task(void *pvParameters);
 
-void C610_FB_Task(void *pvParameters);
+

@@ -34,6 +34,7 @@ FIXME:Pub、Subの同時使用時の遅延問題
 
 // 自作ヘッダーファイル
 #include "can_defs.h"    //CAN関連を管理
+#include "vel_pid.h"    //速度制御用PIDを管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
 #include "input_task.h"  //入力系のタスクを管理
@@ -69,6 +70,10 @@ void setup() {
     case 5:
         ros_init();
         mode5_init();
+        break;
+    case 6://実験用いらなくなったら消す
+        ros_init();
+        mode6_init();
         break;
     default:;
         ;
@@ -254,6 +259,34 @@ void mode5_init() {
         &led_pwm_handle,
         APP_CPU_NUM);
 }
+
+void mode6_init() {
+//ロボマスに速度制御用PIDを組み込んだ実験用モード
+    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+    if (!CAN.begin(1000E3)) {
+        while (1)
+            ;
+    }
+
+    xTaskCreateUniversal(
+        C610_vel_Task,
+        "C610_vel_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);
+}
+
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
