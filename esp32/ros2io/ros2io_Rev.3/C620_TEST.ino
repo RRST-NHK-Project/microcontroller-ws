@@ -3,7 +3,7 @@
 //---------定義--------//
 const int ENCODER_MAX = 8192; //エンコーダの最大
 const int HALF_ENCODER = ENCODER_MAX / 2;
-constexpr float gear_ratio = 19.0f; // 減速比
+constexpr float gear_ratio = 19.2f; // 減速比
 constexpr int motor_id = 1; //モータID
 // constexpr int   CAN_ID_TX = 0x200 + 2;             // 1〜4にまとめて送るグループID
 // constexpr int   CAN_ID_RX = 0x200 + MOTOR_ID;      // C610フィードバック
@@ -27,27 +27,29 @@ float limit = 19520;
 float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
-float target_angle = 720.0; //目標角度
-//float encoder_count = 0.0; //現在のエンコーダの値
+float target_angle = 360.0; //目標角度
+float target_rpm = 100.0; //現在のエンコーダの値
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
 float pos_output = 0;            // 角度PID出力（目標速度）
 
 float vel_input = 0.0; //現在の速度
 float vel_error_prev = 0.0;        // 前回の速度誤差
+float vel_prop_prev = 0;
 float vel_integral = 0.0;          // 速度積分項
 float vel_output = 0;            // 速度PID出力
+float vel_out = 0;
 
 unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 //------------PIDゲイン-----------//
 float kp_pos = 0.8;//0.4;
-float ki_pos = 0.01;
+float ki_pos = 0.03;
 float kd_pos = 0.02;//0.02;
 
-// float kp_vel = 1.0;
-// float ki_vel = 0.01;
-// float kd_vel = 0.05;
+// float kp_vel = 0.18;
+// float ki_vel = 0.0;
+// float kd_vel = 0.0005;  // 微分は控えめに
 
 
 
@@ -55,6 +57,21 @@ float kd_pos = 0.02;//0.02;
 float pid(float setpoint, float input, float &error_prev, float &integral, float kp, float ki, float kd, float dt);
 //setpoint:目標値,input:現在の値,&error_prev:前回の誤差,&integral:積分値
 float constrain_double(float val, float min_val, float max_val);// 範囲制限
+
+float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, float &output,
+          float kp, float ki, float kd, float dt){
+            float error = setpoint - input;
+            float prop = error - error_prev;
+            float deriv = prop - prop_prev;
+            float du = kp * prop + ki * error * dt + kd * deriv;
+            output += du;
+
+            prop_prev = prop;
+            error_prev = error;
+
+            return output;
+        }
+
 
 void send_cur(float cur) {
   constexpr float MAX_CUR = 10;
@@ -115,6 +132,7 @@ void setup() {
 
 
 void loop() {
+
   unsigned long now = millis();
     float dt = (now - lastPidTime) / 1000.0;
     if(dt <= 0) dt = 0.000001f; // dtが0にならないようにする
@@ -122,7 +140,7 @@ void loop() {
 
   // 1. CAN受信
   int packetSize = CAN.parsePacket();
-    while (packetSize) {  // 複数パケットも処理
+    while(packetSize) {  // while → if
         if (CAN.packetId() == 0x201) { // モータID=1
             uint8_t rx[8];
             for(int i=0;i<8;i++) rx[i] = CAN.read();
@@ -153,24 +171,28 @@ void loop() {
             last_encoder_count = encoder_count;
             total_encoder_count = rotation_count * ENCODER_MAX + encoder_count;
             angle = total_encoder_count * (360.0 / (8192.0 * gear_ratio));
-            vel_input = (rpm / gear_ratio) * 360.0 / 60.0;
+            vel_input = (rpm / gear_ratio);
         }
         packetSize = CAN.parsePacket(); // 次の受信も処理
     }
-float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
-    //float vel_output = pid(pos_output, vel_input, vel_error_prev, vel_integral, kp_vel, ki_vel, kd_vel, dt);
-    motor_output_current_A = 1.2; //constrain_double(pos_output, -current_limit_A, current_limit_A);
-    //motor_output_current_A = 0.3;
+  float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+    //float vel_out = pid_vel(target_rpm, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
+    motor_output_current_A = pos_output; //constrain_double(pos_output, -current_limit_A, current_limit_A);
+  //  motor_output_current_A = 0.0;
   // 2. コマンド送信
   send_cur(motor_output_current_A);
 
   // 3. デバッグ出力
+  
   //Serial.print("pos:\t"); Serial.println(angle);
-  Serial.print(encoder_count);
-  Serial.print("vel:\t");
-  Serial.println(rpm);
-
-  delay(1);
+  Serial.println(vel_input);
+  Serial.print("\t");
+  Serial.println(target_rpm);
+  // Serial.print("\tvel:\t");
+  // Serial.print(rpm);
+  // Serial.print("\t");
+  // Serial.println(angle);
+  delay(5);
 }
 
 
