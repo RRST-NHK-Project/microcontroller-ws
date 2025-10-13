@@ -43,13 +43,13 @@ float vel_out = 0;
 unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 //------------PIDゲイン-----------//
-float kp_pos = 0.8;//0.4;
-float ki_pos = 0.03;
-float kd_pos = 0.02;//0.02;
+float kp_pos = 0.8;
+float ki_pos = 0.01;
+float kd_pos = 0.2;//0.02;
 
-// float kp_vel = 0.18;
-// float ki_vel = 0.0;
-// float kd_vel = 0.0005;  // 微分は控えめに
+float kp_vel = 0.18;
+float ki_vel = 0.0;
+float kd_vel = 0.05;  // 微分は控えめに
 
 
 
@@ -175,9 +175,9 @@ void loop() {
         }
         packetSize = CAN.parsePacket(); // 次の受信も処理
     }
-  float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
-    //float vel_out = pid_vel(target_rpm, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
-    motor_output_current_A = pos_output; //constrain_double(pos_output, -current_limit_A, current_limit_A);
+  //float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+    float vel_out = pid_vel(target_rpm, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
+    motor_output_current_A = vel_out; //constrain_double(pos_output, -current_limit_A, current_limit_A);
   //  motor_output_current_A = 0.0;
   // 2. コマンド送信
   send_cur(motor_output_current_A);
@@ -185,14 +185,15 @@ void loop() {
   // 3. デバッグ出力
   
   //Serial.print("pos:\t"); Serial.println(angle);
-  Serial.println(vel_input);
-  Serial.print("\t");
-  Serial.println(target_rpm);
+  // Serial.println(vel_input);
+  // Serial.print("\t");
+   Serial.print(target_rpm);
   // Serial.print("\tvel:\t");
   // Serial.print(rpm);
-  // Serial.print("\t");
-  // Serial.println(angle);
-  delay(5);
+   Serial.print("\t");
+   Serial.println(vel_input);
+  //Serial.println(target_angle-angle);
+  delay(1);
 }
 
 
