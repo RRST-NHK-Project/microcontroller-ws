@@ -28,7 +28,7 @@ float current_limit_A = 10.0f; // 最大出力電流（例：5A）
 
 //------設定値-----//
 float target_angle = 360.0; //目標角度
-float target_rpm = 100.0; //現在のエンコーダの値
+float target_rpm = 100.0; //目標rpm
 float pos_error_prev = 0.0;        // 前回の角度誤差
 float pos_integral = 0.0;          // 角度積分項
 float pos_output = 0;            // 角度PID出力（目標速度）
@@ -44,8 +44,8 @@ unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 //------------PIDゲイン-----------//
 float kp_pos = 0.8;
-float ki_pos = 0.01;
-float kd_pos = 0.2;//0.02;
+float ki_pos = 0.001;
+float kd_pos = 0.02;//0.02;
 
 float kp_vel = 0.18;
 float ki_vel = 0.0;
@@ -175,8 +175,8 @@ void loop() {
         }
         packetSize = CAN.parsePacket(); // 次の受信も処理
     }
-  //float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
-    float vel_out = pid_vel(target_rpm, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
+  float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
+    float vel_out = pid_vel(pos_output, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
     motor_output_current_A = vel_out; //constrain_double(pos_output, -current_limit_A, current_limit_A);
   //  motor_output_current_A = 0.0;
   // 2. コマンド送信
@@ -187,11 +187,11 @@ void loop() {
   //Serial.print("pos:\t"); Serial.println(angle);
   // Serial.println(vel_input);
   // Serial.print("\t");
-   Serial.print(target_rpm);
+   Serial.print(target_angle);
   // Serial.print("\tvel:\t");
   // Serial.print(rpm);
    Serial.print("\t");
-   Serial.println(vel_input);
+   Serial.println(angle);
   //Serial.println(target_angle-angle);
   delay(1);
 }
