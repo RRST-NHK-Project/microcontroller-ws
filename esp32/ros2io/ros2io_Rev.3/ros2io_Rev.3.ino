@@ -3,6 +3,8 @@ ros2io Rev.3
 Copyright © 2025 RRST-NHK-Project. All rights reserved.
 <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>*/
 
+// そろそろRev.4作るよ！
+
 /*
 For NHK-Robocon-2026
 ESP32用microROSプログラム。ROSメッセージからマイコンのIOを操作する。
@@ -34,12 +36,12 @@ FIXME:Pub、Subの同時使用時の遅延問題
 
 // 自作ヘッダーファイル
 #include "can_defs.h"    //CAN関連を管理
-#include "vel_pid.h"    //速度制御用PIDを管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
 #include "input_task.h"  //入力系のタスクを管理
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
+#include "vel_pid.h"     //速度制御用PIDを管理
 
 void setup() {
 
@@ -71,7 +73,7 @@ void setup() {
         ros_init();
         mode5_init();
         break;
-    case 6://実験用いらなくなったら消す
+    case 6: // 実験用いらなくなったら消す
         ros_init();
         mode6_init();
         break;
@@ -261,7 +263,7 @@ void mode5_init() {
 }
 
 void mode6_init() {
-//ロボマスに速度制御用PIDを組み込んだ実験用モード
+    // ロボマスに速度制御用PIDを組み込んだ実験用モード
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
         while (1)
@@ -286,7 +288,6 @@ void mode6_init() {
         &led_pwm_handle,
         APP_CPU_NUM);
 }
-
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
