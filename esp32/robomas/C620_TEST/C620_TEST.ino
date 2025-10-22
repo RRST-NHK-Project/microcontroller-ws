@@ -44,10 +44,10 @@ unsigned long lastPidTime = 0; // PID制御の時間計測用
 
 //------------PIDゲイン-----------//
 float kp_pos = 0.8;
-float ki_pos = 0.001;
+float ki_pos = 0.01;
 float kd_pos = 0.02;//0.02;
 
-float kp_vel = 0.18;
+float kp_vel = 0.3;
 float ki_vel = 0.0;
 float kd_vel = 0.05;  // 微分は控えめに
 
@@ -120,7 +120,7 @@ void setup() {
   while (!Serial)
     ;
 
-  CAN.setPins(5, 4);//rx.tx
+  CAN.setPins(2, 4);//rx.tx
   if (!CAN.begin(1000E3)) {
     Serial.println("Starting CAN failed!");
     while (1)
@@ -178,7 +178,7 @@ void loop() {
   float pos_output = pid(target_angle, angle, pos_error_prev, pos_integral, kp_pos, ki_pos, kd_pos, dt);
     float vel_out = pid_vel(pos_output, vel_input, vel_error_prev, vel_prop_prev,vel_output, kp_vel, ki_vel, kd_vel, dt);
     motor_output_current_A = vel_out; //constrain_double(pos_output, -current_limit_A, current_limit_A);
-  //  motor_output_current_A = 0.0;
+  //motor_output_current_A = 1.0;
   // 2. コマンド送信
   send_cur(motor_output_current_A);
 
@@ -187,11 +187,11 @@ void loop() {
   //Serial.print("pos:\t"); Serial.println(angle);
   // Serial.println(vel_input);
   // Serial.print("\t");
-   Serial.print(target_angle);
+  // Serial.print(target_angle);
   // Serial.print("\tvel:\t");
   // Serial.print(rpm);
-   Serial.print("\t");
-   Serial.println(angle);
+   //Serial.print("\t");
+   //Serial.println(angle);
   //Serial.println(target_angle-angle);
   delay(1);
 }
