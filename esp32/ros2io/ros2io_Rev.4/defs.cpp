@@ -19,7 +19,7 @@ size_t received_size = 0;              // 受信データのサイズ //2025/09/
 int16_t count[4] = {0};
 
 // スイッチの状態格納用
-bool sw_state[4] = {false};
+bool sw_state[8] = {false};
 
 // ===== タスクハンドルのグローバル変数 =====
 TaskHandle_t led_blink100_handle = NULL;
