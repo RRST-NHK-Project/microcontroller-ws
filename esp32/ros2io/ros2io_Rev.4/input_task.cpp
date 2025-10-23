@@ -7,8 +7,45 @@
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
-void SW_Read_Publish_Task(void *pvParameters) {
+void ENC_PRI_Read_Publish_Task(void *pvParameters) {
     while (1) {
+
+        // パルスカウンタの値を取得
+        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
+        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
+        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
+        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
+
+        // スイッチの状態を取得
+        sw_state[0] = (digitalRead(SW1) == HIGH);
+        sw_state[1] = (digitalRead(SW2) == HIGH);
+        sw_state[2] = (digitalRead(SW3) == HIGH);
+        sw_state[3] = (digitalRead(SW4) == HIGH);
+
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+        msg.data.data[2] = count[2];
+        msg.data.data[3] = count[3];
+        msg.data.data[4] = sw_state[0];
+        msg.data.data[5] = sw_state[1];
+        msg.data.data[6] = sw_state[2];
+        msg.data.data[7] = sw_state[3];
+
+        // Publish
+        if (MODE != 0) {
+            RCCHECK(rcl_publish(&publisher, &msg, NULL));
+        }
+
+        vTaskDelay(1); // WDTのリセット(必須)
+    }
+}
+
+void SW_PRI_Read_Publish_Task(void *pvParameters) {
+    while (1) {
+
+        // パルスカウンタの値を取得
+        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
+        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
 
         // スイッチの状態を取得
         sw_state[0] = (digitalRead(SW1) == HIGH);
@@ -20,6 +57,9 @@ void SW_Read_Publish_Task(void *pvParameters) {
         sw_state[6] = (digitalRead(SW7) == HIGH);
         sw_state[7] = (digitalRead(SW8) == HIGH);
 
+        msg.data.data[0] = count[0];
+        msg.data.data[1] = count[1];
+
         msg.data.data[4] = sw_state[0];
         msg.data.data[5] = sw_state[1];
         msg.data.data[6] = sw_state[2];
@@ -28,59 +68,6 @@ void SW_Read_Publish_Task(void *pvParameters) {
         msg.data.data[9] = sw_state[5];
         msg.data.data[10] = sw_state[6];
         msg.data.data[11] = sw_state[7];
-
-        // Publish
-        if (MODE != 0) {
-            RCCHECK(rcl_publish(&publisher, &msg, NULL));
-        }
-
-        vTaskDelay(1); // WDTのリセット(必須)
-    }
-}
-
-void ENC_Read_Publish_Task(void *pvParameters) {
-    while (1) {
-
-        // パルスカウンタの値を取得
-        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-        pcnt_get_counter_value(PCNT_UNIT_2, &count[2]);
-        pcnt_get_counter_value(PCNT_UNIT_3, &count[3]);
-
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-
-        // Publish
-        if (MODE != 0) {
-            RCCHECK(rcl_publish(&publisher, &msg, NULL));
-        }
-
-        vTaskDelay(1); // WDTのリセット(必須)
-    }
-}
-
-void ENC_SW_Read_Publish_Task(void *pvParameters) {
-    while (1) {
-
-        // パルスカウンタの値を取得
-        pcnt_get_counter_value(PCNT_UNIT_0, &count[0]);
-        pcnt_get_counter_value(PCNT_UNIT_1, &count[1]);
-
-        // スイッチの状態を取得
-        sw_state[0] = (digitalRead(SW1) == HIGH);
-        sw_state[1] = (digitalRead(SW2) == HIGH);
-        sw_state[2] = (digitalRead(SW3) == HIGH);
-        sw_state[3] = (digitalRead(SW4) == HIGH);
-
-        msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-
-        msg.data.data[4] = sw_state[0];
-        msg.data.data[5] = sw_state[1];
-        msg.data.data[6] = sw_state[2];
-        msg.data.data[7] = sw_state[3];
 
         // Publish
         if (MODE != 0) {

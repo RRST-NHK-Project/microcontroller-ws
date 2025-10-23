@@ -47,6 +47,10 @@ void setup() {
     // MODEに応じた初期化
     switch (MODE) {
     case 0:
+        while (1) {
+            // テストモード実装までの応急所置
+            ;
+        }
         Serial.begin(115200);
         mode0_init();
         break;
@@ -66,10 +70,6 @@ void setup() {
         ros_init();
         mode4_init();
         break;
-    case 5:
-        ros_init();
-        mode5_init();
-        break;
     default:;
         ;
     }
@@ -83,6 +83,7 @@ void loop() {
 }
 
 // 各モードの初期化関数
+
 void mode1_init() {
     // モード1用の初期化
 
@@ -92,10 +93,25 @@ void mode1_init() {
     ledcAttach(MD3P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
     ledcAttach(MD4P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
 
+    // サーボのPWMの初期化
+    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO2, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO3, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    ledcAttach(SERVO4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+
+    // トランジスタのピンを出力に設定
+    pinMode(TR1, OUTPUT);
+    pinMode(TR2, OUTPUT);
+    pinMode(TR3, OUTPUT);
+    pinMode(TR4, OUTPUT);
+    pinMode(TR5, OUTPUT);
+    pinMode(TR6, OUTPUT);
+    pinMode(TR7, OUTPUT);
+
     // 受信＆ピン操作のスレッド（タスク）の作成
     xTaskCreateUniversal(
-        MD_Output_Task,
-        "MD_Output_Task",
+        Output_Task,
+        "Output_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
@@ -105,10 +121,16 @@ void mode1_init() {
 
 void mode2_init() {
     // モード2用の初期化
-    // SerialBT.println("Mode 2 Initialized");
+    while (1) {
+        ;
+    }
+}
+
+void mode3_init() {
+    // モード3用の初期化
 
     // エンコーダの初期化
-    enc_init();
+    enc_init_all();
 
     // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
     pinMode(SW1, INPUT_PULLUP);
@@ -116,19 +138,13 @@ void mode2_init() {
     pinMode(SW3, INPUT_PULLUP);
     pinMode(SW4, INPUT_PULLUP);
 
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        while (1)
-            ;
-    }
-
     msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
     msg.data.size = 20;
     msg.data.capacity = 20;
 
     xTaskCreateUniversal(
-        ROBOMAS_ENC_SW_Read_Publish_Task,
-        "ROBOMAS_ENC_SW_Read_Publish_Task",
+        ENC_PRI_Read_Publish_Task,
+        "ENC_PRI_Read_Publish_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
@@ -142,95 +158,30 @@ void mode2_init() {
         NULL,
         1, // 優先度、最大25？
         &led_pwm_handle,
-        APP_CPU_NUM);
-}
-
-void mode3_init() {
-    // モード3用の初期化
-    // SerialBT.println("Mode 3 Initialized");
-
-    // サーボのPWMの初期化
-    ledcAttach(SERVO1, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO2, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO3, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-
-    pinMode(TR1, OUTPUT);
-    pinMode(TR2, OUTPUT);
-    pinMode(TR3, OUTPUT);
-    pinMode(TR4, OUTPUT);
-    pinMode(TR5, OUTPUT);
-    pinMode(TR6, OUTPUT);
-    pinMode(TR7, OUTPUT);
-
-    // サーボ操作のスレッド（タスク）の作成
-    xTaskCreateUniversal(
-        Servo_Output_Task,
-        "Servo_Output_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    // ソレノイド操作のスレッド（タスク）の作成
-    xTaskCreateUniversal(
-        SV_Task,
-        "SV_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
         APP_CPU_NUM);
 }
 
 void mode4_init() {
-    // モード4用の初期化
-    // SerialBT.println("Mode 4 Initialized");
-    // Pub,Subを同時にしたときの遅延問題が解決できていないため未使用
-    // とりあえず書いておく
-
     // エンコーダの初期化
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        while (1)
-            ;
-    }
+    enc_init_half();
+
+    // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
+    pinMode(SW1, INPUT_PULLUP);
+    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
+    pinMode(SW5, INPUT_PULLUP);
+    pinMode(SW6, INPUT_PULLUP);
+    pinMode(SW7, INPUT_PULLUP);
+    pinMode(SW8, INPUT_PULLUP);
 
     msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
     msg.data.size = 20;
     msg.data.capacity = 20;
 
     xTaskCreateUniversal(
-        C610_FB_Task,
-        "C610_FB_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
-}
-
-void mode5_init() {
-
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        while (1)
-            ;
-    }
-
-    xTaskCreateUniversal(
-        C610_Task,
-        "C610_Task",
+        ENC_PRI_Read_Publish_Task,
+        "ENC_PRI_Read_Publish_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
@@ -250,126 +201,7 @@ void mode5_init() {
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
 void mode0_init() {
-    // デバッグ・テスト用の初期化
-    Serial.println("Debug/Test Mode Initialized.");
-    Serial.println("Press Enter to continue...");
-
-    xTaskCreateUniversal(
-        LED_Blink100_Task,
-        "LED_Blink100_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    // テストモードの安全装置
     while (1) {
-        if (Serial.available() > 0) {
-            char c = Serial.read();
-            if (c == '\n' || c == '\r') { // Enterが押されたら抜ける
-                break;
-            }
-        }
-    }
-
-    switch (TEST_MODE) {
-    case 0:
-        // なにもしない
-        Serial.println("MODE_DUMMY");
-        while (1) {
-            ;
-        }
-        break;
-    case 1:
-        // MDのテスト
-        Serial.println("MD_TEST");
-        mode1_init();
-        while (1) {
-            Serial.println("MD:20%");
-            for (int i = 1; i <= 8; i++) {
-                received_data[i] = 20;
-            }
-            delay(1000);
-
-            Serial.println("MD:0%");
-            for (int i = 1; i <= 8; i++) {
-                received_data[i] = 0;
-            }
-            delay(1000);
-
-            Serial.println("MD:-20%");
-            for (int i = 1; i <= 8; i++) {
-                received_data[i] = -20;
-            }
-            delay(1000);
-        }
-        break;
-    case 2:
-        // エンコーダ、スイッチのテスト
-        Serial.println("ENC/SW_TEST");
-        enc_init();
-        mode2_init();
-        while (1) {
-            for (int i = 0; i < 4; i++) {
-                Serial.print("count[");
-                Serial.print(i);
-                Serial.print("] = ");
-                Serial.print(count[i]);
-                Serial.print("\t sw_state[");
-                Serial.print(i);
-                Serial.print("] = ");
-                Serial.println(sw_state[i]);
-            }
-            Serial.println("------");
-        }
-        break;
-    case 3:
-        // サーボ、ソレノイドのテスト
-        Serial.println("SERVO/SV_TEST");
-        mode3_init();
-        while (1) {
-            for (int i = 9; i <= 16; i++) {
-                Serial.print("SERVO");
-                Serial.print(i - 8);
-                Serial.println(" Sweep");
-                for (int angle = 0; angle <= 180; angle += 10) {
-                    received_data[i] = angle;
-                    delay(500);
-                }
-                for (int angle = 180; angle >= 0; angle -= 10) {
-                    received_data[i] = angle;
-                    delay(500);
-                }
-            }
-            for (int i = 17; i <= 23; i++) {
-                Serial.print("SV");
-                Serial.print(i - 16);
-                Serial.println(" ON");
-                received_data[i] = 1;
-                delay(1000);
-                Serial.print("SV");
-                Serial.print(i - 16);
-                Serial.println(" OFF");
-                received_data[i] = 0;
-                delay(1000);
-            }
-        }
-        break;
-
-    case 5:
-        // CANのテスト
-        Serial.println("CAN_TEST");
-        mode5_init();
-        while (1) {
-        }
-        break;
-
-    default:
-        Serial.println("Invalid MODE for Test Mode.");
-        while (1) {
-            ;
-        }
-        break;
+        ;
     }
 }
