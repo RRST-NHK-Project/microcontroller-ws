@@ -24,19 +24,11 @@ void MD_Output_Task(void *pvParameters) {
         digitalWrite(MD2D, received_data[2] > 0 ? HIGH : LOW);
         digitalWrite(MD3D, received_data[3] > 0 ? HIGH : LOW);
         digitalWrite(MD4D, received_data[4] > 0 ? HIGH : LOW);
-        digitalWrite(MD5D, received_data[5] > 0 ? HIGH : LOW);
-        digitalWrite(MD6D, received_data[6] > 0 ? HIGH : LOW);
-        digitalWrite(MD7D, received_data[7] > 0 ? HIGH : LOW);
-        digitalWrite(MD8D, received_data[8] > 0 ? HIGH : LOW);
 
         ledcWrite(MD1P, abs(received_data[1]));
         ledcWrite(MD2P, abs(received_data[2]));
         ledcWrite(MD3P, abs(received_data[3]));
         ledcWrite(MD4P, abs(received_data[4]));
-        ledcWrite(MD5P, abs(received_data[5]));
-        ledcWrite(MD6P, abs(received_data[6]));
-        ledcWrite(MD7P, abs(received_data[7]));
-        ledcWrite(MD8P, abs(received_data[8]));
 
         vTaskDelay(1); // WDTのリセット(必須)
     }
@@ -85,46 +77,6 @@ void Servo_Output_Task(void *pvParameters) {
         int duty4 = (int)(us4 * SERVO_PWM_SCALE);
         ledcWrite(SERVO4, duty4);
 
-        // サーボ5
-        int angle5 = received_data[13];
-        if (angle5 < SERVO5_MIN_DEG)
-            angle5 = SERVO5_MIN_DEG;
-        if (angle5 > SERVO5_MAX_DEG)
-            angle5 = SERVO5_MAX_DEG;
-        int us5 = map(angle5, SERVO5_MIN_DEG, SERVO5_MAX_DEG, SERVO5_MIN_US, SERVO5_MAX_US);
-        int duty5 = (int)(us5 * SERVO_PWM_SCALE);
-        ledcWrite(SERVO5, duty5);
-
-        // サーボ6
-        int angle6 = received_data[14];
-        if (angle6 < SERVO6_MIN_DEG)
-            angle6 = SERVO6_MIN_DEG;
-        if (angle6 > SERVO6_MAX_DEG)
-            angle6 = SERVO6_MAX_DEG;
-        int us6 = map(angle6, SERVO6_MIN_DEG, SERVO6_MAX_DEG, SERVO6_MIN_US, SERVO6_MAX_US);
-        int duty6 = (int)(us6 * SERVO_PWM_SCALE);
-        ledcWrite(SERVO6, duty6);
-
-        // サーボ7
-        int angle7 = received_data[15];
-        if (angle7 < SERVO7_MIN_DEG)
-            angle7 = SERVO7_MIN_DEG;
-        if (angle7 > SERVO7_MAX_DEG)
-            angle7 = SERVO7_MAX_DEG;
-        int us7 = map(angle7, SERVO7_MIN_DEG, SERVO7_MAX_DEG, SERVO7_MIN_US, SERVO7_MAX_US);
-        int duty7 = (int)(us7 * SERVO_PWM_SCALE);
-        ledcWrite(SERVO7, duty7);
-
-        // サーボ8
-        int angle8 = received_data[16];
-        if (angle8 < SERVO8_MIN_DEG)
-            angle8 = SERVO8_MIN_DEG;
-        if (angle8 > SERVO8_MAX_DEG)
-            angle8 = SERVO8_MAX_DEG;
-        int us8 = map(angle8, SERVO8_MIN_DEG, SERVO8_MAX_DEG, SERVO8_MIN_US, SERVO8_MAX_US);
-        int duty8 = (int)(us8 * SERVO_PWM_SCALE);
-        ledcWrite(SERVO8, duty8);
-
         vTaskDelay(1); // WDTのリセット(必須)
     }
 }
@@ -132,13 +84,13 @@ void Servo_Output_Task(void *pvParameters) {
 void SV_Task(void *pvParameters) {
     while (1) {
 
-        digitalWrite(SV1, received_data[17] ? HIGH : LOW);
-        digitalWrite(SV2, received_data[18] ? HIGH : LOW);
-        digitalWrite(SV3, received_data[19] ? HIGH : LOW);
-        digitalWrite(SV4, received_data[20] ? HIGH : LOW);
-        digitalWrite(SV5, received_data[21] ? HIGH : LOW);
-        digitalWrite(SV6, received_data[22] ? HIGH : LOW);
-        digitalWrite(SV7, received_data[23] ? HIGH : LOW);
+        digitalWrite(TR1, received_data[17] ? HIGH : LOW);
+        digitalWrite(TR2, received_data[18] ? HIGH : LOW);
+        digitalWrite(TR3, received_data[19] ? HIGH : LOW);
+        digitalWrite(TR4, received_data[20] ? HIGH : LOW);
+        digitalWrite(TR5, received_data[21] ? HIGH : LOW);
+        digitalWrite(TR6, received_data[22] ? HIGH : LOW);
+        digitalWrite(TR7, received_data[23] ? HIGH : LOW);
 
         vTaskDelay(1); // WDTのリセット(必須)
     }

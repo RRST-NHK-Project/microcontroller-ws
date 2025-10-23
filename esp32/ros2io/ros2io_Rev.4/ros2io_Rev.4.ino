@@ -39,7 +39,6 @@ FIXME:Pub、Subの同時使用時の遅延問題
 #include "input_task.h"  //入力系のタスクを管理
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
-#include "vel_pid.h"     //速度制御用PIDを管理
 
 void setup() {
 
@@ -70,10 +69,6 @@ void setup() {
     case 5:
         ros_init();
         mode5_init();
-        break;
-    case 6: // 実験用いらなくなったら消す
-        ros_init();
-        mode6_init();
         break;
     default:;
         ;
@@ -159,18 +154,14 @@ void mode3_init() {
     ledcAttach(SERVO2, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
     ledcAttach(SERVO3, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
     ledcAttach(SERVO4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO5, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO6, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcAttach(SERVO8, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
 
-    pinMode(SV1, OUTPUT);
-    pinMode(SV2, OUTPUT);
-    pinMode(SV3, OUTPUT);
-    pinMode(SV4, OUTPUT);
-    pinMode(SV5, OUTPUT);
-    pinMode(SV6, OUTPUT);
-    pinMode(SV7, OUTPUT);
+    pinMode(TR1, OUTPUT);
+    pinMode(TR2, OUTPUT);
+    pinMode(TR3, OUTPUT);
+    pinMode(TR4, OUTPUT);
+    pinMode(TR5, OUTPUT);
+    pinMode(TR6, OUTPUT);
+    pinMode(TR7, OUTPUT);
 
     // サーボ操作のスレッド（タスク）の作成
     xTaskCreateUniversal(
@@ -256,32 +247,6 @@ void mode5_init() {
         APP_CPU_NUM);
 }
 
-void mode6_init() {
-    // ロボマスに速度制御用PIDを組み込んだ実験用モード
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    if (!CAN.begin(1000E3)) {
-        while (1)
-            ;
-    }
-
-    xTaskCreateUniversal(
-        C610_vel_Task,
-        "C610_vel_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
-}
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
