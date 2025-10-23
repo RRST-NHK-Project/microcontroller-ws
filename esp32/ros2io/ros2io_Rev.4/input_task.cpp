@@ -21,6 +21,10 @@ void ENC_SW_Read_Publish_Task(void *pvParameters) {
         sw_state[1] = (digitalRead(SW2) == HIGH);
         sw_state[2] = (digitalRead(SW3) == HIGH);
         sw_state[3] = (digitalRead(SW4) == HIGH);
+        sw_state[4] = (digitalRead(SW5) == HIGH);
+        sw_state[5] = (digitalRead(SW6) == HIGH);
+        sw_state[6] = (digitalRead(SW7) == HIGH);
+        sw_state[7] = (digitalRead(SW8) == HIGH);
 
         msg.data.data[0] = count[0];
         msg.data.data[1] = count[1];
@@ -30,6 +34,10 @@ void ENC_SW_Read_Publish_Task(void *pvParameters) {
         msg.data.data[5] = sw_state[1];
         msg.data.data[6] = sw_state[2];
         msg.data.data[7] = sw_state[3];
+        msg.data.data[8] = sw_state[4];
+        msg.data.data[9] = sw_state[5];
+        msg.data.data[10] = sw_state[6];
+        msg.data.data[11] = sw_state[7];
 
         // Publish
         if (MODE != 0) {
