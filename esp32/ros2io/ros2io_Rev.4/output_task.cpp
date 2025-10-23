@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include <output_task.h>
 #include <defs.h>
 #include <esp32-hal-ledc.h>
+#include <output_task.h>
 
 // 受信データ格納用
 extern int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
@@ -14,10 +14,6 @@ void MD_Output_Task(void *pvParameters) {
         received_data[2] = constrain(received_data[2], -MD_PWM_MAX, MD_PWM_MAX);
         received_data[3] = constrain(received_data[3], -MD_PWM_MAX, MD_PWM_MAX);
         received_data[4] = constrain(received_data[4], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[5] = constrain(received_data[5], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[6] = constrain(received_data[6], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[7] = constrain(received_data[7], -MD_PWM_MAX, MD_PWM_MAX);
-        received_data[8] = constrain(received_data[8], -MD_PWM_MAX, MD_PWM_MAX);
 
         // ピンの操作
         digitalWrite(MD1D, received_data[1] > 0 ? HIGH : LOW);
@@ -84,13 +80,13 @@ void Servo_Output_Task(void *pvParameters) {
 void SV_Task(void *pvParameters) {
     while (1) {
 
-        digitalWrite(TR1, received_data[17] ? HIGH : LOW);
-        digitalWrite(TR2, received_data[18] ? HIGH : LOW);
-        digitalWrite(TR3, received_data[19] ? HIGH : LOW);
-        digitalWrite(TR4, received_data[20] ? HIGH : LOW);
-        digitalWrite(TR5, received_data[21] ? HIGH : LOW);
-        digitalWrite(TR6, received_data[22] ? HIGH : LOW);
-        digitalWrite(TR7, received_data[23] ? HIGH : LOW);
+        digitalWrite(TR1, received_data[11] ? HIGH : LOW);
+        digitalWrite(TR2, received_data[12] ? HIGH : LOW);
+        digitalWrite(TR3, received_data[13] ? HIGH : LOW);
+        digitalWrite(TR4, received_data[24] ? HIGH : LOW);
+        digitalWrite(TR5, received_data[25] ? HIGH : LOW);
+        digitalWrite(TR6, received_data[26] ? HIGH : LOW);
+        digitalWrite(TR7, received_data[27] ? HIGH : LOW);
 
         vTaskDelay(1); // WDTのリセット(必須)
     }
