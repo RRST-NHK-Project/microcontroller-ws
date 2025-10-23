@@ -10,18 +10,20 @@
 #include <std_msgs/msg/int32_multi_array.h>
 
 // 各アクチュエータの総数を定義
-#define MD 8
-#define SERVO 8
-#define SV 7
+#define MD 4
+#define SERVO 4
+#define TR 7
+#define ENC 4
+#define SW 8
 
 // 受信配列の要素数を定義
-#define MAX_ARRAY_SIZE 25
+#define MAX_ARRAY_SIZE 18 // Rev.4から変更(25 -> 18)
 /*
-0:モード選択
-1~8:MD
-9~16:サーボ
-17~23:ソレノイドバルブ
-24:予備
+0:予備
+1~4:MD
+5~8:サーボ
+9~10:予備
+11~17:ソレノイドバルブ
 */
 
 // パルスカウンタの上限・下限の定義
@@ -30,74 +32,62 @@
 #define PCNT_FILTER_VALUE 1023 // 0~1023, 1 = 12.5ns
 
 // MD出力の上限値
-#define MD_PWM_MAX 255
+#define MD_PWM_MAX 255 // 8bit
 
 // ピンの定義 //
 // 状態表示LED
 #define LED 0
 
-// エンコーダ
-#define ENC1_A 12
-#define ENC1_B 13
-#define ENC2_A 14
-#define ENC2_B 15
-#define ENC3_A 21
-#define ENC3_B 22
-#define ENC4_A 23
-#define ENC4_B 25
-
 // MD PWM
-#define MD1P 21
-#define MD2P 22
-#define MD3P 23
-#define MD4P 25
-#define MD5P 26
-#define MD6P 27
-#define MD7P 2
-#define MD8P 4
+#define MD1P 5
+#define MD2P 12
+#define MD3P 13
+#define MD4P 14
 
 // MD DIR
-#define MD1D 12
-#define MD2D 13
-#define MD3D 14
-#define MD4D 15
-#define MD5D 32
-#define MD6D 33
-#define MD7D 5
-#define MD8D 19
+#define MD1D 15
+#define MD2D 16
+#define MD3D 17
+#define MD4D 18
 
 // サーボ
-#define SERVO1 16
-#define SERVO2 17
-#define SERVO3 18
-#define SERVO4 19
-#define SERVO5 21
-#define SERVO6 22
-#define SERVO7 23
-#define SERVO8 25
+#define SERVO1 19
+#define SERVO2 21
+#define SERVO3 22
+#define SERVO4 23
 
 // ソレノイドバルブ
-#define SV1 2
-#define SV2 4
-#define SV3 5
-#define SV4 12
-#define SV5 13
-#define SV6 14
-#define SV7 15
+#define TR1 25
+#define TR2 26
+#define TR3 27
+#define TR4 32
+#define TR5 33
+#define TR6 22
+#define TR7 23
+
+// エンコーダ
+#define ENC1_A 19
+#define ENC1_B 21
+#define ENC2_A 22
+#define ENC2_B 23
+#define ENC3_A 15
+#define ENC3_B 16
+#define ENC4_A 17
+#define ENC4_B 18
 
 // スイッチ
-#define SW1 26
-#define SW2 27
-#define SW3 32
-#define SW4 33
-#define SW5 2
-#define SW6 19
-#define SW7 14
-#define SW8 15
+#define SW1 5
+#define SW2 12
+#define SW3 13
+#define SW4 14
+#define SW5 15
+#define SW6 16
+#define SW7 17
+#define SW8 18
 
 // ロボマス
-#define CAN_RX 4
-#define CAN_TX 5
+#define CAN_RX 2
+#define CAN_TX 4
 // PWM関連の設定値を定義
 // MD用
 #define MD_PWM_FREQ 20000   // MDのPWM周波数
@@ -131,26 +121,6 @@
 #define SERVO4_MIN_DEG 0
 #define SERVO4_MAX_DEG 180
 
-#define SERVO5_MIN_US 500
-#define SERVO5_MAX_US 2500
-#define SERVO5_MIN_DEG 0
-#define SERVO5_MAX_DEG 180
-
-#define SERVO6_MIN_US 500
-#define SERVO6_MAX_US 2500
-#define SERVO6_MIN_DEG 0
-#define SERVO6_MAX_DEG 180
-
-#define SERVO7_MIN_US 500
-#define SERVO7_MAX_US 2500
-#define SERVO7_MIN_DEG 0
-#define SERVO7_MAX_DEG 180
-
-#define SERVO8_MIN_US 500
-#define SERVO8_MAX_US 2500
-#define SERVO8_MIN_DEG 0
-#define SERVO8_MAX_DEG 180
-
 // 受信データ格納用のバッファ
 extern int32_t buffer[MAX_ARRAY_SIZE];
 
@@ -162,7 +132,7 @@ extern size_t received_size;                  // 受信データのサイズ //2
 extern int16_t count[4];
 
 // スイッチの状態格納用
-extern bool sw_state[4];
+extern bool sw_state[8];
 
 // ===== タスクハンドルのグローバル変数 =====
 extern TaskHandle_t led_blink100_handle;
