@@ -1,9 +1,7 @@
 /*<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-ros2io Rev.3
+ros2io Rev.4
 Copyright © 2025 RRST-NHK-Project. All rights reserved.
 <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>*/
-
-// そろそろRev.4作るよ！
 
 /*
 For NHK-Robocon-2026
@@ -98,10 +96,6 @@ void mode1_init() {
     ledcAttach(MD2P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
     ledcAttach(MD3P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
     ledcAttach(MD4P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
-    ledcAttach(MD5P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
-    ledcAttach(MD6P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
-    ledcAttach(MD7P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
-    ledcAttach(MD8P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
 
     // 受信＆ピン操作のスレッド（タスク）の作成
     xTaskCreateUniversal(
