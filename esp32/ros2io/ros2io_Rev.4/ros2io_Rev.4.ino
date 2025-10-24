@@ -138,6 +138,7 @@ void mode3_init() {
     pinMode(SW3, INPUT_PULLUP);
     pinMode(SW4, INPUT_PULLUP);
 
+    // Rev.3からそのまま、そのうち変える
     msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
     msg.data.size = 20;
     msg.data.capacity = 20;
@@ -175,6 +176,7 @@ void mode4_init() {
     pinMode(SW7, INPUT_PULLUP);
     pinMode(SW8, INPUT_PULLUP);
 
+    // Rev.3からそのまま、そのうち変える
     msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
     msg.data.size = 20;
     msg.data.capacity = 20;
@@ -202,6 +204,7 @@ void mode4_init() {
 // シリアルモニターからEnterが押されるまで待機する
 void mode0_init() {
     while (1) {
+        // テストモード実装予定
         ;
     }
 }
