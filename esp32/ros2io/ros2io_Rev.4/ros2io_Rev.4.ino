@@ -182,8 +182,8 @@ void mode4_init() {
     msg.data.capacity = 20;
 
     xTaskCreateUniversal(
-        ENC_PRI_Read_Publish_Task,
-        "ENC_PRI_Read_Publish_Task",
+        SW_PRI_Read_Publish_Task,
+        "SW_PRI_Read_Publish_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
