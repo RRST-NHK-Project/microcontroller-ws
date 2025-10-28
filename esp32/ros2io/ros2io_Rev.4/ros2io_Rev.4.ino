@@ -1,9 +1,6 @@
 /*====================================================================
-Project: ros2io Rev.4
+ros2io Rev.4 beta
 Target board: ESP32 Dev Module (ESP32-DEVKITC-32E)
-Description:
-    Core I/O firmware for micro-ROS on ESP32.
-    Handles ROS 2 communication and GPIO management.
 
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
