@@ -144,9 +144,9 @@ void mode3_init() {
     pinMode(SW4, INPUT_PULLUP);
 
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
-    msg.data.size = 20;
-    msg.data.capacity = 20;
+    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
+    msg.data.size = 8;
+    msg.data.capacity = 8;
 
     xTaskCreateUniversal(
         ENC_PRI_Read_Publish_Task,
@@ -182,9 +182,9 @@ void mode4_init() {
     pinMode(SW8, INPUT_PULLUP);
 
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
-    msg.data.size = 20;
-    msg.data.capacity = 20;
+    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 11);
+    msg.data.size = 11;
+    msg.data.capacity = 11;
 
     xTaskCreateUniversal(
         SW_PRI_Read_Publish_Task,
