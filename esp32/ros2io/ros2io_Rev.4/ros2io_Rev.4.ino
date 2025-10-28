@@ -19,7 +19,6 @@ config.hでIDとMODEを設定する。
 /*
 TODO:ROSからのモード選択機能の実装（保留中）
 TODO:定数定義の統一
-FIXME:Pub、Subの同時使用時の遅延問題
 */
 
 #include <Arduino.h>
