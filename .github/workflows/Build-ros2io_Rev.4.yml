@@ -16,21 +16,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. リポジトリを取得
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Arduino CLI をセットアップ
       - name: Set up Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         with:
-          version: 0.35.3  # 明示的に指定
+          version: 0.35.3
 
+      # 3. ESP32 ボードの追加 URL と Core インストール
       - name: Install ESP32 core
         run: |
+          # 設定ディレクトリ作成
+          mkdir -p ~/.arduino15
+          arduino-cli config init
+
           # EspressifボードマネージャURLを追加
           arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+          # Core インデックス更新
           arduino-cli core update-index
+
+          # ESP32 Core インストール
           arduino-cli core install esp32:esp32
 
+      # 4. ZIP ライブラリ展開
       - name: Prepare libraries
         run: |
           mkdir -p ~/Arduino/libraries
@@ -38,6 +50,7 @@ jobs:
             unzip -o "$z" -d ~/Arduino/libraries/
           done
 
+      # 5. スケッチのビルド
       - name: Build ros2io_Rev.4
         run: |
           echo "=== Building esp32/ros2io/ros2io_Rev.4/ros2io_Rev.4.ino ==="
@@ -46,6 +59,7 @@ jobs:
             --warnings default \
             esp32/ros2io/ros2io_Rev.4/ros2io_Rev.4.ino
 
+      # 6. ビルド成果物をアップロード
       - name: Upload firmware
         if: success()
         uses: actions/upload-artifact@v4
