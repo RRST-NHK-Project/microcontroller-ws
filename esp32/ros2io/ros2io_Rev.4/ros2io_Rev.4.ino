@@ -46,6 +46,7 @@ TODO:定数定義の統一
 
 void setup() {
 
+    // 状態表示LEDの初期化
     pinMode(LED, OUTPUT);
 
     // MODEに応じた初期化
