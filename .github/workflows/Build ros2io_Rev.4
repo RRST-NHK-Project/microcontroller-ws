@@ -1,0 +1,51 @@
+name: Build ros2io_Rev.4
+
+on:
+  push:
+    paths:
+      - "esp32/ros2io/ros2io_Rev.4/**"
+  pull_request:
+    paths:
+      - "esp32/ros2io/ros2io_Rev.4/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: latest
+
+      - name: Install ESP32 core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Prepare libraries
+        run: |
+          mkdir -p ~/Arduino/libraries
+          for z in esp32/ros2io/libraries/*.zip; do
+            unzip -o "$z" -d ~/Arduino/libraries/
+          done
+
+      - name: Build ros2io_Rev.4
+        run: |
+          echo "=== Building esp32/ros2io/ros2io_Rev.4/ros2io_Rev.4.ino ==="
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32dev \
+            --warnings default \
+            esp32/ros2io/ros2io_Rev.4/ros2io_Rev.4.ino
+
+      - name: Upload firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ros2io_Rev.4
+          path: |
+            esp32/ros2io/ros2io_Rev.4/build/*.bin
