@@ -89,6 +89,12 @@ void loop() {
 void mode1_init() {
     // モード1用の初期化
 
+    // MDの方向ピンを出力に設定
+    pinMode(MD1D, OUTPUT);
+    pinMode(MD2D, OUTPUT);
+    pinMode(MD3D, OUTPUT);
+    pinMode(MD4D, OUTPUT);
+
     // PWMの初期化
     ledcAttach(MD1P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
     ledcAttach(MD2P, MD_PWM_FREQ, MD_PWM_RESOLUTION);
