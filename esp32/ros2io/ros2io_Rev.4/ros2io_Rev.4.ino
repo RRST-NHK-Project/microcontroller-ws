@@ -40,6 +40,7 @@ TODO:定数定義の統一
 #include "input_task.h"  //入力系のタスクを管理
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
+#include "c620_def.h"   //C620関連を管理
 
 void setup() {
 
@@ -71,6 +72,10 @@ void setup() {
     case 4:
         ros_init();
         mode4_init();
+        break;
+    case 5:
+        ros_init();
+        mode5_init();
         break;
     default:;
         ;
@@ -192,6 +197,42 @@ void mode4_init() {
     xTaskCreateUniversal(
         SW_PRI_Read_Publish_Task,
         "SW_PRI_Read_Publish_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);
+}
+
+void mode5_init() {
+    // モード5用の初期化
+
+    // エンコーダの初期化
+    enc_init_half();
+
+    // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
+    pinMode(SW1, INPUT_PULLUP);
+    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
+
+    // Rev.3からそのまま、そのうち変える
+    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
+    msg.data.size = 20;
+    msg.data.capacity = 20;
+
+    xTaskCreateUniversal(
+        C620_Task,
+        "C620_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
