@@ -147,7 +147,7 @@ void m3508_ENC_SW_Read_Publish_Task(void *pvParameters) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
         }
 
-        vTaskDelay(1); // ウォッチドッグタイマのリセット(必須)
+        vTaskDelay(1);// ウォッチドッグタイマのリセット(必須)
     }
 }
 
@@ -224,7 +224,7 @@ void C620_Task(void *pvParameters) {
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
 
-        delay(1);
+        vTaskDelay(1);
     }
 }
 
@@ -325,6 +325,6 @@ void C620_FB_Task(void *pvParameters) {
         msg.data.data[18] = current[2];
         msg.data.data[19] = current[3];
 
-        delay(1);
+        vTaskDelay(1);
     }
 }

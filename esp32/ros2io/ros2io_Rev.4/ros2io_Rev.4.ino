@@ -74,7 +74,8 @@ void setup() {
         mode4_init();
         break;
     case 5:
-        ros_init();
+        //set_microros_transports(); 
+        ros_can_init();
         mode5_init();
         break;
     case 101: // テスト用（自由に変えていい）
@@ -219,15 +220,21 @@ void mode4_init() {
 
 void mode5_init() {
     // モード5用の初期化
+   // delay(2000);
+  Serial.begin(115200);
+    while (!Serial)
+        ;
+
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
+        Serial.println("Starting CAN failed!");
         while (1)
             ;
     }
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
-    msg.data.size = 8;
-    msg.data.capacity = 8;
+    // msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
+    // msg.data.size = 8;
+    // msg.data.capacity = 8;
 
 
     xTaskCreateUniversal(
@@ -239,14 +246,16 @@ void mode5_init() {
         NULL,
         APP_CPU_NUM);
 
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
+    // xTaskCreateUniversal(
+    //     LED_PWM_Task,
+    //     "LED_PWM_Task",
+    //     2048,
+    //     NULL,
+    //     1, // 優先度、最大25Serial.begin(115200);
+//     while (!Serial)
+//   ？
+    //     &led_pwm_handle,
+    //     APP_CPU_NUM);
 }
 
 // テストモード　※実機で「絶対」に実行するな！

@@ -123,7 +123,8 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
                     total_encoder[idx] = 0;
                     offset_ok[idx] = true;
                 }
-
+                //エンコーダ差分とラップ補正
+                
                 int enc_rel = encoder_count[idx] - encoder_offset[idx];
                 if (enc_rel < 0)
                     enc_rel += ENCODER_MAX;

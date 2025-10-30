@@ -31,7 +31,8 @@ void ENC_PRI_Read_Publish_Task(void *pvParameters) {
         msg.data.data[6] = sw_state[2];
         msg.data.data[7] = sw_state[3];
 
-        // Publish
+        // Publishriver/pcnt.h"
+
         if (MODE != 0) {
             RCCHECK(rcl_publish(&publisher, &msg, NULL));
         }
