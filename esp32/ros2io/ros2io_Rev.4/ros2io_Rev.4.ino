@@ -34,13 +34,13 @@ TODO:定数定義の統一
 #include "driver/pcnt.h"
 
 // 自作ヘッダーファイル
+#include "c620_def.h"    //C620関連を管理
 #include "can_defs.h"    //CAN関連を管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
 #include "input_task.h"  //入力系のタスクを管理
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
-#include "c620_def.h"   //C620関連を管理
 
 void setup() {
 
@@ -76,6 +76,10 @@ void setup() {
     case 5:
         ros_init();
         mode5_init();
+        break;
+    case 101: // テスト用（自由に変えていい）
+        ros_wifi_init();
+        mode3_init();
         break;
     default:;
         ;
