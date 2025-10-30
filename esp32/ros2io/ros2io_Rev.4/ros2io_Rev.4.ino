@@ -219,20 +219,16 @@ void mode4_init() {
 
 void mode5_init() {
     // モード5用の初期化
-
-    // エンコーダの初期化
-    enc_init_half();
-
-    // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
-    pinMode(SW1, INPUT_PULLUP);
-    pinMode(SW2, INPUT_PULLUP);
-    pinMode(SW3, INPUT_PULLUP);
-    pinMode(SW4, INPUT_PULLUP);
-
+    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+    if (!CAN.begin(1000E3)) {
+        while (1)
+            ;
+    }
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 20);
-    msg.data.size = 20;
-    msg.data.capacity = 20;
+    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
+    msg.data.size = 8;
+    msg.data.capacity = 8;
+
 
     xTaskCreateUniversal(
         C620_Task,
