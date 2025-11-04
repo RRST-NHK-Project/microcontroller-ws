@@ -1,108 +1,69 @@
 #include <Wire.h>
 #include <stdint.h>
 
-#define AS5600_AS5601_DEV_ADDRESS 0x36
-#define AS5600_AS5601_REG_RAW_ANGLE 0x0C
+#define AS5600_ADDR 0x36
+#define REG_RAW_ANGLE_H 0x0C
+#define REG_AGC 0x1A
+#define REG_MAGNITUDE_H 0x1B // MAG is 2 bytes (MSB, LSB)
 
 void setup() {
-    Serial.begin(115200);          // シリアル通信を初期化
-    Wire.begin();                  // I2C初期化
-    Wire.setClock(100000);         // 400kHzに設定
+    Serial.begin(115200);
+    Wire.begin(); // ESP32なら Wire.begin(SDA_pin, SCL_pin);
+    Wire.setClock(100000);
     delay(100);
 }
 
-void loop() {
-    // RAW_ANGLEを読み取り
-    Wire.beginTransmission(AS5600_AS5601_DEV_ADDRESS);
-    Wire.write(AS5600_AS5601_REG_RAW_ANGLE);
+uint16_t readRawAngle() {
+    Wire.beginTransmission(AS5600_ADDR);
+    Wire.write(REG_RAW_ANGLE_H);
     Wire.endTransmission(false);
-    Wire.requestFrom(AS5600_AS5601_DEV_ADDRESS, 2);
-
-    if (Wire.available() == 2) {
-        uint8_t highByte = Wire.read();
-        uint8_t lowByte = Wire.read();
-
-        uint16_t RawAngle = ((uint16_t)(highByte & 0x0F) << 8) | lowByte;
-
-        // 結果をシリアル出力
-        Serial.print("Raw Angle: ");
-        Serial.println(RawAngle);
-    } else {
-        Serial.println("I2C read error");
-    }
-
-    delay(200); // 200msごとに更新
+    Wire.requestFrom(AS5600_ADDR, 2);
+    if (Wire.available() < 2)
+        return 0xFFFF;
+    uint8_t hi = Wire.read();
+    uint8_t lo = Wire.read();
+    return ((uint16_t)(hi & 0x0F) << 8) | lo;
 }
 
-/* ----- Pin setting -----
-//    PC4 - Analog   4 - Encoder SDA
-//    PC5 - Analog   5 - Encoder SCL
-//    PC0 - Analog   0 - Encoder OUT
-// */
+uint8_t readAGC() {
+    Wire.beginTransmission(AS5600_ADDR);
+    Wire.write(REG_AGC);
+    Wire.endTransmission(false);
+    Wire.requestFrom(AS5600_ADDR, 1);
+    if (Wire.available() < 1)
+        return 0xFF;
+    return Wire.read();
+}
 
-// #include <stdint.h>
-// #include <Wire.h>
-// #define AS5600_AS5601_DEV_ADDRESS       0x36
-// #define AS5600_AS5601_REG_CONF          0x07
-// #define AS5600_AS5601_REG_STATUS        0x0B
+uint16_t readMagnitude() {
+    Wire.beginTransmission(AS5600_ADDR);
+    Wire.write(REG_MAGNITUDE_H);
+    Wire.endTransmission(false);
+    Wire.requestFrom(AS5600_ADDR, 2);
+    if (Wire.available() < 2)
+        return 0xFFFF;
+    uint8_t hi = Wire.read();
+    uint8_t lo = Wire.read();
+    return ((uint16_t)hi << 8) | lo; // magnitudeは12bit扱いの場合あり
+}
 
-// void Encoder_I2C_init(void){
-//   byte error;
-//   uint8_t data;
+void loop() {
+    uint16_t raw = readRawAngle();
+    uint8_t agc = readAGC();
+    uint16_t mag = readMagnitude();
 
-//   // Read AS5601 status register
-//   Wire.beginTransmission(AS5600_AS5601_DEV_ADDRESS);
-//   Wire.write(AS5600_AS5601_REG_STATUS);
-//   Wire.endTransmission(false);
-//   Wire.requestFrom(AS5600_AS5601_DEV_ADDRESS, 1);
-//   data = Wire.read();
-//   data &= 0x38;
-//   if (data != 0x20)
-//   {
-//     Serial.print("Magnet error : ");
-//     if ( !(data & 0x20) )
-//       Serial.println("Magnet was not detected");
-//     if (data & 0x10)
-//       Serial.println("Magnet too weak");
-//     if (data & 0x08)
-//       Serial.println("Magnet too strong");
-//     Serial.println("Stop");
-//     for(;;);
-//   }
-//   else
-//     Serial.println("Magnet : OK");
-
-//   // Write AS5601 conf
-//   Wire.beginTransmission(AS5600_AS5601_DEV_ADDRESS);
-//   Wire.write(AS5600_AS5601_REG_CONF);
-//   Wire.write(0b00000111);   // WD = 0b0, FTH = 0b001, SF = 0b11
-//   error = Wire.endTransmission();
-//   if (error)
-//   {
-//     Serial.print("error=");
-//     Serial.println(error);
-//   }
-//   delay(1);
-// }
-
-// void setup() {
-//   // I2C init
-//   Wire.begin();
-//   Wire.setClock(400000);
-
-//   // Communication function init
-//   Serial.begin(115200);
-//   while (!Serial);
-
-//   // Peripheral init
-//   Encoder_I2C_init();
-// }
-
-// void loop() {
-//   uint16_t AnalogValue = 0;
-//   AnalogValue = analogRead(4);
-//   AnalogValue &= 0x03FF;
-//   AnalogValue = 0x03FF - AnalogValue;
-//   Serial.println(AnalogValue);
-//   delay(200);
-// }
+    if (raw != 0xFFFF) {
+        float deg = (raw / 4096.0) * 360.0;
+        Serial.print("Raw: ");
+        Serial.print(raw);
+        Serial.print("  Deg: ");
+        Serial.print(deg, 2);
+    } else {
+        Serial.print("Raw: ERR ");
+    }
+    Serial.print("  AGC: ");
+    Serial.print(agc);
+    Serial.print("  MAG: ");
+    Serial.println(mag);
+    delay(200);
+}
