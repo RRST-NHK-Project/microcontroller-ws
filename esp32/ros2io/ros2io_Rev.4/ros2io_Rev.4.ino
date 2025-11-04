@@ -74,7 +74,6 @@ void setup() {
         mode4_init();
         break;
     case 5:
-        //set_microros_transports(); 
         ros_can_init();
         mode5_init();
         break;
@@ -220,8 +219,8 @@ void mode4_init() {
 
 void mode5_init() {
     // モード5用の初期化
-   // delay(2000);
-  Serial.begin(115200);
+    // delay(2000);
+    Serial.begin(115200);
     while (!Serial)
         ;
 
@@ -236,7 +235,6 @@ void mode5_init() {
     // msg.data.size = 8;
     // msg.data.capacity = 8;
 
-
     xTaskCreateUniversal(
         C620_Task,
         "C620_Task",
@@ -245,17 +243,6 @@ void mode5_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
-
-    // xTaskCreateUniversal(
-    //     LED_PWM_Task,
-    //     "LED_PWM_Task",
-    //     2048,
-    //     NULL,
-    //     1, // 優先度、最大25Serial.begin(115200);
-//     while (!Serial)
-//   ？
-    //     &led_pwm_handle,
-    //     APP_CPU_NUM);
 }
 
 // テストモード　※実機で「絶対」に実行するな！
