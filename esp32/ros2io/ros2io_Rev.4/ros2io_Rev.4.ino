@@ -74,7 +74,7 @@ void setup() {
         mode4_init();
         break;
     case 5:
-        ros_can_init();
+        ros_init();
         mode5_init();
         break;
     case 101: // テスト用（自由に変えていい）
@@ -220,20 +220,17 @@ void mode4_init() {
 void mode5_init() {
     // モード5用の初期化
     // delay(2000);
-    Serial.begin(115200);
-    while (!Serial)
+    Serial1.begin(115200, SERIAL_8N1, 5, 18);
+    while (!Serial1)
         ;
 
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
+        Serial1.println("Starting CAN failed!");
         while (1)
             ;
     }
-    // Rev.3からそのまま、そのうち変える
-    // msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
-    // msg.data.size = 8;
-    // msg.data.capacity = 8;
+
 
     xTaskCreateUniversal(
         C620_Task,
@@ -243,6 +240,15 @@ void mode5_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);        
 }
 
 // テストモード　※実機で「絶対」に実行するな！
