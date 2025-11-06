@@ -1,3 +1,9 @@
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #pragma once
 
 #include "defs.h"
@@ -14,20 +20,20 @@
 constexpr int ENCODER_MAX = 8192;             // エンコーダの最大値
 constexpr int HALF_ENCODER = ENCODER_MAX / 2; // エンコーダ半回転値
 constexpr float gear_ratio = 36.0f;           // 減速比(m3508用)
-constexpr int NUM_MOTOR = 4;                 // モータ数
+constexpr int NUM_MOTOR = 4;                  // モータ数
 extern float current_limit_A;
 
 // -------- 状態量 / CAN受信関連 -------- //
-extern int encoder_count[NUM_MOTOR];       // エンコーダ値
-extern int rpm[NUM_MOTOR];           // 回転速度
-extern int current[NUM_MOTOR];       // 電流値
+extern int encoder_count[NUM_MOTOR];  // エンコーダ値
+extern int rpm[NUM_MOTOR];            // 回転速度
+extern int current[NUM_MOTOR];        // 電流値
 extern bool offset_ok[NUM_MOTOR];     // オフセット完了フラグ
 extern int encoder_offset[NUM_MOTOR]; // エンコーダオフセット
 extern int last_encoder[NUM_MOTOR];   // 前回エンコーダ値
 extern int rotation_count[NUM_MOTOR]; // 回転数
 extern long total_encoder[NUM_MOTOR]; // 累積エンコーダ値
-extern float angle[NUM_MOTOR];       // 角度
-extern float vel[NUM_MOTOR];         // 速度
+extern float angle[NUM_MOTOR];        // 角度
+extern float vel[NUM_MOTOR];          // 速度
 
 // -------- PID関連変数 -------- //
 extern float target_angle[NUM_MOTOR];         // 目標角度

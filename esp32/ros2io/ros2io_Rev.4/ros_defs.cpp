@@ -1,3 +1,9 @@
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include "ros_defs.h"
 
 rcl_subscription_t subscriber;
@@ -41,7 +47,6 @@ void ros_init() {
 
     set_microros_transports();
     allocator = rcl_get_default_allocator();
-
 
     xTaskCreateUniversal(
         LED_Blink100_Task,
@@ -94,7 +99,6 @@ void ros_can_init() {
     set_microros_transports();
     allocator = rcl_get_default_allocator();
 
-
     // xTaskCreateUniversal(
     //     LED_Blink100_Task,
     //     "LED_Blink100_Task",
@@ -139,8 +143,6 @@ void ros_can_init() {
     // vTaskDelete(led_blink100_handle);
     // led_blink100_handle = NULL;
 }
-
-
 
 // micro-ROSの初期化（Wi-Fi）
 void ros_wifi_init() {

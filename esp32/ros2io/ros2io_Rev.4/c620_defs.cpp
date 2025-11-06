@@ -1,4 +1,10 @@
-#include "c620_def.h"
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
+#include "c620_defs.h"
 #include "can_defs.h"
 #include "defs.h"
 #include "input_task.h"

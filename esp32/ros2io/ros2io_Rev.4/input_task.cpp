@@ -1,3 +1,9 @@
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include "input_task.h"
 #include "defs.h"
 #include "output_task.h"

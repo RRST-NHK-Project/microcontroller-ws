@@ -1,3 +1,10 @@
+/*====================================================================
+<defs.cpp>
+・defs.h の実装ファイル
+
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include "defs.h"
 #include <Arduino.h>
 // microROS関連

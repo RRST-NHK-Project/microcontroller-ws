@@ -1,3 +1,9 @@
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include "can_defs.h"
 #include "defs.h"
 #include "input_task.h"
@@ -9,16 +15,16 @@
 // ********* CAN関連 ********* //
 
 // -------- 状態量 / CAN受信関連 -------- //
-int encoder_count[NUM_MOTOR] = {0};       // エンコーダ値
-int rpm[NUM_MOTOR] = {0};           // 回転速度
-int current[NUM_MOTOR] = {0};       // 電流値
+int encoder_count[NUM_MOTOR] = {0};  // エンコーダ値
+int rpm[NUM_MOTOR] = {0};            // 回転速度
+int current[NUM_MOTOR] = {0};        // 電流値
 bool offset_ok[NUM_MOTOR] = {false}; // オフセット完了フラグ
 int encoder_offset[NUM_MOTOR] = {0}; // エンコーダオフセット
 int last_encoder[NUM_MOTOR];         // 前回エンコーダ値
 int rotation_count[NUM_MOTOR] = {0}; // 回転数
 long total_encoder[NUM_MOTOR] = {0}; // 累積エンコーダ値
-float angle[NUM_MOTOR] = {0};       // 角度
-float vel[NUM_MOTOR] = {0};         // 速度
+float angle[NUM_MOTOR] = {0};        // 角度
+float vel[NUM_MOTOR] = {0};          // 速度
 
 // -------- PID関連変数 -------- //
 float target_angle[NUM_MOTOR] = {0};         // 目標角度
@@ -123,8 +129,8 @@ void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters) {
                     total_encoder[idx] = 0;
                     offset_ok[idx] = true;
                 }
-                //エンコーダ差分とラップ補正
-                
+                // エンコーダ差分とラップ補正
+
                 int enc_rel = encoder_count[idx] - encoder_offset[idx];
                 if (enc_rel < 0)
                     enc_rel += ENCODER_MAX;

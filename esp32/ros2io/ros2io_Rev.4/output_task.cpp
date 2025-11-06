@@ -1,3 +1,9 @@
+/*====================================================================
+<>
+・
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include <Arduino.h>
 #include <defs.h>
 #include <esp32-hal-ledc.h>
