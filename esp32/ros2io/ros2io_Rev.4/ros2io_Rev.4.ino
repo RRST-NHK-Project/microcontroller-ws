@@ -220,13 +220,14 @@ void mode4_init() {
 void mode5_init() {
     // モード5用の初期化
     // delay(2000);
+    Serial1.setTxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, 5, 18);
-    while (!Serial1)
+    while (!Serial)
         ;
 
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     if (!CAN.begin(1000E3)) {
-        Serial1.println("Starting CAN failed!");
+        Serial.println("Starting CAN failed!");
         while (1)
             ;
     }
