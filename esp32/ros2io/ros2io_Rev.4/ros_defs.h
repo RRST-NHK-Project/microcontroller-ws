@@ -41,4 +41,3 @@ void error_loop();
 void subscription_callback(const void *msgin);
 void ros_init();
 void ros_wifi_init();
-void ros_can_init();
