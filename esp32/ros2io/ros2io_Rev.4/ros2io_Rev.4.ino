@@ -34,7 +34,7 @@ TODO:定数定義の統一
 #include "driver/pcnt.h"
 
 // 自作ヘッダーファイル
-#include "c620_def.h"    //C620関連を管理
+#include "c620_defs.h"    //C620関連を管理
 #include "can_defs.h"    //CAN関連を管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
