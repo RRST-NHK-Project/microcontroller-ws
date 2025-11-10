@@ -45,6 +45,10 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // 状態表示LED
 #define LED 0
 
+// 外部シリアル変換モジュール
+#define DEBUG_SERIAL_TxD 14
+#define DEBUG_SERIAL_RxD 18
+
 // MD PWM
 #define MD1P 5
 #define MD2P 12

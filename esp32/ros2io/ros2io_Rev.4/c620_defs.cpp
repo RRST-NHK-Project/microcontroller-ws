@@ -225,22 +225,22 @@ void C620_Task(void *pvParameters) {
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
 
-        Serial1.print("angle\t");
-        Serial1.print(angle_m3508[0]);
-        Serial1.print("\t");
-        Serial1.print(angle_m3508[1]);
-        Serial1.print("\t");
-        Serial1.print(angle_m3508[2]);
-        Serial1.print("\t");
-        Serial1.print(angle_m3508[3]);
-        Serial1.print("\trpm\t");
-        Serial1.print(vel_m3508[0]);
-        Serial1.print("\t");
-        Serial1.print(vel_m3508[1]);
-        Serial1.print("\t");
-        Serial1.print(vel_m3508[2]);
-        Serial1.print("\t");
-        Serial1.println(vel_m3508[3]);
+        // Serial1.print("angle\t");
+        // Serial1.print(angle_m3508[0]);
+        // Serial1.print("\t");
+        // Serial1.print(angle_m3508[1]);
+        // Serial1.print("\t");
+        // Serial1.print(angle_m3508[2]);
+        // Serial1.print("\t");
+        // Serial1.print(angle_m3508[3]);
+        // Serial1.print("\trpm\t");
+        // Serial1.print(vel_m3508[0]);
+        // Serial1.print("\t");
+        // Serial1.print(vel_m3508[1]);
+        // Serial1.print("\t");
+        // Serial1.print(vel_m3508[2]);
+        // Serial1.print("\t");
+        // Serial1.println(vel_m3508[3]);
 
         vTaskDelay(1);
     }

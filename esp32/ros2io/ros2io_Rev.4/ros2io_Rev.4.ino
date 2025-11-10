@@ -34,7 +34,7 @@ TODO:定数定義の統一
 #include "driver/pcnt.h"
 
 // 自作ヘッダーファイル
-#include "c620_defs.h"    //C620関連を管理
+#include "c620_defs.h"   //C620関連を管理
 #include "can_defs.h"    //CAN関連を管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
@@ -42,7 +42,21 @@ TODO:定数定義の統一
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
 
+// デバッグ出力用のマクロ
+#if DEBUG_SERIAL
+#define DEBUG_BEGIN(baud) Serial.begin(baud, SERIAL_8N1, DEBUG_SERIAL_TxD, DEBUG_SERIAL_RxD);
+#define DEBUG_PRINT(x) Serial.print(x);
+#define DEBUG_PRINTLN(x) Serial.println(x);
+#else
+#define DEBUG_BEGIN(baud)
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#endif
+
 void setup() {
+
+    DEBUG_BEGIN(115200);
+    DEBUG_PRINTLN("Debug Serial Started");
 
     // 状態表示LEDの初期化
     pinMode(LED, OUTPUT);
@@ -232,7 +246,6 @@ void mode5_init() {
             ;
     }
 
-
     xTaskCreateUniversal(
         C620_Task,
         "C620_Task",
@@ -249,7 +262,7 @@ void mode5_init() {
         NULL,
         1, // 優先度、最大25？
         &led_pwm_handle,
-        APP_CPU_NUM);        
+        APP_CPU_NUM);
 }
 
 // テストモード　※実機で「絶対」に実行するな！
