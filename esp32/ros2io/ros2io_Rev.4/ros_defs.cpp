@@ -1,6 +1,6 @@
 /*====================================================================
-<>
-・
+<ros_defs.cpp>
+・microROS関連の変数や関数の実装ファイル
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
@@ -92,7 +92,6 @@ void ros_init() {
     vTaskDelete(led_blink100_handle);
     led_blink100_handle = NULL;
 }
-
 
 // micro-ROSの初期化（Wi-Fi）
 void ros_wifi_init() {
