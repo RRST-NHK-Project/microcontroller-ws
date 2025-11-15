@@ -14,35 +14,6 @@
 float angle_m3508[NUM_MOTOR] = {0};       // 角度
 float vel_m3508[NUM_MOTOR] = {0};         // 速度
 
-// -------- PID関連変数 -------- //
-float target_rpm[NUM_MOTOR] = {0};         // 目標速度
-float vel_error_prev[NUM_MOTOR] = {0};       // 前回速度誤差
-float vel_prop_prev[NUM_MOTOR] = {0};         // 速度比例項
-float vel_output[NUM_MOTOR] = {0};           // 速度PID出力
-float vel_out[NUM_MOTOR] = {0};           // 最終速度出力
-
-// -------- PIDゲイン -------- //
-float kp_vel = 0.3;
-float ki_vel = 0.0;
-float kd_vel = 0.05;  // 微分は控えめに
-
-
-
-//速度PID計算関数
-float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, float &output,
-          float kp, float ki, float kd, float dt){
-            float error = setpoint - input;
-            float prop = error - error_prev;
-            float deriv = prop - prop_prev;
-            float du = kp * prop + ki * error * dt + kd * deriv;
-            output += du;
-
-            prop_prev = prop;
-            error_prev = error;
-
-            return output;
-        }
-
 // ********* CAN関連ここまで ********* //
 
 void m3508_ENC_SW_Read_Publish_Task(void *pvParameters) {

@@ -92,6 +92,10 @@ void setup() {
         ros_init();
         mode5_init();
         break;
+    // case 6:
+    //     ros_init();
+    //     mode6_init();
+    //     break;
     case 101: // テスト用（自由に変えていい）
         ros_wifi_init();
         mode3_init();
@@ -102,8 +106,8 @@ void setup() {
 }
 
 void loop() {
-    if (MODE != 0) {
-        RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5)));
-        vTaskDelay(1);
+    while(1) {
+        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5));
+        vTaskDelay(1); // 1msスリープ
     }
 }

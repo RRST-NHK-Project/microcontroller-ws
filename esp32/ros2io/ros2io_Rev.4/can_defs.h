@@ -39,6 +39,7 @@ extern float vel[NUM_MOTOR];          // 速度
 extern float target_angle[NUM_MOTOR];         // 目標角度
 extern float pos_error_prev[NUM_MOTOR];       // 前回角度誤差
 extern float pos_integral[NUM_MOTOR];         // 角度積分項
+extern float vel_integral[NUM_MOTOR];
 extern float pos_output[NUM_MOTOR];           // PID出力
 extern float motor_output_current[NUM_MOTOR]; // 出力電流
 
@@ -63,6 +64,11 @@ float constrain_double(float val, float min_val, float max_val);
 
 void ROBOMAS_ENC_SW_Read_Publish_Task(void *pvParameters);
 
-void C610_Task(void *pvParameters);
-
 void C610_FB_Task(void *pvParameters);
+
+void CR25_Task(void *pvParameters);
+
+
+void CAN_Pb(void *pvParameters);
+
+void SV_Task(void *pvParameters);

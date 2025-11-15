@@ -79,6 +79,7 @@ void mode3_init() {
 
     // エンコーダの初期化
     enc_init_all();
+    pinMode(SV1, OUTPUT);
 
     // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
     pinMode(SW1, INPUT_PULLUP);
@@ -107,6 +108,16 @@ void mode3_init() {
         NULL,
         1, // 優先度、最大25？
         &led_pwm_handle,
+        APP_CPU_NUM);
+
+    // ソレノイド操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        SV_Task,
+        "SV_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
         APP_CPU_NUM);
 }
 
@@ -149,23 +160,43 @@ void mode4_init() {
 }
 
 void mode5_init() {
-    // モード5用の初期化
-    // delay(2000);
-    Serial1.setTxBufferSize(1024);
-    Serial1.begin(115200, SERIAL_8N1, 5, 18);
-    while (!Serial)
-        ;
-
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+  
+    //CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+    CAN.setPins(4, 5); // rx.tx
+    
     if (!CAN.begin(1000E3)) {
-        Serial.println("Starting CAN failed!");
+        Serial1.println("Starting CAN failed!");
         while (1)
             ;
     }
+    ledcAttach(16, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    pinMode(SV1, OUTPUT);
+    pinMode(26, INPUT_PULLUP);
+    pinMode(27, INPUT_PULLUP);
+
+    //  xTaskCreateUniversal(
+    //     CAN_Pb,
+    //     "CAN_Pb",
+    //     4096,
+    //     NULL,
+    //     5, // 優先度、最大25？
+    //     NULL,
+    //     APP_CPU_NUM);
+
 
     xTaskCreateUniversal(
-        C620_Task,
-        "C620_Task",
+        CR25_Task,
+        "CR25_Task",
+        4096,
+        NULL,
+        1, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+    
+    // ソレノイド操作のスレッド（タスク）の作成
+    xTaskCreateUniversal(
+        SV_Task,
+        "SV_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
@@ -181,6 +212,7 @@ void mode5_init() {
         &led_pwm_handle,
         APP_CPU_NUM);
 }
+
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する

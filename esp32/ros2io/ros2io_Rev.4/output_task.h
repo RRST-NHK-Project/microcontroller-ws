@@ -12,3 +12,5 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 void Output_Task(void *pvParameters);
 void LED_Blink100_Task(void *pvParameters);
 void LED_PWM_Task(void *pvParameters);
+void SV_Task(void *pvParameters);
+void Servo_Task(void *pvParameters);

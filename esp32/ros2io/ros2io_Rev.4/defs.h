@@ -96,9 +96,14 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define SW7 17
 #define SW8 18
 
+
 // ロボマス
 #define CAN_RX 2
 #define CAN_TX 4
+
+//ソレノイドバルブ
+#define SV1 2
+
 // PWM関連の設定値を定義
 // MD用
 #define MD_PWM_FREQ 20000   // MDのPWM周波数
