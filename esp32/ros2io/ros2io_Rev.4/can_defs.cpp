@@ -432,7 +432,7 @@ void SV_Task(void *pvParameters) {
     while (1) {
 
       // サーボ1
-        int angle1 = received_data[9];
+        int angle1 = 90+received_data[9];
         if (angle1 < SERVO1_MIN_DEG)
             angle1 = SERVO1_MIN_DEG;
         if (angle1 > SERVO1_MAX_DEG)
