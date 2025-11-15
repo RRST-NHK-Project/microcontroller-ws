@@ -407,12 +407,18 @@ void CR25_Task(void *pvParameters) {
         
        
         //motor_output_current[2]=constrain_double(output, -0.5, 0.5);
+       static unsigned long lastSerial = 0;
+        if (now - lastSerial > 50) {  // 20Hzくらい
+            lastSerial = now;
+            Serial1.printf("%.2f\t%.2f\t%.2f\n", current[0], current[1], current[2]);;
+        }
 
-
+   
+        
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
 
-        vTaskDelay(1);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

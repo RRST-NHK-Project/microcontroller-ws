@@ -161,6 +161,11 @@ void mode4_init() {
 
 void mode5_init() {
   
+     Serial1.setTxBufferSize(1024);
+    Serial1.begin(115200, SERIAL_8N1, 17, 18);
+    while (!Serial)
+        ;
+    
     //CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     CAN.setPins(4, 5); // rx.tx
     
