@@ -92,10 +92,10 @@ void setup() {
         ros_init();
         mode5_init();
         break;
-    // case 6:
-    //     ros_init();
-    //     mode6_init();
-    //     break;
+    case 6:
+        ros_init();
+        mode6_init();
+        break;
     case 101: // テスト用（自由に変えていい）
         ros_wifi_init();
         mode3_init();
