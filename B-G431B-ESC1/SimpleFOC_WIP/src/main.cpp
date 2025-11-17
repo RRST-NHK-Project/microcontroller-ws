@@ -34,7 +34,8 @@ void setup() {
     motor.voltage_limit = 6;
     motor.velocity_limit = 1000;
 
-    motor.controller = MotionControlType::velocity;
+    // motor.controller = MotionControlType::velocity;
+    motor.controller = MotionControlType::angle;
     motor.torque_controller = TorqueControlType::foc_current;
 
     motor.PID_current_q.P = motor.PID_current_d.P = 0.1;
@@ -60,8 +61,8 @@ void setup() {
 }
 
 void loop() {
-    motor.move();
     motor.loopFOC();
+    motor.move();
     command.run();
 }
 
