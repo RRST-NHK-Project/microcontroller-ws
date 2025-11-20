@@ -134,7 +134,7 @@ void C620_Task(void *pvParameters) {
         // -------- 目標角度の更新 -------- //
         // received_data[1]～[4] にモータ1～4の目標角度が入っている前提
         for (int i = 0; i < NUM_MOTOR; i++) {
-            target_rpm[i] = received_data[i + 1]*0.5;
+            target_rpm[i] = received_data[i + 1];
         }
 
         // -------- CAN受信処理 -------- //
@@ -187,40 +187,39 @@ void C620_Task(void *pvParameters) {
 
         // -------- PID制御（全モータ） -------- //
         for (int i = 0; i < NUM_MOTOR; i++) {
-         //pos_output[i] = pid(target_angle, angle[i], pos_error_prev[i], pos_integral[i], kp_pos, ki_pos, kd_pos, dt);
+        //pos_output[i] = pid(target_rpm[i], angle_m3508[i], pos_error_prev[i], pos_integral[i], kp_pos, ki_pos, kd_pos, dt);
         vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
+        //vel_out[i] = pid_vel(100, vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
    
 
-        motor_output_current[i] = vel_out[i]; //constrain_double(pos_output, -current_limit_A, current_limit_A);
+        motor_output_current[i] = vel_out[i];//pos_output[i]; 
+        //constrain_double(motor_output_current[i], -15, 0.5);
 }
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
 
-        //Serial1.printf("%f\t%f\t%f\t%f\n",vel_m3508[0],vel_m3508[1],vel_m3508[2],vel_m3508[3]);
-        // Serial1.print(angle_m3508[0]);%.2f\t%.2f\t%.2f\t%.2f\n
-        // Serial1.print("\t");
-        // Serial1.print(angle_m3508[1]);
-        // Serial1.print("\t");
-        // Serial1.print(angle_m3508[2]);
-        // Serial1.print("\t");
-        // Serial1.print(angle_m3508[3]);
-        // Serial1.print("\trpm\t");
-        Serial1.print(vel_m3508[0]);
-        Serial1.print("\t");
-        Serial1.print(vel_m3508[1]);
-        Serial1.print("\t");
-        Serial1.print(vel_m3508[2]);
-        Serial1.print("\t");
-        Serial1.println(vel_m3508[3]);
+        vTaskDelay(1);
+    }
+}
 
-         if (MODE != 0) {
+void C620_debug(void *pvParameters){
+    const TickType_t delay_ticks = pdMS_TO_TICKS(50); // 20Hz
+    while (1) {
+         Serial.printf("%.2f\t%.2f\t%.2f\t%.2f\n",
+                       vel_m3508[0],
+                       vel_m3508[1],
+                       vel_m3508[2],
+                       vel_m3508[3]);
+        vTaskDelay(delay_ticks);
+    }
+
+     if (MODE != 0) {
            rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5));
         vTaskDelay(1);// ウォッチドッグタイマのリセット(必須)    
           }
 
-        vTaskDelay(1);
-    }
 }
+
 
 void C620_FB_Task(void *pvParameters) {
     for (int i = 0; i < NUM_MOTOR; i++) {

@@ -40,3 +40,5 @@ float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, 
 // ********* CAN関連ここまで ********* //
 
 void C620_Task(void *pvParameters);
+
+void C620_debug(void *pvParameters);

@@ -148,7 +148,60 @@ void mode4_init() {
         APP_CPU_NUM);
 }
 
+
 void mode5_init() {
+
+    // Serial1.setTxBufferSize(1024);
+    // Serial1.begin(115200, SERIAL_8N1, 17, 18);
+    while (!Serial)
+        ;
+
+    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+
+    if (!CAN.begin(1000E3)) {
+       // Serial1.println("Starting CAN failed!");
+        while (1)
+            ;
+    }
+
+    //  xTaskCreateUniversal(
+    //     CAN_Pb,
+    //     "CAN_Pb",
+    //     4096,
+    //     NULL,
+    //     5, // 優先度、最大25？
+    //     NULL,
+    //     APP_CPU_NUM);
+
+    xTaskCreateUniversal(
+        C620_Task,
+        "C620_Task",
+        4096,
+        NULL,
+        2, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+    
+    xTaskCreateUniversal(
+        C620_debug,
+        "C620_debug",
+        4096,
+        NULL,
+        1, // 優先度、最大25？
+        NULL,
+        APP_CPU_NUM);
+  
+    xTaskCreateUniversal(
+        LED_PWM_Task,
+        "LED_PWM_Task",
+        2048,
+        NULL,
+        1, // 優先度、最大25？
+        &led_pwm_handle,
+        APP_CPU_NUM);
+}
+
+void mode6_init() {
 
     Serial1.setTxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, 17, 18);
@@ -206,48 +259,6 @@ void mode5_init() {
         APP_CPU_NUM);
 }
 
-void mode6_init() {
-
-    Serial1.setTxBufferSize(1024);
-    Serial1.begin(115200, SERIAL_8N1, 17, 18);
-    while (!Serial)
-        ;
-
-    CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-
-    if (!CAN.begin(1000E3)) {
-        Serial1.println("Starting CAN failed!");
-        while (1)
-            ;
-    }
-
-    //  xTaskCreateUniversal(
-    //     CAN_Pb,
-    //     "CAN_Pb",
-    //     4096,
-    //     NULL,
-    //     5, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        C620_Task,
-        "C620_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
-}
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する

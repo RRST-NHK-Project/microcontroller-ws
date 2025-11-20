@@ -51,14 +51,14 @@ float ki_pos = 0.01f; // 角度積分ゲイン
 float kd_pos = 0.02f; // 角度微分ゲイン
 
 // -------- 速度PIDゲイン -------- //
-float kp_vel = 0.05;
+float kp_vel = 0.8;
 float ki_vel = 0.0;
-float kd_vel = 0.0;  // 微分は控えめに
+float kd_vel = 0.05;  // 微分は控えめに
 
 // 複数モータ対応CAN送信関数
 void send_cur_all(float cur_array[NUM_MOTOR]) {
     constexpr float MAX_CUR = 10;
-    constexpr int MAX_CUR_VAL = 10000;
+    constexpr int MAX_CUR_VAL = 1000;
     uint8_t send_data[8] = {};
 
     for (int i = 0; i < NUM_MOTOR; i++) {
@@ -102,7 +102,6 @@ float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, f
 
             return output;
         }
-
 
 // 値制限関数(正直これはいらんかも)
 float constrain_double(float val, float min_val, float max_val) {
