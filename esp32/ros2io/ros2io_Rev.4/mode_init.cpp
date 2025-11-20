@@ -79,7 +79,6 @@ void mode3_init() {
 
     // エンコーダの初期化
     enc_init_all();
-    pinMode(SV1, OUTPUT);
 
     // スイッチのピンを入力に設定し内蔵プルアップ抵抗を有効化
     pinMode(SW1, INPUT_PULLUP);
@@ -108,16 +107,6 @@ void mode3_init() {
         NULL,
         1, // 優先度、最大25？
         &led_pwm_handle,
-        APP_CPU_NUM);
-
-    // ソレノイド操作のスレッド（タスク）の作成
-    xTaskCreateUniversal(
-        SV_Task,
-        "SV_Task",
-        4096,
-        NULL,
-        2, // 優先度、最大25？
-        NULL,
         APP_CPU_NUM);
 }
 
@@ -160,15 +149,15 @@ void mode4_init() {
 }
 
 void mode5_init() {
-  
-     Serial1.setTxBufferSize(1024);
+
+    Serial1.setTxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, 17, 18);
     while (!Serial)
         ;
-    
-    //CAN.setPins(CAN_RX, CAN_TX); // rx.tx
+
+    // CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     CAN.setPins(4, 5); // rx.tx
-    
+
     if (!CAN.begin(1000E3)) {
         Serial1.println("Starting CAN failed!");
         while (1)
@@ -188,7 +177,6 @@ void mode5_init() {
     //     NULL,
     //     APP_CPU_NUM);
 
-
     xTaskCreateUniversal(
         CR25_Task,
         "CR25_Task",
@@ -197,7 +185,7 @@ void mode5_init() {
         1, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
-    
+
     // ソレノイド操作のスレッド（タスク）の作成
     xTaskCreateUniversal(
         SV_Task,
@@ -219,20 +207,19 @@ void mode5_init() {
 }
 
 void mode6_init() {
-  
-     Serial1.setTxBufferSize(1024);
+
+    Serial1.setTxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, 17, 18);
     while (!Serial)
         ;
-    
+
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    
+
     if (!CAN.begin(1000E3)) {
         Serial1.println("Starting CAN failed!");
         while (1)
             ;
     }
-   
 
     //  xTaskCreateUniversal(
     //     CAN_Pb,
@@ -243,7 +230,6 @@ void mode6_init() {
     //     NULL,
     //     APP_CPU_NUM);
 
-
     xTaskCreateUniversal(
         C620_Task,
         "C620_Task",
@@ -252,7 +238,6 @@ void mode6_init() {
         2, // 優先度、最大25？
         NULL,
         APP_CPU_NUM);
-    
 
     xTaskCreateUniversal(
         LED_PWM_Task,
