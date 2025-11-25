@@ -20,7 +20,7 @@ void setup() {
 
     motor.linkSensor(&encoder);
 
-    driver.voltage_power_supply = 12;
+    driver.voltage_power_supply = 24;
     driver.init();
     motor.linkDriver(&driver);
 
@@ -31,22 +31,25 @@ void setup() {
 
     motor.voltage_sensor_align = 1;
     motor.velocity_index_search = 3;
-    motor.voltage_limit = 6;
+    motor.voltage_limit = 12;
     motor.velocity_limit = 1000;
+    // motor.current_limit = 40;
 
-    // motor.controller = MotionControlType::velocity;
-    motor.controller = MotionControlType::angle;
+    motor.controller = MotionControlType::velocity;
+    // motor.controller = MotionControlType::angle;
     motor.torque_controller = TorqueControlType::foc_current;
 
     motor.PID_current_q.P = motor.PID_current_d.P = 0.1;
     motor.PID_current_q.I = motor.PID_current_d.I = 10;
+    motor.PID_current_q.D = motor.PID_current_d.D = 0;
 
     motor.PID_velocity.P = 0.5;
     motor.PID_velocity.I = 1;
+    motor.PID_velocity.D = 0;
     motor.PID_velocity.output_ramp = 1000;
     motor.LPF_velocity.Tf = 0.01;
 
-    motor.P_angle.P = 20;
+    motor.P_angle.P = 9;
 
     Serial.begin(115200);
     motor.useMonitoring(Serial);
