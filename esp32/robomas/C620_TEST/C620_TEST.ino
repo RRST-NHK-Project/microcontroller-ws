@@ -5,6 +5,8 @@
 #define CAN_TX 4
 #define NUM_MOTOR 4
 
+#define AMP_MAX 20.0f // 最大電流指令値
+
 //#include "c610.hpp"
 //---------定義--------//
 const int ENCODER_MAX = 8192; //エンコーダの最大
@@ -26,6 +28,7 @@ int rotation_count[NUM_MOTOR] = {0}; // 回転数
 long total_encoder[NUM_MOTOR] = {0}; // 累積エンコーダ値
 float angle[NUM_MOTOR] = {0};        // 角度
 float vel[NUM_MOTOR] = {0};          // 速度
+float c[NUM_MOTOR] = {0};          // 速度
 
 // -------- PID関連変数 -------- //
 float target_angle[NUM_MOTOR] = {0};         // 目標角度
@@ -60,13 +63,14 @@ float kp_pos = 0.8;//0.4;
 float ki_pos = 0.01;
 float kd_pos = 0.02;//0.02;
 
-float kp_vel = 0.8;
-float ki_vel = 0.0;
-float kd_vel = 0.05;
+float kp_vel = 0.5;   // 比例を少し下げて暴走抑制
+float ki_vel = 0.01;  // 積分で定常偏差補正（小さめ）
+float kd_vel = 0.1;   // 微分を少し上げて振動抑制
 
-float kp_cur = 0.01;
-float ki_cur = 0.0;
-float kd_cur = 0.0;
+float kp_cur = 0.03;  // 比例を少し上げて追従
+float ki_cur = 0.002; // 積分は小さく
+float kd_cur = 0.001; // 微分で発散防止
+float integral_limit_cur = 5.0f; // 積分リミット[A]、安全
 
 
 float pid(float setpoint, float input, float &error_prev, float &integral,
@@ -95,6 +99,31 @@ float pid_vel(float setpoint, float input, float &error_prev,float &prop_prev, f
             return output;
         }
 
+float pid_current(float setpoint, float input, float &error_prev, float &integral,
+                  float kp, float ki, float kd, float dt, float integral_limit)
+{
+    float error = setpoint - input;
+    integral += error * dt;
+    // 積分リミット
+    if (integral > integral_limit) integral = integral_limit;
+    if (integral < -integral_limit) integral = -integral_limit;
+
+    float derivative = (error - error_prev) / dt;
+    error_prev = error;
+
+    float output = kp*error + ki*integral + kd*derivative;
+    // 出力制限は後でAMP_MAXで
+    return output;
+}
+
+// 単純1次ローパスフィルタ
+float lowpass_filter(float input, float &prev_output, float alpha)
+{
+    // alpha: フィルタ係数 0<alpha<1（小さいほど滑らか）
+    prev_output = alpha * input + (1 - alpha) * prev_output;
+    return prev_output;
+}
+
 
 float constrain_double(float val, float min_val, float max_val)
 {
@@ -105,20 +134,24 @@ float constrain_double(float val, float min_val, float max_val)
 
 
 void send_cur_all(float cur_array[NUM_MOTOR]) {
-    constexpr float MAX_CUR = 10;
-    constexpr int MAX_CUR_VAL = 10000;
+    constexpr float MAX_CUR = 20.0f;       // C620最大電流[A]
+    constexpr int MAX_CUR_VAL = 16384;     // C620のcanで送る電流指令値の範囲
     uint8_t send_data[8] = {};
 
     for (int i = 0; i < NUM_MOTOR; i++) {
-        float val = cur_array[i] * (MAX_CUR_VAL / MAX_CUR);
-        if (val < -MAX_CUR_VAL)
-            val = -MAX_CUR_VAL;
-        if (val > MAX_CUR_VAL)
-            val = MAX_CUR_VAL;
 
-        int16_t transmit_val = val;
-        send_data[i * 2] = (transmit_val >> 8) & 0xFF;
-        send_data[i * 2 + 1] = transmit_val & 0xFF;
+        // アンペアをC620の電流指令値に変換(電流指令値 = 指令電流[A] * (16384 / 20[A]) )
+        float val = cur_array[i] * (MAX_CUR_VAL / MAX_CUR);
+
+        // 安全リミット
+        if (val < -MAX_CUR_VAL) 
+            val = -MAX_CUR_VAL;
+        if (val >  MAX_CUR_VAL) 
+            val =  MAX_CUR_VAL;
+
+        int16_t transmit_val = val;// キャスト
+        send_data[i * 2]     = (transmit_val >> 8) & 0xFF;
+        send_data[i * 2 + 1] =  transmit_val       & 0xFF;
     }
 
     CAN.beginPacket(0x200);
@@ -148,8 +181,12 @@ void setup() {
 void loop() {
 unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
-        if (dt <= 0)
+        if (dt <= 0){
             dt = 0.000001f; // dtが0にならないよう補正
+        }
+        if (dt > 0.02f) { 
+          dt = 0.02f;     // 最大 20ms（安全）
+        }
         lastPidTime = now;
 
         // -------- 目標角度の更新 -------- //
@@ -160,11 +197,11 @@ unsigned long now = millis();
     }
     else {
         // 5秒経過後、1ずつ増加
-       static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100}; 
+       static float rpm_step[NUM_MOTOR] = {0, 0, 0, 0}; 
 
         // 1ずつ増加
-        if (rpm_step[i] < 300) {
-            rpm_step[i] += 0.1;
+        if (rpm_step[i] < 2) {
+            rpm_step[i] += 0.0001;
         }
 
         target_rpm[i] = rpm_step[i];
@@ -174,7 +211,7 @@ unsigned long now = millis();
 
         // -------- CAN受信処理 -------- //
         int packetSize = CAN.parsePacket();
-        while (packetSize) {
+       while(packetSize) {
             int id = CAN.packetId();
             if (id >= 0x201 && id < 0x201 + NUM_MOTOR) {
                 int motor_index = id - 0x201;
@@ -215,6 +252,7 @@ unsigned long now = millis();
                 total_encoder[motor_index] = rotation_count[motor_index] * ENCODER_MAX + encoder_count[motor_index];
                 angle_m3508[motor_index] = total_encoder[motor_index] * (360.0f / (ENCODER_MAX * gear_m3508));
                 vel_m3508[motor_index] = (rpm[motor_index] / gear_m3508);
+                c[motor_index] = current[motor_index]*20/16384; 
             }
 
             packetSize = CAN.parsePacket(); // 次の受信も処理
@@ -223,12 +261,23 @@ unsigned long now = millis();
         // -------- PID制御（全モータ） -------- //
         for (int i = 0; i < NUM_MOTOR; i++) {
         vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
-        cur_output[i] = pid(vel_out[i], current[i], cur_error_prev[i], cur_integral[i], kp_cur, ki_cur, kd_cur, dt);
+        //cur_output[i] = pid(vel_out[i], current[i], cur_error_prev[i], cur_integral[i], kp_cur, ki_cur, kd_cur, dt);
         //vel_out[i] = pid_vel(100, vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
-   
+        //vel_out[i] = pid(target_rpm[i], vel_m3508[i], cur_error_prev[i], cur_integral[i], kp_vel, ki_vel, kd_vel, dt);
+        cur_output[i] = pid_current(vel_out[i], c[i], cur_error_prev[i], cur_integral[i],kp_cur, ki_cur, kd_cur, dt, integral_limit_cur);  // 積分リミット10[A]相当);
+        
+        static float cur_output_filtered[NUM_MOTOR] = {0}; // フィルタ前回値
+     motor_output_current[i] = lowpass_filter(cur_output[i], cur_output_filtered[i], 0.2);
+
+
+        // 限界（アンチワインドアップ）
+        // if (cur_output[i] > AMP_MAX) 
+        //     cur_output[i] = AMP_MAX;
+        // if (cur_output[i] < -AMP_MAX)
+        //     cur_output[i] = -AMP_MAX;
          //motor_output_current[i] = cur_output[i];
-        motor_output_current[i] =vel_out[i];////pos_output[i]; 
-        //constrain_double(motor_output_current[i], -15, 0.5);
+        motor_output_current[i] =cur_output[i];//target_rpm[i];////pos_output[i]; 
+        constrain_double(motor_output_current[i], -20, 20);
 }
         // -------- CAN送信（全モータ） -------- //
         send_cur_all(motor_output_current);
@@ -238,10 +287,13 @@ unsigned long now = millis();
   // Serial.print("\t");
   // Serial.println(cur_output[0]);
   
-  Serial.print(vel_m3508[0]);
+  // Serial.print(vel_m3508[0]);
+  // Serial.print("\t");
+  // Serial.print(target_rpm[0]);
+  // Serial.print("\t");
+  Serial.print(current[0]);
   Serial.print("\t");
   Serial.println(target_rpm[0]);
-  
   // //Serial.print("\t");  
   //Serial.println(angle);
   //Serial.println(angle);
