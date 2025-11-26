@@ -187,12 +187,12 @@ void C620_Task(void *pvParameters) {
 
         // -------- PID制御（全モータ） -------- //
         for (int i = 0; i < NUM_MOTOR; i++) {
-        //pos_output[i] = pid(target_rpm[i], angle_m3508[i], pos_error_prev[i], pos_integral[i], kp_pos, ki_pos, kd_pos, dt);
         vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
+        cur_output[i] = pid(vel_out[i], current[i], cur_error_prev[i], cur_integral[i], kp_cur, ki_cur, kd_cur, dt);
         //vel_out[i] = pid_vel(100, vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
    
 
-        motor_output_current[i] = vel_out[i];//pos_output[i]; 
+        motor_output_current[i] = cur_output[i];//vel_out[i];////pos_output[i]; 
         //constrain_double(motor_output_current[i], -15, 0.5);
 }
         // -------- CAN送信（全モータ） -------- //

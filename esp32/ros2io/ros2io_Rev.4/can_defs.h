@@ -38,9 +38,12 @@ extern float vel[NUM_MOTOR];          // 速度
 // -------- PID関連変数 -------- //
 extern float target_angle[NUM_MOTOR];         // 目標角度
 extern float pos_error_prev[NUM_MOTOR];       // 前回角度誤差
+extern float cur_error_prev[NUM_MOTOR];       // 前回角度誤差
 extern float pos_integral[NUM_MOTOR];         // 角度積分項
 extern float vel_integral[NUM_MOTOR];
+extern float cur_integral[NUM_MOTOR];
 extern float pos_output[NUM_MOTOR];           // PID出力
+extern float cur_output[NUM_MOTOR];           // PID出力
 extern float motor_output_current[NUM_MOTOR]; // 出力電流
 
 extern unsigned long lastPidTime; // PID制御用タイマー
@@ -49,6 +52,14 @@ extern unsigned long lastPidTime; // PID制御用タイマー
 extern float kp_pos; // 角度比例ゲイン
 extern float ki_pos; // 角度積分ゲイン
 extern float kd_pos; // 角度微分ゲイン
+
+extern float kp_vel;
+extern float ki_vel;
+extern float kd_vel; // 速度微分ゲイン
+
+extern float kp_cur;
+extern float ki_cur;
+extern float kd_cur; // 速度微分ゲイン
 
 // 複数モータ対応CAN送信関数
 void send_cur_all(float cur_array[NUM_MOTOR]);

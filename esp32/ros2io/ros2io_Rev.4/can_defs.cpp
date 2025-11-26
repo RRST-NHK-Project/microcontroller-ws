@@ -29,9 +29,12 @@ float vel[NUM_MOTOR] = {0};          // 速度
 // -------- PID関連変数 -------- //
 float target_angle[NUM_MOTOR] = {0};         // 目標角度
 float pos_error_prev[NUM_MOTOR] = {0};       // 前回角度誤差
+float cur_error_prev[NUM_MOTOR] = {0};       // 前回角度誤差
 float pos_integral[NUM_MOTOR] = {0};         // 角度積分項
 float vel_integral[NUM_MOTOR] = {0};
+float cur_integral[NUM_MOTOR] = {0};
 float pos_output[NUM_MOTOR] = {0};           // PID出力
+float cur_output[NUM_MOTOR] = {0};           // PID出力
 float motor_output_current[NUM_MOTOR] = {0}; // 出力電流
 float output[NUM_MOTOR] = {0};
 
@@ -54,6 +57,12 @@ float kd_pos = 0.02f; // 角度微分ゲイン
 float kp_vel = 0.8;
 float ki_vel = 0.0;
 float kd_vel = 0.05;  // 微分は控えめに
+
+// -------- 電流PIDゲイン -------- //
+float kp_cur = 0.01;
+float ki_cur = 0.0;
+float kd_cur = 0.0;  // 微分は控えめに
+
 
 // 複数モータ対応CAN送信関数
 void send_cur_all(float cur_array[NUM_MOTOR]) {

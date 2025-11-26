@@ -28,10 +28,7 @@ extern float vel_prop_prev[NUM_MOTOR];  // 速度比例項前回値
 extern float vel_output[NUM_MOTOR]; // 速度PID出力
 extern float vel_out[NUM_MOTOR];    // 最終速度出力
 
-// -------- PIDゲイン -------- //
-extern float kp_vel;
-extern float ki_vel;
-extern float kd_vel; // 速度微分ゲイン
+
 
 // 速度PID計算関数
 float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
