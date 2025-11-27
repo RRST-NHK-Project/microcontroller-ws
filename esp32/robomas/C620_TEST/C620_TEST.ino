@@ -61,7 +61,7 @@ float ki_pos = 0.01;
 float kd_pos = 0.02; // 0.02;
 
 float kp_vel = 0.5;  // 比例を少し下げて暴走抑制
-float ki_vel = 0.01; // 積分で定常偏差補正（小さめ）
+float ki_vel = 0.0;//0.01; // 積分で定常偏差補正（小さめ）
 float kd_vel = 0.1;  // 微分を少し上げて振動抑制
 
 float kp_cur = 0.03;             // 比例を少し上げて追従
@@ -206,7 +206,7 @@ void loop()
             static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
 
             // 1ずつ増加
-            if (rpm_step[i] < 400)
+            if (rpm_step[i] < 300)
             {
                 rpm_step[i] += 0.1;
             }
@@ -234,17 +234,17 @@ void loop()
             rpm[motor_index] = (int16_t)(rx[2] << 8 | rx[3]);           // 回転速度
             current[motor_index] = (int16_t)(rx[4] << 8 | rx[5]);       // 電流値
 
-            // 初回オフセット設定
-            if (!offset_ok[motor_index])
-            {
-                encoder_offset[motor_index] = encoder_count[motor_index];
-                last_encoder[motor_index] = -1;
-                rotation_count[motor_index] = 0;
-                total_encoder[motor_index] = 0;
-                pos_integral[motor_index] = 0;
-                pos_error_prev[motor_index] = 0;
-                offset_ok[motor_index] = true;
-            }
+            // // 初回オフセット設定
+            // if (!offset_ok[motor_index])
+            // {
+            //     encoder_offset[motor_index] = encoder_count[motor_index];
+            //     last_encoder[motor_index] = -1;
+            //     rotation_count[motor_index] = 0;
+            //     total_encoder[motor_index] = 0;
+            //     pos_integral[motor_index] = 0;
+            //     pos_error_prev[motor_index] = 0;
+            //     offset_ok[motor_index] = true;
+            // }
 
             // エンコーダ差分とラップ補正
             int enc_relative = encoder_count[motor_index] - encoder_offset[motor_index];
@@ -273,14 +273,14 @@ void loop()
     // -------- PID制御（全モータ） -------- //
     for (int i = 0; i < NUM_MOTOR; i++)
     {
-        // vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
+         vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i],vel_output[i], kp_vel, ki_vel, kd_vel, dt);
         // cur_output[i] = pid_current(vel_out[i], c[i], cur_error_prev[i], cur_integral[i],kp_cur, ki_cur, kd_cur, dt, integral_limit_cur);  // 積分リミット10[A]相当);
         pos_output[i] = pid(180, angle_m3508[i], pos_error_prev[i], pos_integral[i], kp_pos, ki_pos, kd_pos, dt); // 積分リミット10[A]相当);
 
         static float cur_output_filtered[NUM_MOTOR] = {0}; // フィルタ前回値
                                                            // motor_output_current[i] = lowpass_filter(cur_output[i], cur_output_filtered[i], 0.2);
 
-        motor_output_current[i] = 10; // pos_output[i]*10;//vel_out[i]*10;
+        motor_output_current[i] = vel_out[i]*10; // pos_output[i]*10;//vel_out[i]*10;
         // motor_output_current[i] =cur_output[i];//target_rpm[i];////pos_output[i];
         constrain_double(motor_output_current[i], -20, 20);
     }
@@ -297,4 +297,6 @@ void loop()
     //   // Serial.print(target_rpm[0]);
     //   // Serial.print("\t");
     Serial.println(current[0]);
+
+    delay(1);
 }
