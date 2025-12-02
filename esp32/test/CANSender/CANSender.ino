@@ -60,7 +60,7 @@ void loop() {
       Serial.print(" DLC: ");
       Serial.println(msg.data_length_code);
 
-      gSendDate += 1000; // 1秒ごと送信
+      gSendDate += 10; // 1秒ごと送信
       gSentCount++;
       gFrameLength++;
       if (gFrameLength > 8) gFrameLength = 0; // DLCは最大8
