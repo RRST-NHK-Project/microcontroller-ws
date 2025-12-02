@@ -38,4 +38,6 @@ float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, 
 
 void C620_Task(void *pvParameters);
 
+void C620_Task_v2(void *pvParameters);
+
 void C620_debug(void *pvParameters);

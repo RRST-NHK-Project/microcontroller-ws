@@ -174,8 +174,8 @@ void mode5_init() {
     //     APP_CPU_NUM);
 
     xTaskCreateUniversal(
-        C620_Task,
-        "C620_Task",
+        C620_Task_v2,
+        "C620_Task_v2",
         4096,
         NULL,
         2, // 優先度、最大25？
