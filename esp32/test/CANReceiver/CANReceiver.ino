@@ -1,7 +1,7 @@
 #include <CAN.h>
 
-#define CAN_RX 
-#define CAN_TX PB_9
+#define CAN_RX 2
+#define CAN_TX 4
 
 void setup() {
   Serial.begin(9600);
