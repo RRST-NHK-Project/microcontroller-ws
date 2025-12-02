@@ -1,53 +1,62 @@
-#include <CAN.h>
+#include <Arduino.h>
+#include "driver/twai.h"
 
-#define CAN_RX 2
-#define CAN_TX 4
+#define CAN_TX_PIN ((gpio_num_t)4)
+#define CAN_RX_PIN ((gpio_num_t)2)
 
 void setup() {
   Serial.begin(9600);
   while (!Serial);
 
-  Serial.println("CAN Receiver");
+  Serial.println("CAN Receiver (TWAI)");
 
-  CAN.setPins(CAN_RX, CAN_TX); 
+  // TWAI 設定
+  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX_PIN, CAN_RX_PIN, TWAI_MODE_NORMAL);
+  twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS(); // 500 kbps
+  twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-  // start the CAN bus at 500 kbps
-  if (!CAN.begin(500E3)) {
-    Serial.println("Starting CAN failed!");
+  if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+    Serial.println("TWAI driver install failed!");
     while (1);
   }
+
+  if (twai_start() != ESP_OK) {
+    Serial.println("TWAI start failed!");
+    while (1);
+  }
+
+  Serial.println("TWAI initialized");
 }
 
 void loop() {
-  // try to parse packet
-  int packetSize = CAN.parsePacket();
+  twai_message_t message;
+  if (twai_receive(&message, pdMS_TO_TICKS(10)) == ESP_OK) {
 
-  if (packetSize) {
-    // received a packet
     Serial.print("Received ");
 
-    if (CAN.packetExtended()) {
+    if (message.extd) {
       Serial.print("extended ");
+    } else {
+      Serial.print("standard ");
     }
 
-    if (CAN.packetRtr()) {
-      // Remote transmission request, packet contains no data
+    if (message.rtr) {
       Serial.print("RTR ");
     }
 
     Serial.print("packet with id 0x");
-    Serial.print(CAN.packetId(), HEX);
+    Serial.print(message.identifier, HEX);
 
-    if (CAN.packetRtr()) {
+    if (message.rtr) {
       Serial.print(" and requested length ");
-      Serial.println(CAN.packetDlc());
+      Serial.println(message.data_length_code);
     } else {
       Serial.print(" and length ");
-      Serial.println(packetSize);
+      Serial.println(message.data_length_code);
 
-      // only print packet data for non-RTR packets
-      while (CAN.available()) {
-        Serial.print((char)CAN.read());
+      // データ表示
+      for (int i = 0; i < message.data_length_code; i++) {
+        Serial.print((char)message.data[i]);
       }
       Serial.println();
     }
@@ -55,4 +64,3 @@ void loop() {
     Serial.println();
   }
 }
-
