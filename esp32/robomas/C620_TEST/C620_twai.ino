@@ -17,9 +17,6 @@ const int ENCODER_MAX = 8192;
 const int HALF_ENCODER = ENCODER_MAX / 2;
 constexpr float gear_m3508 = 19.2f;
 
-// =============================
-// グローバル変数（元コードそのまま）
-// =============================
 int encoder_count[NUM_MOTOR] = {0};
 int rpm[NUM_MOTOR] = {0};
 int current[NUM_MOTOR] = {0};
@@ -46,9 +43,6 @@ float kp_vel = 0.5;
 float ki_vel = 0.0;
 float kd_vel = 0.1;
 
-// =============================
-// 汎用関数
-// =============================
 float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
               float kp, float ki, float kd, float dt)
 {
@@ -78,11 +72,11 @@ float constrain_double(float val, float min_val, float max_val)
 // =============================
 void send_cur_all(float cur_array[NUM_MOTOR])
 {
-    twai_message_t tx;
-    tx.identifier = 0x200;
-    tx.extd = 0;
-    tx.rtr = 0;
-    tx.data_length_code = 8;
+    twai_message_t tx;       // 送信用メッセージ
+    tx.identifier = 0x200;   // CAN ID
+    tx.extd = 0;             // 標準フレーム
+    tx.rtr = 0;              // データフレーム
+    tx.data_length_code = 8; // 8バイト
 
     // C620 の仕様: -16384 ～ +16384
     for (int i = 0; i < NUM_MOTOR; i++)
@@ -167,9 +161,6 @@ void setup()
     Serial.println("TWAI started");
 }
 
-// =============================
-// メインループ
-// =============================
 void loop()
 {
     unsigned long now = millis();
