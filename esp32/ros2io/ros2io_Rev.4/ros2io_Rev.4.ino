@@ -10,7 +10,8 @@ For NHK-Robocon-2026
 ESP32用microROSプログラム。ROSメッセージからマイコンのIOを操作する。
 ライブラリはros2io/librariesに格納。修正済みのライブラリを使用しているため同梱のZipを使用すること。
 ボードマネージャーはesp32 by Espressif Systemsを選択
-config.hでIDとMODEを設定する。
+config.hでIDとMODEを設定
+defs.hでピンアサインや定数を管理
 */
 
 /*
@@ -106,7 +107,7 @@ void setup() {
 }
 
 void loop() {
-    while(1) {
+    while (1) {
         rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5));
         vTaskDelay(1); // 1msスリープ
     }
