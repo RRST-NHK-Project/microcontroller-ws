@@ -159,6 +159,10 @@ void C620_twai(void *pvParameters)
 {
     while (1)
     {
+        for (int i = 0; i < NUM_MOTOR; i++)
+        {
+            target_rpm[i] = received_data[i + 1];
+        }
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
         if (dt <= 0)
@@ -170,23 +174,23 @@ void C620_twai(void *pvParameters)
         // TWAI受信処理
         twai_receive_feedback();
 
-        // 5秒後にターゲットRPM増加
+        // // 5秒後にターゲットRPM増加
         for (int i = 0; i < NUM_MOTOR; i++)
         {
-            static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
+        //     static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
 
-            if (now < 5000)
-            {
-                target_rpm[i] = 0;
-            }
-            else
-            {
-                if (rpm_step[i] < 300)
-                    rpm_step[i] += 0.1;
-                target_rpm[i] = rpm_step[i];
-            }
+        //     if (now < 5000)
+        //     {
+        //         target_rpm[i] = 0;
+        //     }
+        //     else
+        //     {
+        //         if (rpm_step[i] < 300)
+        //             rpm_step[i] += 0.1;
+        //         target_rpm[i] = rpm_step[i];
+        //     }
 
-            vel_out[i] = pid_vel(100, vel_m3508[i], vel_error_prev[i], vel_prop_prev[i], vel_output[i], kp_vel, ki_vel, kd_vel, dt);
+            vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i], vel_output[i], kp_vel, ki_vel, kd_vel, dt);
 
             motor_output_current[i] = constrain_double(vel_out[i] * 10, -20, 20);
         }
