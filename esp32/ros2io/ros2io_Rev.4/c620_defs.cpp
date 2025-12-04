@@ -2,6 +2,7 @@
 #include "c620_defs.h"
 #include "can_defs.h"
 #include "defs.h"
+#include "twai.h"
 #include "input_task.h"
 #include <Arduino.h>
 #include <CAN.h>
@@ -10,10 +11,6 @@
 
 // ********* CAN関連 ********* //
 
-// -------- 状態量 / CAN受信関連 -------- //
-float angle_m3508[NUM_MOTOR] = {0}; // 角度
-float vel_m3508[NUM_MOTOR] = {0};   // 速度
-float c[NUM_MOTOR] = {0};   // 
 // ********* CAN関連ここまで ********* //
 
 void m3508_ENC_SW_Read_Publish_Task(void *pvParameters)

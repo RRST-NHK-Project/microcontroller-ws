@@ -23,6 +23,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define ENC 4
 #define SW 8
 
+#define NUM_MOTOR 4
+
 // 受信配列の要素数を定義
 #define MAX_ARRAY_SIZE 18 // Rev.4から変更(25 -> 18)
 /*
@@ -99,6 +101,10 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ロボマス
 #define CAN_RX 2
 #define CAN_TX 4
+
+#define CAN_TX GPIO_NUM_4
+#define CAN_RX GPIO_NUM_2
+
 
 // B-G431B-ESC1
 #define BLDC_CAN_TX 4

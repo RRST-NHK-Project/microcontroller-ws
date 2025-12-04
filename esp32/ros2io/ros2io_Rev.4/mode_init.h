@@ -16,3 +16,4 @@ void mode3_init();
 void mode4_init();
 void mode5_init();
 void mode6_init();
+void mode7_init();

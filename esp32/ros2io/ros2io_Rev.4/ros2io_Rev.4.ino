@@ -37,6 +37,7 @@ TODO:定数定義の統一
 // 自作ヘッダーファイル
 #include "c620_defs.h"   //C620関連を管理
 #include "can_defs.h"    //CAN関連を管理
+#include "twai.h"        //twai関連を管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
 #include "input_task.h"  //入力系のタスクを管理
@@ -96,6 +97,10 @@ void setup() {
     case 6:
         ros_init();
         mode6_init();
+        break;
+    case 7:
+        ros_init();
+        mode7_init();
         break;
     case 101: // テスト用（自由に変えていい）
         ros_wifi_init();
