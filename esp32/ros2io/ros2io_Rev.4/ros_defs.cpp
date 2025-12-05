@@ -9,7 +9,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 rcl_subscription_t subscriber;
 rcl_publisher_t publisher;
 // rcl_timer_t timer;
-std_msgs__msg__Int32MultiArray msg;
+std_msgs__msg__Int16MultiArray msg;
 rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
@@ -30,7 +30,7 @@ void error_loop() {
 
 // コールバック内でグローバル変数にコピー
 void subscription_callback(const void *msgin) {
-    const std_msgs__msg__Int32MultiArray *msg = (const std_msgs__msg__Int32MultiArray *)msgin;
+    const std_msgs__msg__Int16MultiArray *msg = (const std_msgs__msg__Int16MultiArray *)msgin;
     size_t len = msg->data.size;
     if (len > MAX_ARRAY_SIZE)
         len = MAX_ARRAY_SIZE;
@@ -69,17 +69,17 @@ void ros_init() {
     RCCHECK(rclc_subscription_init_default(
         &subscriber,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16MultiArray),
         subscriber_topic_name.c_str()));
 
     // Publisherの初期化
     RCCHECK(rclc_publisher_init_default(
         &publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16MultiArray),
         publisher_topic_name.c_str()));
 
-    std_msgs__msg__Int32MultiArray__init(&msg);
+    std_msgs__msg__Int16MultiArray__init(&msg);
     msg.data.data = buffer;
     msg.data.size = 0;
     msg.data.capacity = MAX_ARRAY_SIZE;
@@ -121,17 +121,17 @@ void ros_wifi_init() {
     RCCHECK(rclc_subscription_init_default(
         &subscriber,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16MultiArray),
         subscriber_topic_name.c_str()));
 
     // Publisherの初期化
     RCCHECK(rclc_publisher_init_default(
         &publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16MultiArray),
         publisher_topic_name.c_str()));
 
-    std_msgs__msg__Int32MultiArray__init(&msg);
+    std_msgs__msg__Int16MultiArray__init(&msg);
     msg.data.data = buffer;
     msg.data.size = 0;
     msg.data.capacity = MAX_ARRAY_SIZE;

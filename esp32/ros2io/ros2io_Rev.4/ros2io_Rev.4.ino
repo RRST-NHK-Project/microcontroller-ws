@@ -29,7 +29,7 @@ TODO:定数定義の統一
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
-#include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/int16_multi_array.h>
 
 //  パルスカウンタ関連
 #include "driver/pcnt.h"

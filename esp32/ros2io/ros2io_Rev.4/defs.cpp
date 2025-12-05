@@ -16,10 +16,10 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <std_msgs/msg/int32_multi_array.h>
 
 // 受信データ格納用のバッファ
-int32_t buffer[MAX_ARRAY_SIZE];
+int16_t buffer[MAX_ARRAY_SIZE];
 
 // 受信データ格納用
-int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
+int16_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
 size_t received_size = 0;              // 受信データのサイズ //2025/09/29: volatileを削除
 
 // エンコーダのカウント格納用

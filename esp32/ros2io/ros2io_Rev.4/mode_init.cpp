@@ -12,7 +12,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
-#include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/int16_multi_array.h>
 
 // 自作ヘッダーファイル
 #include "bldc_can.h"    //BLDC用CAN関連を管理
@@ -89,7 +89,7 @@ void mode3_init() {
     pinMode(SW4, INPUT_PULLUP);
 
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 8);
+    msg.data.data = (int16_t *)malloc(sizeof(int16_t) * 8);
     msg.data.size = 8;
     msg.data.capacity = 8;
 
@@ -127,7 +127,7 @@ void mode4_init() {
     pinMode(SW8, INPUT_PULLUP);
 
     // Rev.3からそのまま、そのうち変える
-    msg.data.data = (int32_t *)malloc(sizeof(int32_t) * 11);
+    msg.data.data = (int16_t *)malloc(sizeof(int16_t) * 11);
     msg.data.size = 11;
     msg.data.capacity = 11;
 
@@ -265,7 +265,7 @@ void mode7_init() {
     delay(1000);
 
     // TWAI 設定
-    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX, CAN_RX, TWAI_MODE_NORMAL);
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 

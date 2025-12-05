@@ -10,7 +10,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <output_task.h>
 
 // 受信データ格納用
-extern int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ
+extern int16_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 
 void Output_Task(void *pvParameters) {
     while (1) {

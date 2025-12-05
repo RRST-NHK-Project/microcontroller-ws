@@ -14,7 +14,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
-#include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/int16_multi_array.h>
 
 // デバッグ出力用のマクロ
 #if DEBUG_SERIAL
@@ -89,6 +89,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define TR6 22
 #define TR7 23
 
+//旧メイン基板用
+#define SV1 2
+
 // エンコーダ
 #define ENC1_A 19
 #define ENC1_B 21
@@ -155,10 +158,10 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define SERVO4_MAX_DEG 180
 
 // 受信データ格納用のバッファ
-extern int32_t buffer[MAX_ARRAY_SIZE];
+extern int16_t buffer[MAX_ARRAY_SIZE];
 
 // 受信データ格納用
-extern int32_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
+extern int16_t received_data[MAX_ARRAY_SIZE]; // 受信データ //2025/09/29: volatileを削除
 extern size_t received_size;                  // 受信データのサイズ //2025/09/29: volatileを削除
 
 // エンコーダのカウント格納用

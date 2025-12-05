@@ -16,12 +16,12 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
-#include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/int16_multi_array.h>
 
 extern rcl_subscription_t subscriber;
 extern rcl_publisher_t publisher;
 // rcl_timer_t timer;
-extern std_msgs__msg__Int32MultiArray msg;
+extern std_msgs__msg__Int16MultiArray msg;
 extern rclc_executor_t executor;
 extern rclc_support_t support;
 extern rcl_allocator_t allocator;

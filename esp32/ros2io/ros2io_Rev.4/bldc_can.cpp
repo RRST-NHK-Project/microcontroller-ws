@@ -9,8 +9,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include "driver/twai.h"
 #include <Arduino.h>
 
-static uint32_t gSendDate = 0;
-static uint32_t gSentCount = 0;
+static int16_t gSendDate = 0;
 static uint8_t gFrameLength = 0;
 
 void BLDC_CAN_init() {
