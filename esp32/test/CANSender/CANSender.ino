@@ -38,7 +38,7 @@ void setup() {
 void loop() {
     if (gSendDate < millis()) {
         twai_message_t msg;
-        msg.data_length_code = gFrameLength; // DLC 0～8
+        msg.data_length_code = gFrameLength;
         for (uint8_t i = 0; i < gFrameLength; i++) {
             msg.data[i] = i;
         }
