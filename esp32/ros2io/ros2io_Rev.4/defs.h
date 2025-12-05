@@ -113,15 +113,13 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define CAN_RX 2
 #define CAN_TX 4
 
-#define CAN_TX GPIO_NUM_4
-#define CAN_RX GPIO_NUM_2
+// 二重定義禁止！
+//  #define CAN_TX GPIO_NUM_4
+//  #define CAN_RX GPIO_NUM_2
 
 // B-G431B-ESC1
 #define BLDC_CAN_TX 4
 #define BLDC_CAN_RX 2
-
-// ソレノイドバルブ
-#define SV1 2
 
 // PWM関連の設定値を定義
 // MD用
