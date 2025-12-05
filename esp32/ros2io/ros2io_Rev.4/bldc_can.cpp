@@ -51,12 +51,11 @@ void BLDC_CAN_Send_Task(void *pvParameters) {
             msg.data[5] = 105;
             msg.data[6] = 106;
             msg.data[7] = 107;
-            
 
             msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
             msg.identifier = 0x431; // ID
             gFrameLength = 8;
-            msg.rtr = 0;            // データフレーム
+            msg.rtr = 0; // データフレーム
 
             if (twai_transmit(&msg, pdMS_TO_TICKS(1000)) == ESP_OK) {
                 // Serial.print("Sent ");
@@ -66,19 +65,29 @@ void BLDC_CAN_Send_Task(void *pvParameters) {
                 // Serial.print(" DLC: ");
                 // Serial.println(msg.data_length_code);
 
-                 gSendDate += 10; // 一定周期ごと送信
-            //     gFrameLength++;
-            //     if (gFrameLength > 8)
-            //         gFrameLength = 0; // DLCは最大8
+                gSendDate += 10; // 一定周期ごと送信
+                //     gFrameLength++;
+                //     if (gFrameLength > 8)
+                //         gFrameLength = 0; // DLCは最大8
             } else {
-            //     // Serial.println("Send failed");
+                //     // Serial.println("Send failed");
             }
         }
     }
 }
 
 void BLDC_CAN_Receive_Task(void *pvParameters) {
+    Serial.begin(115200);
     while (1) {
-        ;
+        twai_message_t rx_msg;
+
+        // 10ms タイムアウトで受信
+        if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
+            Serial.printf("ID:0x%X Data:", rx_msg.identifier);
+            for (int i = 0; i < 8; i++) {
+                Serial.printf(" %d", rx_msg.data[i]);
+            }
+            Serial.println();
+        }
     }
 }
