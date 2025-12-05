@@ -1,10 +1,11 @@
+#include "twai.h"
 #include "defs.h"
 #include "input_task.h"
-#include "twai.h"
 #include <Arduino.h>
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
+// twai.h, twai.cppは名称が不適切なので変更してください。ex) c620_twai.h など
 
 // -------- 状態量 / CAN受信関連 -------- //
 int encoder_count[NUM_MOTOR] = {0};  // エンコーダ値
@@ -59,8 +60,7 @@ float kp_cur = 0.01;
 float ki_cur = 0.0;
 float kd_cur = 0.0; // 微分は控えめに
 
-void send_cur(float cur_array[NUM_MOTOR])
-{
+void send_cur(float cur_array[NUM_MOTOR]) {
     twai_message_t tx;       // 送信用メッセージ
     tx.identifier = 0x200;   // CAN ID
     tx.extd = 0;             // 標準フレーム
@@ -68,8 +68,7 @@ void send_cur(float cur_array[NUM_MOTOR])
     tx.data_length_code = 8; // 8バイト
 
     // C620 の仕様: -16384 ～ +16384
-    for (int i = 0; i < NUM_MOTOR; i++)
-    {
+    for (int i = 0; i < NUM_MOTOR; i++) {
         float amp = constrain_double(cur_array[i], -20, 20);
         int16_t val = amp * (16384.0f / 200.0f);
 
@@ -77,16 +76,14 @@ void send_cur(float cur_array[NUM_MOTOR])
         tx.data[i * 2 + 1] = val & 0xFF;
     }
 
-    if (twai_transmit(&tx, pdMS_TO_TICKS(20)) != ESP_OK)
-    {
+    if (twai_transmit(&tx, pdMS_TO_TICKS(20)) != ESP_OK) {
         Serial.println("[ERR] twai_transmit failed");
     }
 }
 
 // PID計算関数（単独モータ用だが複数モータでループ使用可能）
 float pid(float setpoint, float input, float &error_prev, float &integral,
-          float kp, float ki, float kd, float dt)
-{
+          float kp, float ki, float kd, float dt) {
     float error = setpoint - input;
     integral += ((error + error_prev) * dt / 2.0f); // 台形積分
     float derivative = (error - error_prev) / dt;
@@ -96,8 +93,7 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
 
 // 速度PID計算関数
 float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
-              float kp, float ki, float kd, float dt)
-{
+              float kp, float ki, float kd, float dt) {
     float error = setpoint - input;
     float prop = error - error_prev;
     float deriv = prop - prop_prev;
@@ -111,8 +107,7 @@ float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, 
 }
 
 // 値制限関数(正直これはいらんかも)
-float constrain_double(float val, float min_val, float max_val)
-{
+float constrain_double(float val, float min_val, float max_val) {
     if (val < min_val)
         return min_val;
     if (val > max_val)
@@ -120,12 +115,10 @@ float constrain_double(float val, float min_val, float max_val)
     return val;
 }
 
-void twai_receive_feedback()
-{
+void twai_receive_feedback() {
     twai_message_t rx_msg;
 
-    while (twai_receive(&rx_msg, 0) == ESP_OK)
-    {
+    while (twai_receive(&rx_msg, 0) == ESP_OK) {
         if (rx_msg.data_length_code != 8)
             continue;
         if (rx_msg.identifier < 0x201 || rx_msg.identifier > 0x204)
@@ -155,12 +148,9 @@ void twai_receive_feedback()
     }
 }
 
-void C620_twai(void *pvParameters)
-{
-    while (1)
-    {
-        for (int i = 0; i < NUM_MOTOR; i++)
-        {
+void C620_twai(void *pvParameters) {
+    while (1) {
+        for (int i = 0; i < NUM_MOTOR; i++) {
             target_rpm[i] = received_data[i + 1];
         }
         unsigned long now = millis();
@@ -175,20 +165,19 @@ void C620_twai(void *pvParameters)
         twai_receive_feedback();
 
         // // 5秒後にターゲットRPM増加
-        for (int i = 0; i < NUM_MOTOR; i++)
-        {
-        //     static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
+        for (int i = 0; i < NUM_MOTOR; i++) {
+            //     static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
 
-        //     if (now < 5000)
-        //     {
-        //         target_rpm[i] = 0;
-        //     }
-        //     else
-        //     {
-        //         if (rpm_step[i] < 300)
-        //             rpm_step[i] += 0.1;
-        //         target_rpm[i] = rpm_step[i];
-        //     }
+            //     if (now < 5000)
+            //     {
+            //         target_rpm[i] = 0;
+            //     }
+            //     else
+            //     {
+            //         if (rpm_step[i] < 300)
+            //             rpm_step[i] += 0.1;
+            //         target_rpm[i] = rpm_step[i];
+            //     }
 
             vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i], vel_output[i], kp_vel, ki_vel, kd_vel, dt);
 

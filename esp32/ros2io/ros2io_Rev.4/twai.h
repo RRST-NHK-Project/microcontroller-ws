@@ -7,9 +7,10 @@
 //  パルスカウンタ関連
 #include "driver/pcnt.h"
 
-
-#include "driver/twai.h"
 #include "driver/gpio.h"
+#include "driver/twai.h"
+
+// twai.h, twai.cppは名称が不適切なので変更してください。ex) c620_twai.h など
 
 // ********* CAN関連 ********* //
 
