@@ -12,4 +12,5 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 void BLDC_CAN_init();
 void BLDC_CAN_Send_Task(void *pvParameters);
-void BLDC_CAN_Receive_Task(void *pvParameters);
+void BLDC_CAN_8bit_Receive_Task(void *pvParameters);
+void BLDC_CAN_16bit_Receive_Task(void *pvParameters);

@@ -302,8 +302,8 @@ void mode8_init() {
 
 void mode9_init() {
     xTaskCreateUniversal(
-        BLDC_CAN_Receive_Task,
-        "BLDC_CAN_Receive_Task",
+        BLDC_CAN_16bit_Receive_Task,
+        "BLDC_CAN_16bit_Receive_Task",
         4096,
         NULL,
         2, // 優先度、最大25？
