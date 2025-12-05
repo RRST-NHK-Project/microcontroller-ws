@@ -110,9 +110,9 @@ void setup() {
         mode7_init();
         break;
     case 8:
-        // ros_init();
-        BLDC_CAN_init();
-        mode8_init();
+        ros_init();
+        // BLDC_CAN_init();
+        //  mode8_init();
         break;
     case 9:
         // ros_init();

@@ -81,41 +81,41 @@ void BLDC_CAN_Send_Task(void *pvParameters) {
     }
 }
 
-void BLDC_CAN_8bit_Receive_Task(void *pvParameters) {
-    Serial.begin(115200);
-    while (1) {
-        twai_message_t rx_msg;
+// void BLDC_CAN_8bit_Receive_Task(void *pvParameters) {
+//     Serial.begin(115200);
+//     while (1) {
+//         twai_message_t rx_msg;
 
-        // 20ms タイムアウトで受信
-        if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
-            Serial.printf("ID:0x%X Data:", rx_msg.identifier);
-            for (int i = 0; i < 8; i++) {
-                Serial.printf(" %d", rx_msg.data[i]);
-            }
-            Serial.println();
-        }
-        vTaskDelay(1); // WDTのリセット(必須)
-    }
-}
+//         // 20ms タイムアウトで受信
+//         if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
+//             Serial.printf("ID:0x%X Data:", rx_msg.identifier);
+//             for (int i = 0; i < 8; i++) {
+//                 Serial.printf(" %d", rx_msg.data[i]);
+//             }
+//             Serial.println();
+//         }
+//         vTaskDelay(1); // WDTのリセット(必須)
+//     }
+// }
 
-void BLDC_CAN_16bit_Receive_Task(void *pvParameters) {
-    Serial.begin(115200);
-    while (1) {
-        twai_message_t rx_msg;
-        int16_t msg_data[4];
+// void BLDC_CAN_16bit_Receive_Task(void *pvParameters) {
+//     Serial.begin(115200);
+//     while (1) {
+//         twai_message_t rx_msg;
+//         int16_t msg_data[4];
 
-        // 20ms タイムアウトで受信(要調整？)
-        if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
-            msg_data[0] = (int16_t)(rx_msg.data[0] << 8 | rx_msg.data[1]);
-            msg_data[1] = (int16_t)(rx_msg.data[2] << 8 | rx_msg.data[3]);
-            msg_data[2] = (int16_t)(rx_msg.data[4] << 8 | rx_msg.data[5]);
-            msg_data[3] = (int16_t)(rx_msg.data[6] << 8 | rx_msg.data[7]);
-            Serial.printf("ID:0x%X Data:", rx_msg.identifier);
-            for (int i = 0; i < 4; i++) {
-                Serial.printf(" %d", msg_data[i]);
-            }
-            Serial.println();
-        }
-        vTaskDelay(1); // WDTのリセット(必須)
-    }
-}
+//         // 20ms タイムアウトで受信(要調整？)
+//         if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
+//             msg_data[0] = (int16_t)(rx_msg.data[0] << 8 | rx_msg.data[1]);
+//             msg_data[1] = (int16_t)(rx_msg.data[2] << 8 | rx_msg.data[3]);
+//             msg_data[2] = (int16_t)(rx_msg.data[4] << 8 | rx_msg.data[5]);
+//             msg_data[3] = (int16_t)(rx_msg.data[6] << 8 | rx_msg.data[7]);
+//             Serial.printf("ID:0x%X Data:", rx_msg.identifier);
+//             for (int i = 0; i < 4; i++) {
+//                 Serial.printf(" %d", msg_data[i]);
+//             }
+//             Serial.println();
+//         }
+//         vTaskDelay(1); // WDTのリセット(必須)
+//     }
+// }
