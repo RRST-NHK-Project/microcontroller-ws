@@ -35,17 +35,10 @@ void loop() {
     twai_message_t rx_msg;
 
     // 10ms タイムアウトで受信
-    if (twai_receive(&rx_msg, pdMS_TO_TICKS(10)) == ESP_OK) {
-        Serial.print("Received ");
-        Serial.print(rx_msg.extd ? "Extended" : "Standard");
-        Serial.print(" ID: 0x");
-        Serial.print(rx_msg.identifier, HEX);
-        Serial.print(" DLC: ");
-        Serial.print(rx_msg.data_length_code);
-        Serial.print(" Data: ");
-        for (int i = 0; i < rx_msg.data_length_code; i++) {
-            Serial.print(rx_msg.data[i], HEX);
-            Serial.print(" ");
+    if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
+        Serial.printf("ID:0x%X Data:", rx_msg.identifier);
+        for (int i = 0; i < 8; i++) {
+            Serial.printf(" %d", rx_msg.data[i]);
         }
         Serial.println();
     }

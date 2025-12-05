@@ -35,26 +35,27 @@ TODO:定数定義の統一
 #include "driver/pcnt.h"
 
 // 自作ヘッダーファイル
+#include "bldc_can.h"    //BLDC用CAN関連を管理
 #include "c620_defs.h"   //C620関連を管理
 #include "can_defs.h"    //CAN関連を管理
-#include "twai.h"        //twai関連を管理
 #include "config.h"      //モードやIDを管理
 #include "defs.h"        //定数を管理
 #include "input_task.h"  //入力系のタスクを管理
 #include "mode_init.h"   //各モードの初期化関数を管理
 #include "output_task.h" //出力系のタスクを管理
 #include "ros_defs.h"    //microROS関連を管理
+#include "twai.h"        //twai関連を管理(ヘッダー名変えて)
 
 // デバッグ出力用のマクロ
-#if DEBUG_SERIAL
-#define DEBUG_BEGIN(baud) Serial.begin(baud, SERIAL_8N1, DEBUG_SERIAL_TxD, DEBUG_SERIAL_RxD);
-#define DEBUG_PRINT(x) Serial.print(x);
-#define DEBUG_PRINTLN(x) Serial.println(x);
-#else
-#define DEBUG_BEGIN(baud)
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#endif
+// #if DEBUG_SERIAL
+// #define DEBUG_BEGIN(baud) Serial.begin(baud, SERIAL_8N1, DEBUG_SERIAL_TxD, DEBUG_SERIAL_RxD);
+// #define DEBUG_PRINT(x) Serial.print(x);
+// #define DEBUG_PRINTLN(x) Serial.println(x);
+// #else
+// #define DEBUG_BEGIN(baud)
+// #define DEBUG_PRINT(x)
+// #define DEBUG_PRINTLN(x)
+// #endif
 
 void setup() {
 
@@ -75,32 +76,48 @@ void setup() {
         mode0_init();
         break;
     case 1:
+        // 1:出力（モタドラ、サーボ、ソレノイド）
         ros_init();
         mode1_init();
         break;
     case 2:
+        // 2:出力（ロボマス、モタドラ、サーボ、ソレノイド）
         ros_init();
         mode2_init();
         break;
     case 3:
+        // 3:入力（エンコーダー優先）
         ros_init();
         mode3_init();
         break;
     case 4:
+        // 4:入力（マイクロスイッチ優先）
         ros_init();
         mode4_init();
         break;
     case 5:
+        // 5:入力（C620 + M3508）
         ros_init();
         mode5_init();
         break;
     case 6:
+        // 6:出力（C610 + M2006）
         ros_init();
         mode6_init();
         break;
     case 7:
         ros_init();
         mode7_init();
+        break;
+    case 8:
+        // ros_init();
+        BLDC_CAN_init();
+        mode8_init();
+        break;
+    case 9:
+        // ros_init();
+        BLDC_CAN_init();
+        mode9_init();
         break;
     case 101: // テスト用（自由に変えていい）
         ros_wifi_init();

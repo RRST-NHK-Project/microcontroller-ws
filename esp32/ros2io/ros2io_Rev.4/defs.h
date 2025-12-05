@@ -6,8 +6,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
 #pragma once
+#include <Arduino.h>
 
-#include "defs.h"
 // microROS関連
 #include <micro_ros_arduino.h>
 #include <rcl/error_handling.h>
@@ -15,6 +15,17 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
 #include <std_msgs/msg/int32_multi_array.h>
+
+// デバッグ出力用のマクロ
+#if DEBUG_SERIAL
+#define DEBUG_BEGIN(baud) Serial.begin(baud, SERIAL_8N1, DEBUG_SERIAL_TxD, DEBUG_SERIAL_RxD);
+#define DEBUG_PRINT(x) Serial.print(x);
+#define DEBUG_PRINTLN(x) Serial.println(x);
+#else
+#define DEBUG_BEGIN(baud)
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#endif
 
 // 各アクチュエータの総数を定義
 #define MD 4
@@ -104,7 +115,6 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 #define CAN_TX GPIO_NUM_4
 #define CAN_RX GPIO_NUM_2
-
 
 // B-G431B-ESC1
 #define BLDC_CAN_TX 4

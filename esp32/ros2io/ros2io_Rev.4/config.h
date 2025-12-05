@@ -20,7 +20,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 // **使用する基板に合わせてモードを変更** //
 // Rev.4から各モードでの動作を変更
-#define MODE 7
+#define MODE 8
 /*
 0:基板テスト用（ROSと接続せずに基板のテストのみを行う）※実機で「絶対」に実行しないこと　※テストモードについては下記参照
 1:出力（モタドラ、サーボ、ソレノイド）
@@ -29,6 +29,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 4:入力（マイクロスイッチ優先）
 5:入力（C620 + M3508）
 6:出力（C610 + M2006）
+7:出力（C620 + M3508 with twai）
+8:出力（B-G431-ESC1 + BLDC with twai）
+9:入力（CANバスのデバッグ用）
 101:テスト用（自由に書き換えていい）
 */
 // **テスト内容変更** // Rev.3から更新していないため使用禁止
@@ -58,4 +61,5 @@ MODEを0に変更することで有効化され、TEST_MODEを変更すること
 // sudo docker run -it --rm -v /dev:/dev --privileged --net=host microros/micro-ros-agent:jazzy serial --dev /dev/ttyUSB0 -v6
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
-// docker run -it --rm --net=host microros/micro-ros-agent:jazzy tcp4 --port 8888
+// 実装途中ですが、WiFi経由でのmicro-ROSエージェント接続も可能です。下記コマンドでエージェント立ち上げを行ってください（Dockerのインストールが必要）。ポート番号は適宜変更すること。
+//  docker run -it --rm --net=host microros/micro-ros-agent:jazzy tcp4 --port 8888
