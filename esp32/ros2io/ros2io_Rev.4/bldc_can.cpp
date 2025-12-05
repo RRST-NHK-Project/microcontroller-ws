@@ -44,13 +44,13 @@ void BLDC_CAN_Send_Task(void *pvParameters) {
             msg.data_length_code = gFrameLength; // DLC 0～8
 
             msg.data[0] = 100;
-            msg.data[1] = 100;
-            msg.data[2] = 100;
-            msg.data[3] = 100;
-            msg.data[4] = 100;
-            msg.data[5] = 100;
-            msg.data[6] = 100;
-            msg.data[7] = 100;
+            msg.data[1] = 101;
+            msg.data[2] = 102;
+            msg.data[3] = 103;
+            msg.data[4] = 104;
+            msg.data[5] = 105;
+            msg.data[6] = 106;
+            msg.data[7] = 107;
             
 
             msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
