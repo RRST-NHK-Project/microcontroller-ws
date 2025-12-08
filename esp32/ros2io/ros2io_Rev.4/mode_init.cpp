@@ -270,12 +270,12 @@ void mode7_init() {
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
     if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
-        Serial.println("TWAI install failed");
+        //Serial.println("TWAI install failed");
         while (1)
             ;
     }
     if (twai_start() != ESP_OK) {
-        Serial.println("TWAI start failed");
+        //Serial.println("TWAI start failed");
         while (1)
             ;
     }
@@ -286,7 +286,7 @@ void mode7_init() {
         NULL,
         1, // 優先度、最大25？
         NULL,
-        APP_CPU_NUM);
+        0);
 }
 
 void mode8_init() {
