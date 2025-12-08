@@ -39,41 +39,69 @@ void BLDC_CAN_init() {
     DEBUG_PRINTLN("TWAI initialized");
 }
 
+// void BLDC_CAN_Send_Task(void *pvParameters) {
+//     while (1) {
+//         if (gSendDate < millis()) {
+//             twai_message_t msg = {0};
+//             msg.data_length_code = 8; // DLC 0～8
+
+//             // 上位バイト・下位バイトに分割してペイロードに詰める
+//             msg.data[0] = (uint8_t)(received_data[1] >> 8);   // 上位バイト
+//             msg.data[1] = (uint8_t)(received_data[1] & 0xFF); // 下位バイト
+//             msg.data[2] = (uint8_t)(received_data[2] >> 8);   // 上位バイト
+//             msg.data[3] = (uint8_t)(received_data[2] & 0xFF); // 下位バイト
+//             msg.data[4] = (uint8_t)(received_data[3] >> 8);   // 上位バイト
+//             msg.data[5] = (uint8_t)(received_data[3] & 0xFF); // 下位バイト
+//             msg.data[6] = (uint8_t)(received_data[4] >> 8);   // 上位バイト
+//             msg.data[7] = (uint8_t)(received_data[4] & 0xFF); // 下位バイト
+
+//             // ROSと切り離してデバッグする場合に使う、ダミーデータをCANで送信する。
+//             //  msg.data[0] = (uint8_t)(received_data_dammy[1] >> 8);   // 上位バイト
+//             //  msg.data[1] = (uint8_t)(received_data_dammy[1] & 0xFF); // 下位バイト
+//             //  msg.data[2] = (uint8_t)(received_data_dammy[2] >> 8);   // 上位バイト
+//             //  msg.data[3] = (uint8_t)(received_data_dammy[2] & 0xFF); // 下位バイト
+//             //  msg.data[4] = (uint8_t)(received_data_dammy[3] >> 8);   // 上位バイト
+//             //  msg.data[5] = (uint8_t)(received_data_dammy[3] & 0xFF); // 下位バイト
+//             //  msg.data[6] = (uint8_t)(received_data_dammy[4] >> 8);   // 上位バイト
+//             //  msg.data[7] = (uint8_t)(received_data_dammy[4] & 0xFF); // 下位バイト
+
+//             msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
+//             msg.identifier = 0x431; // ID,定義場所変更予定
+//             msg.rtr = 0;            // RTR:0　通常0,気にしない
+
+//             if (twai_transmit(&msg, 0) == ESP_OK) {
+//                 gSendDate = millis() + 50; // 10ms毎に送信
+//             }
+//         }
+//         vTaskDelay(1); // WDTのリセット(必須)
+//     }
+// }
+
 void BLDC_CAN_Send_Task(void *pvParameters) {
+
+    const TickType_t xCycle = pdMS_TO_TICKS(50); // 50ms周期
+
     while (1) {
-        if (gSendDate < millis()) {
-            twai_message_t msg = {0};
-            msg.data_length_code = 8; // DLC 0～8
 
-            // 上位バイト・下位バイトに分割してペイロードに詰める
-            msg.data[0] = (uint8_t)(received_data[1] >> 8);   // 上位バイト
-            msg.data[1] = (uint8_t)(received_data[1] & 0xFF); // 下位バイト
-            msg.data[2] = (uint8_t)(received_data[2] >> 8);   // 上位バイト
-            msg.data[3] = (uint8_t)(received_data[2] & 0xFF); // 下位バイト
-            msg.data[4] = (uint8_t)(received_data[3] >> 8);   // 上位バイト
-            msg.data[5] = (uint8_t)(received_data[3] & 0xFF); // 下位バイト
-            msg.data[6] = (uint8_t)(received_data[4] >> 8);   // 上位バイト
-            msg.data[7] = (uint8_t)(received_data[4] & 0xFF); // 下位バイト
+        twai_message_t msg = {};
+        msg.data_length_code = 8;
 
-            // ROSと切り離してデバッグする場合に使う、ダミーデータをCANで送信する。
-            //  msg.data[0] = (uint8_t)(received_data_dammy[1] >> 8);   // 上位バイト
-            //  msg.data[1] = (uint8_t)(received_data_dammy[1] & 0xFF); // 下位バイト
-            //  msg.data[2] = (uint8_t)(received_data_dammy[2] >> 8);   // 上位バイト
-            //  msg.data[3] = (uint8_t)(received_data_dammy[2] & 0xFF); // 下位バイト
-            //  msg.data[4] = (uint8_t)(received_data_dammy[3] >> 8);   // 上位バイト
-            //  msg.data[5] = (uint8_t)(received_data_dammy[3] & 0xFF); // 下位バイト
-            //  msg.data[6] = (uint8_t)(received_data_dammy[4] >> 8);   // 上位バイト
-            //  msg.data[7] = (uint8_t)(received_data_dammy[4] & 0xFF); // 下位バイト
+        msg.data[0] = received_data[1] >> 8;
+        msg.data[1] = received_data[1] & 0xff;
+        msg.data[2] = received_data[2] >> 8;
+        msg.data[3] = received_data[2] & 0xff;
+        msg.data[4] = received_data[3] >> 8;
+        msg.data[5] = received_data[3] & 0xff;
+        msg.data[6] = received_data[4] >> 8;
+        msg.data[7] = received_data[4] & 0xff;
 
-            msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
-            msg.identifier = 0x431; // ID,定義場所変更予定
-            msg.rtr = 0;            // RTR:0　通常0,気にしない
+        msg.identifier = 0x431;
+        msg.extd = 0;
+        msg.rtr = 0;
 
-            if (twai_transmit(&msg, pdMS_TO_TICKS(1000)) == ESP_OK) {
-                gSendDate = millis() + 10; // 10ms毎に送信
-            }
-        }
-        vTaskDelay(1); // WDTのリセット(必須)
+        twai_transmit(&msg, 0); // 失敗でもOK（周期優先）
+
+        vTaskDelay(xCycle); // ★これだけで周期維持
     }
 }
 

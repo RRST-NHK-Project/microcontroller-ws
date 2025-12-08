@@ -297,7 +297,7 @@ void mode8_init() {
         NULL,
         2, // 優先度、最大25？
         NULL,
-        APP_CPU_NUM);
+        0); // コア0にすると安定したのでこのままで
 }
 
 void mode9_init() {
