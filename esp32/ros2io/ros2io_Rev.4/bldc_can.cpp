@@ -77,23 +77,7 @@ void BLDC_CAN_Send_Task(void *pvParameters) {
     }
 }
 
-void BLDC_CAN_8bit_Receive_Task(void *pvParameters) {
-    Serial.begin(115200);
-    while (1) {
-        twai_message_t rx_msg;
-
-        // 20ms タイムアウトで受信
-        if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
-            Serial.printf("ID:0x%X Data:", rx_msg.identifier);
-            for (int i = 0; i < 8; i++) {
-                Serial.printf(" %d", rx_msg.data[i]);
-            }
-            Serial.println();
-        }
-        vTaskDelay(1); // WDTのリセット(必須)
-    }
-}
-
+// 16bit x4のデータをCANで受信後復元する関数
 void BLDC_CAN_16bit_Receive_Task(void *pvParameters) {
     Serial.begin(115200);
     while (1) {
@@ -109,6 +93,24 @@ void BLDC_CAN_16bit_Receive_Task(void *pvParameters) {
             Serial.printf("ID:0x%X Data:", rx_msg.identifier);
             for (int i = 0; i < 4; i++) {
                 Serial.printf(" %d", msg_data[i]);
+            }
+            Serial.println();
+        }
+        vTaskDelay(1); // WDTのリセット(必須)
+    }
+}
+
+// 8bitで通信することはないと思うが念の為
+void BLDC_CAN_8bit_Receive_Task(void *pvParameters) {
+    Serial.begin(115200);
+    while (1) {
+        twai_message_t rx_msg;
+
+        // 20ms タイムアウトで受信
+        if (twai_receive(&rx_msg, pdMS_TO_TICKS(20)) == ESP_OK) {
+            Serial.printf("ID:0x%X Data:", rx_msg.identifier);
+            for (int i = 0; i < 8; i++) {
+                Serial.printf(" %d", rx_msg.data[i]);
             }
             Serial.println();
         }
