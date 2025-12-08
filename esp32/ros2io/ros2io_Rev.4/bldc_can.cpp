@@ -14,7 +14,6 @@ extern int16_t received_data[MAX_ARRAY_SIZE]; // 受信データ
 int16_t received_data_dammy[MAX_ARRAY_SIZE] = {0}; // ダミー受信データ
 
 static int16_t gSendDate = 0;
-static uint8_t gFrameLength = 0;
 
 void BLDC_CAN_init() {
 
@@ -40,87 +39,43 @@ void BLDC_CAN_init() {
     DEBUG_PRINTLN("TWAI initialized");
 }
 
-// void BLDC_CAN_Send_Task(void *pvParameters) {
-//     while (1) {
-//         if (gSendDate < millis()) {
-//             twai_message_t msg;
-//             msg.data_length_code = gFrameLength; // DLC 0～8
-
-//             // 上位バイト・下位バイトに分割してペイロードに詰める
-//             msg.data[0] = (uint8_t)(received_data_dammy[1] >> 8);   // 上位バイト
-//             msg.data[1] = (uint8_t)(received_data_dammy[1] & 0xFF); // 下位バイト
-//             msg.data[2] = (uint8_t)(received_data_dammy[2] >> 8);   // 上位バイト
-//             msg.data[3] = (uint8_t)(received_data_dammy[2] & 0xFF); // 下位バイト
-//             msg.data[4] = (uint8_t)(received_data_dammy[3] >> 8);   // 上位バイト
-//             msg.data[5] = (uint8_t)(received_data_dammy[3] & 0xFF); // 下位バイト
-//             msg.data[6] = (uint8_t)(received_data_dammy[4] >> 8);   // 上位バイト
-//             msg.data[7] = (uint8_t)(received_data_dammy[4] & 0xFF); // 下位バイト
-
-//             msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
-//             msg.identifier = 0x431; // ID
-//             gFrameLength = 8;
-//             msg.rtr = 0; // データフレーム
-
-//             if (twai_transmit(&msg, pdMS_TO_TICKS(1000)) == ESP_OK) {
-//                 // Serial.print("Sent ");
-//                 // Serial.print(msg.extd ? "Extended" : "Standard");
-//                 // Serial.print(" ID 0x");
-//                 // Serial.print(msg.identifier, HEX);
-//                 // Serial.print(" DLC: ");
-//                 // Serial.println(msg.data_length_code);
-
-//                 gSendDate += 10; // 一定周期ごと送信
-//                 //     gFrameLength++;
-//                 //     if (gFrameLength > 8)
-//                 //         gFrameLength = 0; // DLCは最大8
-//             } else {
-//                 //     // Serial.println("Send failed");
-//             }
-//         }
-//         vTaskDelay(1); // WDTのリセット(必須)
-//     }
-// }
-
 void BLDC_CAN_Send_Task(void *pvParameters) {
     while (1) {
         if (gSendDate < millis()) {
-
-            // ★ゼロ初期化（非常に重要）
             twai_message_t msg = {0};
+            msg.data_length_code = 8; // DLC 0～8
 
-            // ★DLCは最初に8と確定
-            msg.data_length_code = 8;
+            // 上位バイト・下位バイトに分割してペイロードに詰める
+            msg.data[0] = (uint8_t)(received_data[1] >> 8);   // 上位バイト
+            msg.data[1] = (uint8_t)(received_data[1] & 0xFF); // 下位バイト
+            msg.data[2] = (uint8_t)(received_data[2] >> 8);   // 上位バイト
+            msg.data[3] = (uint8_t)(received_data[2] & 0xFF); // 下位バイト
+            msg.data[4] = (uint8_t)(received_data[3] >> 8);   // 上位バイト
+            msg.data[5] = (uint8_t)(received_data[3] & 0xFF); // 下位バイト
+            msg.data[6] = (uint8_t)(received_data[4] >> 8);   // 上位バイト
+            msg.data[7] = (uint8_t)(received_data[4] & 0xFF); // 下位バイト
 
-            // ---- 16bit ×4 を CAN ペイロードへ ----
-            msg.data[0] = received_data_dammy[1] >> 8;
-            msg.data[1] = received_data_dammy[1] & 0xFF;
+            // ROSと切り離してデバッグする場合に使う、ダミーデータをCANで送信する。
+            //  msg.data[0] = (uint8_t)(received_data_dammy[1] >> 8);   // 上位バイト
+            //  msg.data[1] = (uint8_t)(received_data_dammy[1] & 0xFF); // 下位バイト
+            //  msg.data[2] = (uint8_t)(received_data_dammy[2] >> 8);   // 上位バイト
+            //  msg.data[3] = (uint8_t)(received_data_dammy[2] & 0xFF); // 下位バイト
+            //  msg.data[4] = (uint8_t)(received_data_dammy[3] >> 8);   // 上位バイト
+            //  msg.data[5] = (uint8_t)(received_data_dammy[3] & 0xFF); // 下位バイト
+            //  msg.data[6] = (uint8_t)(received_data_dammy[4] >> 8);   // 上位バイト
+            //  msg.data[7] = (uint8_t)(received_data_dammy[4] & 0xFF); // 下位バイト
 
-            msg.data[2] = received_data_dammy[2] >> 8;
-            msg.data[3] = received_data_dammy[2] & 0xFF;
+            msg.extd = 0;           // 標準ID,1に変更すると拡張IDが使用可能
+            msg.identifier = 0x431; // ID,定義場所変更予定
+            msg.rtr = 0;            // RTR:0　通常0,気にしない
 
-            msg.data[4] = received_data_dammy[3] >> 8;
-            msg.data[5] = received_data_dammy[3] & 0xFF;
-
-            msg.data[6] = received_data_dammy[4] >> 8;
-            msg.data[7] = received_data_dammy[4] & 0xFF;
-
-            // ---- CAN ID 設定 ----
-            msg.extd = 0;            // 標準ID
-            msg.identifier = 0x431;  // 送信ID
-            msg.rtr = 0;             // データフレーム
-
-            // ---- 送信 ----
             if (twai_transmit(&msg, pdMS_TO_TICKS(1000)) == ESP_OK) {
-                // 10ms周期を正確に維持
-                gSendDate = millis() + 10;
+                gSendDate = millis() + 10; // 10ms毎に送信
             }
-
         }
-
-        vTaskDelay(1);
+        vTaskDelay(1); // WDTのリセット(必須)
     }
 }
-
 
 void BLDC_CAN_8bit_Receive_Task(void *pvParameters) {
     Serial.begin(115200);
