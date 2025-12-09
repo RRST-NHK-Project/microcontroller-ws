@@ -47,24 +47,31 @@ void setup() {
 //-----------------------------------------------------------------
 
 void loop() {
-    CANFDMessage msg;
-    if (fdcan1.receiveFD0(msg)) {
+    CANFDMessage rx_msg;
+    int16_t msg_data[4];
+
+    if (fdcan1.receiveFD0(rx_msg)) {
         // ID 表示
-        if (msg.ext) {
+        if (rx_msg.ext) {
             Serial.print("Extended ID: 0x");
-            Serial.print(msg.id, HEX);
+            Serial.print(rx_msg.id, HEX);
         } else {
             Serial.print("Standard ID: 0x");
-            Serial.print(msg.id, HEX);
+            Serial.print(rx_msg.id, HEX);
         }
+
+        // 受信データの復元
+        msg_data[0] = (int16_t)(rx_msg.data[0] << 8 | rx_msg.data[1]);
+        msg_data[1] = (int16_t)(rx_msg.data[2] << 8 | rx_msg.data[3]);
+        msg_data[2] = (int16_t)(rx_msg.data[4] << 8 | rx_msg.data[5]);
+        msg_data[3] = (int16_t)(rx_msg.data[6] << 8 | rx_msg.data[7]);
 
         // DLC & データ表示
         Serial.print(" DLC: ");
-        Serial.print(msg.len);
+        Serial.print(rx_msg.len);
         Serial.print(" Data: ");
-        for (int i = 0; i < msg.len; i++) {
-            Serial.print("0x");
-            Serial.print(msg.data[i], HEX);
+        for (int i = 0; i < 4; i++) {
+            Serial.print(msg_data[i]);
             Serial.print(" ");
         }
         Serial.println();
