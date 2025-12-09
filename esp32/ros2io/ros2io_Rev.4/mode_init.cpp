@@ -15,20 +15,20 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <std_msgs/msg/int16_multi_array.h>
 
 // 自作ヘッダーファイル
-#include "bldc_can.h"    //BLDC用CAN関連を管理
-#include "c620_defs.h"   //C620関連を管理
-#include "can_defs.h"    //CAN関連を管理
-#include "config.h"      //モードやIDを管理
-#include "defs.h"        //定数を管理
-#include "input_task.h"  //入力系のタスクを管理
-#include "mode_init.h"   //各モードの初期化関数を管理
-#include "output_task.h" //出力系のタスクを管理
-#include "ros_defs.h"    //microROS関連を管理
-#include "twai.h"        //twai関連を管理(ヘッダー名変えて)
+#include "bldc_can.h"     //BLDC用CAN関連を管理
+#include "can_defs.h"     //CAN関連を管理
+#include "config.h"       //モードやIDを管理
+#include "defs.h"         //定数を管理
+#include "input_task.h"   //入力系のタスクを管理
+#include "mode_init.h"    //各モードの初期化関数を管理
+#include "output_task.h"  //出力系のタスクを管理
+#include "ros_defs.h"     //microROS関連を管理
+#include "robomas_twai.h" //twai関連を管理(ヘッダー名変えて)
 
 // 各モードの初期化関数
 
-void mode1_init() {
+void mode1_init()
+{
     // モード1用の初期化
 
     // MDの方向ピンを出力に設定
@@ -69,14 +69,17 @@ void mode1_init() {
         PRO_CPU_NUM);
 }
 
-void mode2_init() {
+void mode2_init()
+{
     // モード2用の初期化
-    while (1) {
+    while (1)
+    {
         ;
     }
 }
 
-void mode3_init() {
+void mode3_init()
+{
     // モード3用の初期化
 
     // エンコーダの初期化
@@ -112,7 +115,8 @@ void mode3_init() {
         APP_CPU_NUM);
 }
 
-void mode4_init() {
+void mode4_init()
+{
     // エンコーダの初期化
     enc_init_half();
 
@@ -150,7 +154,8 @@ void mode4_init() {
         APP_CPU_NUM);
 }
 
-void mode5_init() {
+void mode5_init()
+{
 
     // Serial1.setTxBufferSize(1024);
     // Serial1.begin(115200, SERIAL_8N1, 17, 18);
@@ -159,7 +164,8 @@ void mode5_init() {
 
     CAN.setPins(CAN_RX, CAN_TX); // rx.tx
 
-    if (!CAN.begin(1000E3)) {
+    if (!CAN.begin(1000E3))
+    {
         // Serial1.println("Starting CAN failed!");
         while (1)
             ;
@@ -184,13 +190,13 @@ void mode5_init() {
         APP_CPU_NUM);
 
     xTaskCreateUniversal(
-        C620_debug,
-        "C620_debug",
+        ROBOMAS_ENC_SW_Read_Publish_Task,
+        "ROBOMAS_ENC_SW_Read_Publish_Task",
         4096,
         NULL,
         1, // 優先度、最大25？
         NULL,
-        APP_CPU_NUM);
+        0);
 
     xTaskCreateUniversal(
         LED_PWM_Task,
@@ -202,7 +208,8 @@ void mode5_init() {
         APP_CPU_NUM);
 }
 
-void mode6_init() {
+void mode6_init()
+{
 
     Serial1.setTxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, 17, 18);
@@ -212,7 +219,8 @@ void mode6_init() {
     // CAN.setPins(CAN_RX, CAN_TX); // rx.tx
     CAN.setPins(4, 5); // rx.tx
 
-    if (!CAN.begin(1000E3)) {
+    if (!CAN.begin(1000E3))
+    {
         Serial1.println("Starting CAN failed!");
         while (1)
             ;
@@ -260,7 +268,8 @@ void mode6_init() {
         APP_CPU_NUM);
 }
 
-void mode7_init() {
+void mode7_init()
+{
     Serial.begin(115200);
     delay(1000);
 
@@ -269,13 +278,15 @@ void mode7_init() {
     twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
     twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
-        //Serial.println("TWAI install failed");
+    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK)
+    {
+        // Serial.println("TWAI install failed");
         while (1)
             ;
     }
-    if (twai_start() != ESP_OK) {
-        //Serial.println("TWAI start failed");
+    if (twai_start() != ESP_OK)
+    {
+        // Serial.println("TWAI start failed");
         while (1)
             ;
     }
@@ -289,7 +300,8 @@ void mode7_init() {
         0);
 }
 
-void mode8_init() {
+void mode8_init()
+{
     xTaskCreateUniversal(
         BLDC_CAN_Send_Task,
         "BLDC_CAN_Send_Task",
@@ -300,7 +312,8 @@ void mode8_init() {
         0); // コア0にすると安定したのでこのままで
 }
 
-void mode9_init() {
+void mode9_init()
+{
     xTaskCreateUniversal(
         BLDC_CAN_16bit_Receive_Task,
         "BLDC_CAN_16bit_Receive_Task",
@@ -313,8 +326,10 @@ void mode9_init() {
 
 // テストモード　※実機で「絶対」に実行するな！
 // シリアルモニターからEnterが押されるまで待機する
-void mode0_init() {
-    while (1) {
+void mode0_init()
+{
+    while (1)
+    {
         // テストモード実装予定
         ;
     }

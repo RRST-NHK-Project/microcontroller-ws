@@ -35,16 +35,15 @@ TODO:定数定義の統一
 #include "driver/pcnt.h"
 
 // 自作ヘッダーファイル
-#include "bldc_can.h"    //BLDC用CAN関連を管理
-#include "c620_defs.h"   //C620関連を管理
-#include "can_defs.h"    //CAN関連を管理
-#include "config.h"      //モードやIDを管理
-#include "defs.h"        //定数を管理
-#include "input_task.h"  //入力系のタスクを管理
-#include "mode_init.h"   //各モードの初期化関数を管理
-#include "output_task.h" //出力系のタスクを管理
-#include "ros_defs.h"    //microROS関連を管理
-#include "twai.h"        //twai関連を管理(ヘッダー名変えて)
+#include "bldc_can.h"     //BLDC用CAN関連を管理
+#include "can_defs.h"     //CAN関連を管理
+#include "config.h"       //モードやIDを管理
+#include "defs.h"         //定数を管理
+#include "input_task.h"   //入力系のタスクを管理
+#include "mode_init.h"    //各モードの初期化関数を管理
+#include "output_task.h"  //出力系のタスクを管理
+#include "ros_defs.h"     //microROS関連を管理
+#include "robomas_twai.h" //twai関連を管理(ヘッダー名変えて)
 
 // デバッグ出力用のマクロ
 // #if DEBUG_SERIAL
@@ -57,7 +56,8 @@ TODO:定数定義の統一
 // #define DEBUG_PRINTLN(x)
 // #endif
 
-void setup() {
+void setup()
+{
 
     DEBUG_BEGIN(115200);
     DEBUG_PRINTLN("Debug Serial Started");
@@ -66,9 +66,11 @@ void setup() {
     pinMode(LED, OUTPUT);
 
     // MODEに応じた初期化
-    switch (MODE) {
+    switch (MODE)
+    {
     case 0:
-        while (1) {
+        while (1)
+        {
             // テストモード実装までの応急所置
             ;
         }
@@ -115,7 +117,7 @@ void setup() {
         mode8_init();
         break;
     case 9:
-        //ros_init();
+        // ros_init();
         BLDC_CAN_init();
         mode9_init();
         break;
@@ -128,8 +130,10 @@ void setup() {
     }
 }
 
-void loop() {
-    while (1) {
+void loop()
+{
+    while (1)
+    {
         rclc_executor_spin_some(&executor, RCL_MS_TO_NS(5));
         vTaskDelay(1); // 1msスリープ
     }

@@ -85,7 +85,7 @@ float pid(float setpoint, float input, float &error_prev, float &integral,
 // 値制限関数
 float constrain_double(float val, float min_val, float max_val);
 
-void send_cur_all(float cur_array[NUM_MOTOR]);
+void send_cur_twai(float cur_array[NUM_MOTOR]);
 
 ///
 void twai_receive_feedback(void *pvParameters);
