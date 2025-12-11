@@ -91,3 +91,5 @@ void send_cur_twai(float cur_array[NUM_MOTOR]);
 void twai_receive_feedback(void *pvParameters);
 
 void C620_twai(void *pvParameters);
+
+void C620_twai_FB(void *pvParameters);
