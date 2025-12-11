@@ -209,27 +209,26 @@ void C620_twai(void *pvParameters)
 
 void C620_twai_FB(void *pvParameters){
     while(1){
-         twai_receive_feedback();
+        twai_receive_feedback();
 
-          msg.data.data[0] = count[0];
-        msg.data.data[1] = count[1];
-        msg.data.data[2] = count[2];
-        msg.data.data[3] = count[3];
-        msg.data.data[4] = sw_state[0];
-        msg.data.data[5] = sw_state[1];
-        msg.data.data[6] = sw_state[2];
-        msg.data.data[7] = sw_state[3];
-        msg.data.data[8] = angle_m3508[0];
-        msg.data.data[9] = angle_m3508[1];
-        msg.data.data[10] = angle_m3508[2];
-        msg.data.data[11] = angle_m3508[3];
-        msg.data.data[12] = vel_m3508[0];
-        msg.data.data[13] = vel_m3508[1];
-        msg.data.data[14] = vel_m3508[2];
-        msg.data.data[15] = vel_m3508[3];
-        msg.data.data[16] = current[0];
-        msg.data.data[17] = current[1];
-        msg.data.data[18] = current[2];
-        msg.data.data[19] = current[3];
+        msg.data.data[0] = angle_m3508[0];
+        msg.data.data[1] = angle_m3508[1];
+        msg.data.data[2] = angle_m3508[2];
+        msg.data.data[3] = angle_m3508[3];
+        msg.data.data[4] = vel_m3508[0];
+        msg.data.data[5] = vel_m3508[1];
+        msg.data.data[6] = vel_m3508[2];
+        msg.data.data[7] = vel_m3508[3];
+        msg.data.data[8] = c[0];
+        msg.data.data[9] = c[1];
+        msg.data.data[10] = c[2];
+        msg.data.data[11] = c[3];
+
+        //  if (MODE != 0) {
+        //     RCCHECK(rcl_publish(&publisher, &msg, NULL));
+        // }
+
+        vTaskDelay(1); // WDTのリセット(必須)
     }
+   
 }

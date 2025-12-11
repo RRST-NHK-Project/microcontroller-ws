@@ -210,62 +210,38 @@ void mode5_init()
 
 void mode6_init()
 {
+    Serial.begin(115200);
+    delay(1000);
 
-    Serial1.setTxBufferSize(1024);
-    Serial1.begin(115200, SERIAL_8N1, 17, 18);
-    while (!Serial)
-        ;
+    msg.data.data = (int16_t *)malloc(sizeof(int16_t) * 12);
+    msg.data.size = 12;
+    msg.data.capacity = 12;
 
-    // CAN.setPins(CAN_RX, CAN_TX); // rx.tx
-    CAN.setPins(4, 5); // rx.tx
+    // TWAI 設定
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
+    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-    if (!CAN.begin(1000E3))
+    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK)
     {
-        Serial1.println("Starting CAN failed!");
+        // Serial.println("TWAI install failed");
         while (1)
             ;
     }
-    ledcAttach(16, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    pinMode(SV1, OUTPUT);
-    pinMode(26, INPUT_PULLUP);
-    pinMode(27, INPUT_PULLUP);
-
-    //  xTaskCreateUniversal(
-    //     CAN_Pb,
-    //     "CAN_Pb",
-    //     4096,
-    //     NULL,
-    //     5, // 優先度、最大25？
-    //     NULL,
-    //     APP_CPU_NUM);
-
+    if (twai_start() != ESP_OK)
+    {
+        // Serial.println("TWAI start failed");
+        while (1)
+            ;
+    }
     xTaskCreateUniversal(
-        CR25_Task,
-        "CR25_Task",
-        4096,
-        NULL,
-        1, // 優先度、最大25？
-        NULL,
-        APP_CPU_NUM);
-
-    // ソレノイド操作のスレッド（タスク）の作成
-    xTaskCreateUniversal(
-        SV_Task,
-        "SV_Task",
+        C620_twai,
+        "C620_twai",
         4096,
         NULL,
         2, // 優先度、最大25？
         NULL,
-        APP_CPU_NUM);
-
-    xTaskCreateUniversal(
-        LED_PWM_Task,
-        "LED_PWM_Task",
-        2048,
-        NULL,
-        1, // 優先度、最大25？
-        &led_pwm_handle,
-        APP_CPU_NUM);
+        0);
 }
 
 void mode7_init()
