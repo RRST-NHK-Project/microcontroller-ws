@@ -1,49 +1,38 @@
 #include <Arduino.h>
 
-#define RxNUM 16
-#define Tx16NUM 8 // 送信データサイズ（16ビット時の要素数）
+#define Tx16NUM 8
+#define START_BYTE 0xAA
 
-#define CMD_ACK 0x20
-#define CMD_ESTOP 0xFF
-
-const uint8_t DEVICE_ID = 0x01;
-int16_t Rx_Data[RxNUM] = {0};
+#define DEVICE_ID 0x02
 
 int16_t Tx_16Data[Tx16NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
-
-// 1 byte(ID) + 16bit × Tx16NUM
-uint8_t Tx_8Data[1 + Tx16NUM * 2] = {0};
-
-bool connected = false;
+uint8_t Tx_8Data[1 + 1 + 1 + Tx16NUM * 2 + 1];
+// START + ID + LENGTH + DATA + CHECKSUM
 
 void setup() {
-    Tx_8Data[0] = DEVICE_ID;
     Serial.begin(115200);
-    // Serial.write(DEVICE_ID);
 }
 
 void loop() {
+    // フレーム作成
+    Tx_8Data[0] = START_BYTE;
+    Tx_8Data[1] = DEVICE_ID;
+    Tx_8Data[2] = Tx16NUM * 2; // データ長
 
-    // ===== ID送信フェーズ =====
-    while (!connected) {
-        Serial.write(DEVICE_ID); // IDのみ送信
-        delay(100);
+    uint8_t checksum = 0;
+    checksum ^= Tx_8Data[1]; // ID
+    checksum ^= Tx_8Data[2]; // LENGTH
 
-        // PCからの応答確認
-        if (Serial.available() > 0) {
-            uint8_t rx = Serial.read();
-            if (rx == CMD_ACK) {
-                connected = true; // 接続確定
-                delay(500);
-            }
-        }
-    }
-
-    Tx_8Data[0] = DEVICE_ID;
     for (int i = 0; i < Tx16NUM; i++) {
-        Tx_8Data[1 + i * 2] = (uint8_t)(Tx_16Data[i] >> 8);       // 上位バイト
-        Tx_8Data[1 + i * 2 + 1] = (uint8_t)(Tx_16Data[i] & 0xFF); // 下位バイト
+        Tx_8Data[3 + i * 2] = (uint8_t)(Tx_16Data[i] >> 8);       // 上位
+        Tx_8Data[3 + i * 2 + 1] = (uint8_t)(Tx_16Data[i] & 0xFF); // 下位
+        checksum ^= Tx_8Data[3 + i * 2];
+        checksum ^= Tx_8Data[3 + i * 2 + 1];
     }
-    Serial.write(Tx_8Data, 1 + Tx16NUM * 2);
+
+    Tx_8Data[3 + Tx16NUM * 2] = checksum;
+
+    Serial.write(Tx_8Data, 1 + 1 + 1 + Tx16NUM * 2 + 1);
+
     delay(100);
 }
