@@ -1,10 +1,34 @@
+/*====================================================================
+ros2io Rev.4f alpha
+Target board: NUCLEO-F446RE
+
+Description:
+  This is a simple serial communication example between a microcontroller
+  and a PC using a custom binary protocol. The microcontroller sends and
+  receives frames containing int16 data.
+
+  Frame Structure:
+  [START_BYTE][DEVICE_ID][LENGTH][DATA...][CHECKSUM]
+    - START_BYTE: 0xAA
+    - DEVICE_ID: 0x02
+    - LENGTH: Number of data bytes (Tx16NUM * 2)
+    - DATA: int16 data (big-endian)
+    - CHECKSUM: XOR of all bytes except START_BYTE
+
+  The microcontroller sends Tx16NUM int16 values to the PC and listens for
+  incoming frames from the PC. Received frames are validated using the
+  checksum and stored in Rx_16Data array.
+
+Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+====================================================================*/
+
 #include <Arduino.h>
 
 #define Tx16NUM 8
 #define START_BYTE 0xAA
 #define DEVICE_ID 0x02
 
-#define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
+#define ENABLE_LOOPBACK 1 // 受信したデータをそのまま送り返す
 
 // ================= TX =================
 
@@ -62,6 +86,10 @@ void send_frame() {
 
     Tx_8Data[3 + Tx16NUM * 2] = checksum;
 
+    // #if !ENABLE_LOOPBACK
+    //     // ===== LOOPBACK =====
+    //     Serial.write(Tx_8Data, sizeof(Tx_8Data));
+    // #endif
     Serial.write(Tx_8Data, sizeof(Tx_8Data));
 }
 
