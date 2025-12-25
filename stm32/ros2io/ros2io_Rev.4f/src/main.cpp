@@ -4,7 +4,7 @@
 #define START_BYTE 0xAA
 #define DEVICE_ID 0x02
 
-#define ENABLE_LOOPBACK 1 // ← ループバックON/OFF
+#define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
 
 // ================= TX =================
 
