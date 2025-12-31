@@ -5,8 +5,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
 #include <Arduino.h>
-#include <defs.h>
-#include <led_task.h>
+#include <defs.hpp>
+#include <led_task.hpp>
 
 void LED_Blink100_Task(void *pvParameters) {
     while (1) {

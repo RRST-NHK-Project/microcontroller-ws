@@ -24,9 +24,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <defs.h>
-#include <led_task.h>
-#include <serial_task.h>
+#include <defs.hpp>
+#include <led_task.hpp>
+#include <serial_task.hpp>
 
 // ================= SETUP =================
 

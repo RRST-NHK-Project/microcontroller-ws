@@ -5,5 +5,5 @@
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
-#include "defs.h"
+#include "defs.hpp"
 #include <Arduino.h>
