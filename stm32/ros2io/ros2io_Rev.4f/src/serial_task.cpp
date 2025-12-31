@@ -12,6 +12,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define START_BYTE 0xAA
 #define DEVICE_ID 0x02
 
+// ループバックの有効化設定（実装途中）
 #define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
 
 // ================= TX =================
@@ -43,6 +44,29 @@ uint8_t rx_checksum = 0;
 
 constexpr uint32_t TX_PERIOD_MS = 20; // 送信周期（ミリ秒）
 constexpr uint32_t RX_PERIOD_MS = 10; // 受信周期（ミリ秒）
+
+void send_frame();
+void receive_frame();
+
+// ================= TASK =================
+
+void txTask(void *) {
+    TickType_t last_wake = xTaskGetTickCount();
+
+    while (1) {
+        send_frame();
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(TX_PERIOD_MS));
+    }
+}
+
+void rxTask(void *) {
+    TickType_t last_wake = xTaskGetTickCount();
+
+    while (1) {
+        receive_frame();
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(RX_PERIOD_MS));
+    }
+}
 
 // ================= TX =================
 
@@ -115,6 +139,9 @@ void receive_frame() {
         case WAIT_CHECKSUM:
             if (rx_checksum == b && rx_id == DEVICE_ID) {
 
+                digitalWrite(F446RE_BUILTIN_LED, !digitalRead(F446RE_BUILTIN_LED));
+                //   digitalWrite(F446RE_BUILTIN_LED, HIGH); // これはテスト用、消して！
+
                 // ===== RAW フレーム保存 =====
                 Rx_raw_frame[0] = START_BYTE;
                 Rx_raw_frame[1] = rx_id;
@@ -143,25 +170,5 @@ void receive_frame() {
             rx_state = WAIT_START;
             break;
         }
-    }
-}
-
-// ================= TASK =================
-
-void txTask(void *) {
-    TickType_t last_wake = xTaskGetTickCount();
-
-    while (1) {
-        send_frame();
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(TX_PERIOD_MS));
-    }
-}
-
-void rxTask(void *) {
-    TickType_t last_wake = xTaskGetTickCount();
-
-    while (1) {
-        receive_frame();
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(RX_PERIOD_MS));
     }
 }

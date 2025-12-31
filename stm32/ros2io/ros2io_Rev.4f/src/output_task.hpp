@@ -4,7 +4,12 @@
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
-#include "frame_data.hpp"
+#pragma once
 
-volatile int16_t Tx_16Data[Tx16NUM] = {0};
-volatile int16_t Rx_16Data[Tx16NUM] = {0};
+#include <Arduino.h>
+
+// 関数のプロトタイプ宣
+void Output_Task(void *); // 出力タスク
+void MD_Output();
+// void Servo_Output();
+// void TR_Output();

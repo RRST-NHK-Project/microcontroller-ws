@@ -1,5 +1,15 @@
+/*
+                              .oooo.    o8o                 ooooooooo.                                   .o    .o88o.
+                            .dP""Y88b   `"'                 `888   `Y88.                               .d88    888 `"
+oooo d8b  .ooooo.   .oooo.o       ]8P' oooo   .ooooo.        888   .d88'  .ooooo.  oooo    ooo       .d'888   o888oo
+`888""8P d88' `88b d88(  "8     .d8P'  `888  d88' `88b       888ooo88P'  d88' `88b  `88.  .8'      .d'  888    888
+ 888     888   888 `"Y88b.    .dP'      888  888   888       888`88b.    888ooo888   `88..8'       88ooo888oo  888
+ 888     888   888 o.  )88b .oP     .o  888  888   888       888  `88b.  888    .o    `888'    .o.      888    888
+d888b    `Y8bod8P' 8""888P' 8888888888 o888o `Y8bod8P'      o888o  o888o `Y8bod8P'     `8'     Y8P     o888o  o888o
+*/
+
 /*====================================================================
-ros2io Rev.4f alpha
+ros2io Rev.4f
 Target board: NUCLEO-F446RE
 
 Description:
@@ -26,6 +36,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <STM32FreeRTOS.h>
 #include <defs.hpp>
 #include <led_task.hpp>
+#include <output_task.hpp>
 #include <serial_task.hpp>
 
 // ================= SETUP =================
@@ -37,13 +48,13 @@ void setup() {
 
     // 以降FreeRTOSタスク関連
 
-    xTaskCreate(
-        LED_Blink100_Task,   // タスク関数
-        "LED_Blink100_Task", // タスク名
-        256,                 // スタックサイズ（words）
-        NULL,
-        1, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     LED_Blink100_Task,   // タスク関数
+    //     "LED_Blink100_Task", // タスク名
+    //     256,                 // スタックサイズ（words）
+    //     NULL,
+    //     1, // 優先度
+    //     NULL);
 
     xTaskCreate(
         txTask,   // タスク関数
@@ -59,6 +70,14 @@ void setup() {
         256,      // スタックサイズ（words）
         NULL,
         10, // 優先度
+        NULL);
+
+    xTaskCreate(
+        Output_Task,   // タスク関数
+        "Output_Task", // タスク名
+        256,           // スタックサイズ（words）
+        NULL,
+        5, // 優先度
         NULL);
 
     vTaskStartScheduler();
