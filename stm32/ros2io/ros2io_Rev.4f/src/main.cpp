@@ -23,12 +23,15 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
 #include <Arduino.h>
+#include <STM32FreeRTOS.h>
+#include <defs.h>
+#include <led_task.h>
 
 #define Tx16NUM 8
 #define START_BYTE 0xAA
 #define DEVICE_ID 0x02
 
-#define ENABLE_LOOPBACK 1 // 受信したデータをそのまま送り返す
+#define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
 
 // ================= TX =================
 
@@ -64,6 +67,20 @@ uint8_t rx_checksum = 0;
 
 void setup() {
     Serial.begin(115200);
+
+    pinMode(F446RE_BUILTIN_LED, OUTPUT);
+
+    // 以降FreeRTOSタスク関連
+
+    xTaskCreate(
+        LED_Blink100_Task,   // タスク関数
+        "LED_Blink100_Task", // タスク名
+        256,                 // スタックサイズ（words）
+        NULL,
+        1, // 優先度
+        NULL);
+
+    vTaskStartScheduler();
 }
 
 // ================= TX =================
