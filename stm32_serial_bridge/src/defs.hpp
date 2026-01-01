@@ -11,8 +11,11 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ================= ピンの定義 =================
 
 // ピンの定義 //
-// 状態表示LED
+// 内蔵LED
 #define F446RE_BUILTIN_LED LED_LD2 // 内蔵LED(NUCLEO-F446RE)
+
+// 内蔵ボタン
+#define F446RE_USER_BUTTON USER_BTN // ユーザーボタン(NUCLEO-F446RE)
 
 // 外部シリアル変換モジュール（実装予定）
 // #define DEBUG_SERIAL_TxD 14
@@ -98,7 +101,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ================================
 // スイッチ
 // ================================
-#define SW1 PA_13
+// #define SW1 PA_13
+#define SW1 F446RE_USER_BUTTON
 #define SW2 PA_14
 #define SW3 PB_3
 #define SW4 PB_10

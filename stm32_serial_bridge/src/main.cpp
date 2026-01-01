@@ -30,6 +30,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
 #include <defs.hpp>
+#include <input_task.hpp>
 #include <led_task.hpp>
 #include <output_task.hpp>
 #include <serial_task.hpp>
@@ -38,11 +39,13 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 void setup() {
 
+    // プログラムが書き込めなくなるバグの応急処置
+    delay(2000); // 安定待ち
+
     // ボーレートは実機テストしながら調整する予定
     Serial.begin(115200);
 
     pinMode(F446RE_BUILTIN_LED, OUTPUT);
-    Output_init();
 
     // 以降FreeRTOSタスク関連
 
@@ -82,6 +85,14 @@ void setup() {
         Output_Task,   // タスク関数
         "Output_Task", // タスク名
         256,           // スタックサイズ（words）
+        NULL,
+        5, // 優先度
+        NULL);
+
+    xTaskCreate(
+        Input_Task,   // タスク関数
+        "Input_Task", // タスク名
+        256,          // スタックサイズ（words）
         NULL,
         5, // 優先度
         NULL);

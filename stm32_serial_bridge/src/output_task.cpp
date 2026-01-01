@@ -12,6 +12,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 constexpr uint32_t OUTPUT_PERIOD_MS = 20; // ピン更新周期（ミリ秒）
 
 void MD_Output();
+void Output_init();
 void Servo_Output();
 void TR_Output();
 
@@ -19,6 +20,7 @@ void TR_Output();
 
 void Output_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
+    Output_init();
 
     while (1) {
         MD_Output();
