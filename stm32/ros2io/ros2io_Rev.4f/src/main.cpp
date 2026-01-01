@@ -1,16 +1,8 @@
-/*
-                              .oooo.    o8o                 ooooooooo.                                   .o    .o88o.
-                            .dP""Y88b   `"'                 `888   `Y88.                               .d88    888 `"
-oooo d8b  .ooooo.   .oooo.o       ]8P' oooo   .ooooo.        888   .d88'  .ooooo.  oooo    ooo       .d'888   o888oo
-`888""8P d88' `88b d88(  "8     .d8P'  `888  d88' `88b       888ooo88P'  d88' `88b  `88.  .8'      .d'  888    888
- 888     888   888 `"Y88b.    .dP'      888  888   888       888`88b.    888ooo888   `88..8'       88ooo888oo  888
- 888     888   888 o.  )88b .oP     .o  888  888   888       888  `88b.  888    .o    `888'    .o.      888    888
-d888b    `Y8bod8P' 8""888P' 8888888888 o888o `Y8bod8P'      o888o  o888o `Y8bod8P'     `8'     Y8P     o888o  o888o
-*/
-
 /*====================================================================
 ros2io Rev.4f
 Target board: NUCLEO-F446RE
+
+とりあえず自動生成された概要コメント↓
 
 Description:
   This is a simple serial communication example between a microcontroller
@@ -56,18 +48,26 @@ void setup() {
     //     1, // 優先度
     //     NULL);
 
-    xTaskCreate(
-        txTask,   // タスク関数
-        "txTask", // タスク名
-        256,      // スタックサイズ（words）
-        NULL,
-        10, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     txTask,   // タスク関数
+    //     "txTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     rxTask,   // タスク関数
+    //     "rxTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
 
     xTaskCreate(
-        rxTask,   // タスク関数
-        "rxTask", // タスク名
-        256,      // スタックサイズ（words）
+        serialTask,   // タスク関数
+        "serialTask", // タスク名
+        256,          // スタックサイズ（words）
         NULL,
         10, // 優先度
         NULL);
@@ -87,4 +87,5 @@ void setup() {
 
 void loop() {
     vTaskDelay(pdMS_TO_TICKS(1000));
+    // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }

@@ -50,6 +50,25 @@ void receive_frame();
 
 // ================= TASK =================
 
+void serialTask(void *) {
+    TickType_t last_tx = xTaskGetTickCount();
+
+    while (1) {
+        // RXは毎ループ呼び出す
+        receive_frame();
+
+        // TXのみ周期管理
+        if (xTaskGetTickCount() - last_tx >= pdMS_TO_TICKS(TX_PERIOD_MS)) {
+            send_frame();
+            last_tx = xTaskGetTickCount();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+}
+
+// TX,RXでタスクを分けると不具合が発生、シリアルに２つのタスクからアクセスしているのが原因？
+// 以下２つのタスクはそのうち削除予定
 void txTask(void *) {
     TickType_t last_wake = xTaskGetTickCount();
 
