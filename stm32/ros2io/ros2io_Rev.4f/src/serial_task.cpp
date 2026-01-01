@@ -69,6 +69,8 @@ void serialTask(void *) {
 
 // TX,RXでタスクを分けると不具合が発生、シリアルに２つのタスクからアクセスしているのが原因？
 // 以下２つのタスクはそのうち削除予定
+
+// 送信タスク（削除予定）
 void txTask(void *) {
     TickType_t last_wake = xTaskGetTickCount();
 
@@ -77,7 +79,7 @@ void txTask(void *) {
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(TX_PERIOD_MS));
     }
 }
-
+// 受信タスク（削除予定）
 void rxTask(void *) {
     TickType_t last_wake = xTaskGetTickCount();
 

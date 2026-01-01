@@ -34,6 +34,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ================= SETUP =================
 
 void setup() {
+
+    // ボーレートは実機テストしながら調整する予定
     Serial.begin(115200);
 
     pinMode(F446RE_BUILTIN_LED, OUTPUT);
