@@ -81,13 +81,13 @@ void setup() {
         10, // 優先度
         NULL);
 
-    xTaskCreate(
-        Output_Task,   // タスク関数
-        "Output_Task", // タスク名
-        256,           // スタックサイズ（words）
-        NULL,
-        5, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     Output_Task,   // タスク関数
+    //     "Output_Task", // タスク名
+    //     256,           // スタックサイズ（words）
+    //     NULL,
+    //     5, // 優先度
+    //     NULL);
 
     xTaskCreate(
         Input_Task,   // タスク関数

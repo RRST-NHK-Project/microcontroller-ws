@@ -10,7 +10,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <SimpleFOC.h>
 #include <defs.hpp>
 
-constexpr uint32_t INPUT_PERIOD_MS = 10; // ピン更新周期（ミリ秒）
+constexpr uint32_t INPUT_PERIOD_MS = 20; // 更新周期（ミリ秒）
 
 void Input_init();
 void ENC_Input();
@@ -60,7 +60,7 @@ void Input_Task(void *) {
     Input_init();
 
     while (1) {
-        ENC_Input();
+        // ENC_Input();
         SW_Input();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(INPUT_PERIOD_MS));
     }
@@ -109,6 +109,7 @@ void Input_init() {
 
 void ENC_Input() {
     // ENC入力処理
+    taskENTER_CRITICAL();
     Tx_16Data[1] = (int16_t)(enc1.getAngle() * 1000.0f);
     Tx_16Data[2] = (int16_t)(enc2.getAngle() * 1000.0f);
     Tx_16Data[3] = (int16_t)(enc3.getAngle() * 1000.0f);
@@ -117,6 +118,7 @@ void ENC_Input() {
     Tx_16Data[6] = (int16_t)(enc6.getAngle() * 1000.0f);
     Tx_16Data[7] = (int16_t)(enc7.getAngle() * 1000.0f);
     Tx_16Data[8] = (int16_t)(enc8.getAngle() * 1000.0f);
+    taskEXIT_CRITICAL();
 }
 
 void SW_Input() {
