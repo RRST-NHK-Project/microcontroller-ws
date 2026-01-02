@@ -30,9 +30,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
 #include <defs.hpp>
-#include <input_task.hpp>
 #include <led_task.hpp>
-#include <output_task.hpp>
+#include <pin_ctrl_task.hpp>
 #include <serial_task.hpp>
 
 // ================= SETUP =================
@@ -89,13 +88,21 @@ void setup() {
     //     5, // 優先度
     //     NULL);
 
-    xTaskCreate(
-        Input_Task,   // タスク関数
-        "Input_Task", // タスク名
-        256,          // スタックサイズ（words）
-        NULL,
-        5, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     Input_Task,   // タスク関数
+    //     "Input_Task", // タスク名
+    //     256,          // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     Pin_Ctrl_Task,   // タスク関数
+    //     "Pin_Ctrl_Task", // タスク名
+    //     512,             // スタックサイズ（words）
+    //     NULL,
+    //     8, // 優先度
+    //     NULL);
 
     vTaskStartScheduler();
 }
