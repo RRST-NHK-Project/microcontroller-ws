@@ -161,8 +161,8 @@ void receive_frame() {
         case WAIT_CHECKSUM:
             if (rx_checksum == b && rx_id == DEVICE_ID) {
 
-                digitalWrite(F446RE_BUILTIN_LED, !digitalRead(F446RE_BUILTIN_LED));
-                //   digitalWrite(F446RE_BUILTIN_LED, HIGH); // これはテスト用、消して！
+                // digitalWrite(F446RE_BUILTIN_LED, !digitalRead(F446RE_BUILTIN_LED));
+                //    digitalWrite(F446RE_BUILTIN_LED, HIGH); // これはテスト用、消して！
 
                 // ===== RAW フレーム保存 =====
                 Rx_raw_frame[0] = START_BYTE;

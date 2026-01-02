@@ -10,7 +10,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <SimpleFOC.h>
 #include <defs.hpp>
 
-constexpr uint32_t CTRL_PERIOD_MS = 10; // ピン更新周期（ミリ秒）
+constexpr uint32_t CTRL_PERIOD_MS = 20; // ピン更新周期（ミリ秒）
 
 void MD_Output();
 void Output_init();
@@ -81,7 +81,7 @@ void Output_Task(void *) {
 
     while (1) {
         MD_Output();
-        Servo_Output();
+        // Servo_Output();
         TR_Output();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }

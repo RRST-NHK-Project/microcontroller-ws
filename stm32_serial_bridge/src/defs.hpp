@@ -37,7 +37,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ================================
 // MD DIR
 // ================================
-#define MD1D PA_6
+// #define MD1D PA_6
+#define MD1D F446RE_BUILTIN_LED
 #define MD2D PA_7
 #define MD3D PB_2
 #define MD4D PB_15

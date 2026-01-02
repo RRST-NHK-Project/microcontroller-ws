@@ -7,8 +7,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #pragma once
 #include <stdint.h>
 
-#define Tx16NUM 24 // 送信するint16データの数
-#define Rx16NUM 17 // 受信するint16データの数
+#define Tx16NUM 17 // 送信するint16データの数
+#define Rx16NUM 24 // 受信するint16データの数
 
 extern volatile int16_t Tx_16Data[Tx16NUM];
 /*
