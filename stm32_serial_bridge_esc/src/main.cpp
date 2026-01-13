@@ -31,6 +31,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <STM32FreeRTOS.h>
 #include <SimpleFOC.h>
 #include <defs.hpp>
+#include <frame_data.hpp>
 #include <led_task.hpp>
 #include <serial_task.hpp>
 
@@ -151,9 +152,11 @@ void setup() {
 // ================= LOOP =================
 
 void loop() {
-    vTaskDelay(pdMS_TO_TICKS(1000));
     // メインループではFOC制御を実行
     motor.loopFOC();
     motor.move();
-    command.run();
+    // command.run();
+    float SCALE = 1.0f; // スケール変更
+    float target_angle = (float)Rx_16Data[1] * DEG_TO_RAD / SCALE;
+    motor.target = target_angle;
 }
