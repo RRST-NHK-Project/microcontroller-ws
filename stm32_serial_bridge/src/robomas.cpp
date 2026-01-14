@@ -179,6 +179,31 @@ void M3508_RX()
     }
 }
 
+// 複数モータ対応CAN送信関数
+void send_cur_all(float cur_array[NUM_MOTOR])
+{
+    constexpr float MAX_CUR = 10;
+    constexpr int MAX_CUR_VAL = 1000;
+    uint8_t send_data[8] = {};
+
+    for (int i = 0; i < NUM_MOTOR; i++)
+    {
+        float val = cur_array[i] * (MAX_CUR_VAL / MAX_CUR);
+        if (val < -MAX_CUR_VAL)
+            val = -MAX_CUR_VAL;
+        if (val > MAX_CUR_VAL)
+            val = MAX_CUR_VAL;
+
+        int16_t transmit_val = val;
+        send_data[i * 2] = (transmit_val >> 8) & 0xFF;
+        send_data[i * 2 + 1] = transmit_val & 0xFF;
+    }
+
+    CAN.beginPacket(0x200);
+    CAN.write(send_data, 8);
+    CAN.endPacket();
+}
+
 /*====================================================================
 
                 robomas.cpp 処理全体フロー
@@ -217,7 +242,7 @@ void M3508_RX()
                       │
                       ▼
         ┌─────────────────────────────┐
-        │     CAN 送信   (M3508_Task) │
+        │     CAN 送信   (send_cur) │
         │-----------------------------│
         │ ・CAN ID: 0x200             │
         │ ・motor_output_current[]   │
