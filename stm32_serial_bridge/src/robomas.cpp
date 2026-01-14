@@ -91,16 +91,6 @@ void M3508_Task()
                 kp_vel, ki_vel, kd_vel,
                 dt);
 
-            // （必要なら）位置PID
-            // pos_output[i] = pid(
-            //     180.0f,
-            //     angle_m3508[i],
-            //     pos_error_prev[i],
-            //     pos_integral[i],
-            //     kp_pos, ki_pos, kd_pos,
-            //     dt
-            // );
-
             // 電流指令へ変換
             motor_output_current[i] = vel_out[i] * 10.0f;
 
