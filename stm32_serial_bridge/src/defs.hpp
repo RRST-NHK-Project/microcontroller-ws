@@ -115,6 +115,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // CAN通信（ロボマス）
 // #define CAN_RX
 // #define CAN_TX
+// チャッピーいわく
+// #define CAN_RX PB_8
+// #define CAN_TX PB_9
 
 // ================= 定数 =================
 // MD出力の上限値
@@ -172,3 +175,40 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define SERVO8_MAX_US 2500
 #define SERVO8_MIN_DEG 0
 #define SERVO8_MAX_DEG 180
+
+// ロボマス
+#define NUM_MOTOR 4                    // モーター数
+#define gear_m3508 19.2f               // M3508ギア比
+#define gear_m2006 36.0f               // M2006ギア比
+#define ENCODER_MAX 8192               // エンコーダ分解能
+#define HALF_ENCODER (ENCODER_MAX / 2) // エンコーダ分解能の半分
+
+// 状態変数の宣言
+extern int encoder_count[NUM_MOTOR];
+extern int rpm[NUM_MOTOR];
+extern int current[NUM_MOTOR];
+extern bool offset_ok[NUM_MOTOR];
+extern int encoder_offset[NUM_MOTOR];
+extern int last_encoder[NUM_MOTOR];
+extern int rotation_count[NUM_MOTOR];
+extern long total_encoder[NUM_MOTOR];
+extern float angle[NUM_MOTOR];
+extern float vel[NUM_MOTOR];
+
+// PID関連変数
+extern float target_angle[NUM_MOTOR];
+extern float pos_error_prev[NUM_MOTOR];
+extern float cur_error_prev[NUM_MOTOR];
+extern float pos_integral[NUM_MOTOR];
+extern float vel_integral[NUM_MOTOR];
+extern float cur_integral[NUM_MOTOR];
+extern float pos_output[NUM_MOTOR];
+extern float cur_output[NUM_MOTOR];
+extern float motor_output_current[NUM_MOTOR];
+
+extern float angle_m3508[NUM_MOTOR];
+extern float vel_m3508[NUM_MOTOR];
+extern float c[NUM_MOTOR];
+extern float output[NUM_MOTOR];
+
+extern unsigned long lastPidTime;
