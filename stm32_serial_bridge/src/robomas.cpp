@@ -22,8 +22,8 @@ int last_encoder[NUM_MOTOR] = {-1, -1, -1, -1};
 int rotation_count[NUM_MOTOR] = {0};
 long total_encoder[NUM_MOTOR] = {0};
 
-float angle[NUM_MOTOR] = {0.0f};
-float vel[NUM_MOTOR] = {0.0f};
+// // float angle[NUM_MOTOR] = {0.0f};
+// float vel[NUM_MOTOR] = {0.0f};
 
 // PID関連
 float target_rpm[NUM_MOTOR] = {0.0f};
@@ -32,11 +32,14 @@ float pos_error_prev[NUM_MOTOR] = {0.0f};
 float vel_error_prev[NUM_MOTOR] = {0.0f};
 float cur_error_prev[NUM_MOTOR] = {0.0f};
 
+float vel_prop_prev[NUM_MOTOR] = {0}; // 速度比例項
+
 float pos_integral[NUM_MOTOR] = {0.0f};
 float vel_integral[NUM_MOTOR] = {0.0f};
 float cur_integral[NUM_MOTOR] = {0.0f};
 
 float vel_out[NUM_MOTOR] = {0.0f};
+float vel_output[NUM_MOTOR] = {0.0f};
 float pos_output[NUM_MOTOR] = {0.0f};
 float cur_output[NUM_MOTOR] = {0.0f};
 
@@ -47,8 +50,71 @@ float angle_m3508[NUM_MOTOR] = {0.0f};
 float vel_m3508[NUM_MOTOR] = {0.0f};
 float c[NUM_MOTOR] = {0.0f};
 
+//-- -- -- --PIDゲイン-- -- -- -- //
+float kp_pos = 0.8f;  // 角度比例ゲイン
+float ki_pos = 0.01f; // 角度積分ゲイン
+float kd_pos = 0.02f; // 角度微分ゲイン
+
+// -------- 速度PIDゲイン -------- //
+float kp_vel = 0.8;
+float ki_vel = 0.0;
+float kd_vel = 0.05; // 微分は控えめに
+
+// -------- 電流PIDゲイン -------- //
+float kp_cur = 0.01;
+float ki_cur = 0.0;
+float kd_cur = 0.0; // 微分は控えめに
+
 // タイマー
 unsigned long lastPidTime = 0;
+
+void send_cur_all(float cur_array[NUM_MOTOR])
+{
+    constexpr float MAX_CUR = 10;
+    constexpr int MAX_CUR_VAL = 1000;
+    uint8_t send_data[8] = {};
+
+    for (int i = 0; i < NUM_MOTOR; i++)
+    {
+        float val = cur_array[i] * (MAX_CUR_VAL / MAX_CUR);
+        if (val < -MAX_CUR_VAL)
+            val = -MAX_CUR_VAL;
+        if (val > MAX_CUR_VAL)
+            val = MAX_CUR_VAL;
+
+        int16_t transmit_val = val;
+        send_data[i * 2] = (transmit_val >> 8) & 0xFF;
+        send_data[i * 2 + 1] = transmit_val & 0xFF;
+    }
+
+    CAN.beginPacket(0x200);
+    CAN.write(send_data, 8);
+    CAN.endPacket();
+}
+
+float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
+              float kp, float ki, float kd, float dt)
+{
+    float error = setpoint - input;
+    float prop = error - error_prev;
+    float deriv = prop - prop_prev;
+    float du = kp * prop + ki * error * dt + kd * deriv;
+    output += du;
+
+    prop_prev = prop;
+    error_prev = error;
+
+    return output;
+}
+
+float constrain_double(float val, float min_val, float max_val)
+{
+    if (val < min_val)
+        return min_val;
+    if (val > max_val)
+        return max_val;
+    return val;
+}
 
 // M3508制御タスク
 void M3508_Task()
@@ -169,30 +235,7 @@ void M3508_RX()
     }
 }
 
-// 複数モータ対応CAN送信関数
-void send_cur_all(float cur_array[NUM_MOTOR])
-{
-    constexpr float MAX_CUR = 10;
-    constexpr int MAX_CUR_VAL = 1000;
-    uint8_t send_data[8] = {};
 
-    for (int i = 0; i < NUM_MOTOR; i++)
-    {
-        float val = cur_array[i] * (MAX_CUR_VAL / MAX_CUR);
-        if (val < -MAX_CUR_VAL)
-            val = -MAX_CUR_VAL;
-        if (val > MAX_CUR_VAL)
-            val = MAX_CUR_VAL;
-
-        int16_t transmit_val = val;
-        send_data[i * 2] = (transmit_val >> 8) & 0xFF;
-        send_data[i * 2 + 1] = transmit_val & 0xFF;
-    }
-
-    CAN.beginPacket(0x200);
-    CAN.write(send_data, 8);
-    CAN.endPacket();
-}
 
 /*====================================================================
 

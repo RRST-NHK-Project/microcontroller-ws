@@ -192,8 +192,8 @@ extern int encoder_offset[NUM_MOTOR];
 extern int last_encoder[NUM_MOTOR];
 extern int rotation_count[NUM_MOTOR];
 extern long total_encoder[NUM_MOTOR];
-extern float angle[NUM_MOTOR];
-extern float vel[NUM_MOTOR];
+// extern float angle[NUM_MOTOR];
+// extern float vel[NUM_MOTOR];
 
 // PID関連変数
 extern float target_angle[NUM_MOTOR];
