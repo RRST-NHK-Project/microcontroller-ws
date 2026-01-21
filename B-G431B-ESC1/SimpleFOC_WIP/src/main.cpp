@@ -28,10 +28,12 @@ void doIndex() { encoder.handleIndex(); }
 // =====================
 Commander command = Commander(Serial);
 
+int speed_limit = 100;
+
 // ---- 速度制御（rad/s）----
 void doVelocity(char *cmd) {
     float v = atof(cmd);
-    v = constrain(v, -20.0, 20.0); // 安全制限
+    v = constrain(v, -speed_limit, speed_limit); // 安全制限
     motor.controller = MotionControlType::velocity;
     motor.target = v;
 }
@@ -57,7 +59,7 @@ void setup() {
     motor.linkSensor(&encoder);
 
     // ===== ドライバ =====
-    driver.voltage_power_supply = 24;
+    driver.voltage_power_supply = 18;
     driver.init();
     motor.linkDriver(&driver);
 
@@ -65,12 +67,12 @@ void setup() {
     motor.torque_controller = TorqueControlType::voltage;
 
     // ---- 速度制御パラメータ ----
-    motor.PID_velocity.P = 0.1;
-    motor.PID_velocity.I = 1.0;
+    motor.PID_velocity.P = 1.0;
+    motor.PID_velocity.I = 0.0;
     motor.PID_velocity.D = 0;
     motor.PID_velocity.output_ramp = 10;
     motor.LPF_velocity.Tf = 0.01;
-    motor.velocity_limit = 40; // rad/s
+    motor.velocity_limit = 500; // rad/s
 
     // ---- 位置制御パラメータ ----
     motor.P_angle.P = 5.0;
