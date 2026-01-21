@@ -57,7 +57,7 @@ void setup() {
     motor.linkSensor(&encoder);
 
     // ===== ドライバ =====
-    driver.voltage_power_supply = 12;
+    driver.voltage_power_supply = 24;
     driver.init();
     motor.linkDriver(&driver);
 
@@ -73,10 +73,10 @@ void setup() {
     motor.velocity_limit = 40; // rad/s
 
     // ---- 位置制御パラメータ ----
-    motor.P_angle.P = 2.0;
+    motor.P_angle.P = 5.0;
 
     // ---- 電圧制限 ----
-    motor.voltage_limit = 10;
+    motor.voltage_limit = 12;
 
     // ===== 初期化 =====
     motor.useMonitoring(Serial);
