@@ -74,7 +74,7 @@ void setup() {
     xTaskCreate(
         serialTask,   // タスク関数
         "serialTask", // タスク名
-        256,          // スタックサイズ（words）
+        1024,         // スタックサイズ（words）
         NULL,
         10, // 優先度
         NULL);
@@ -87,13 +87,13 @@ void setup() {
     //     5, // 優先度
     //     NULL);
 
-    xTaskCreate(
-        Input_Task,   // タスク関数
-        "Input_Task", // タスク名
-        1024,         // スタックサイズ（words）
-        NULL,
-        4, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     Input_Task,   // タスク関数
+    //     "Input_Task", // タスク名
+    //     1024,         // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
 
     // xTaskCreate(
     //     Pin_Ctrl_Task,   // タスク関数
@@ -119,7 +119,7 @@ void setup() {
     //     9, // 優先度
     //     NULL);
 
-    vTaskStartScheduler();
+    // vTaskStartScheduler();
 }
 
 // ================= LOOP =================
