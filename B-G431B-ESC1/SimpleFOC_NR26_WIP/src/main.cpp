@@ -1,6 +1,14 @@
 #include <Arduino.h>
 #include <SimpleFOC.h>
 
+#define SPEED_LIMIT 100 // 入力値の制限(rad/s)
+#define GEAR_RATIO 1.0  // ギア比
+
+// ！！注意！！
+//  ここの設定を間違えるとドライバが燃えます
+#define VOLTAGE_SUPPLY 24 // 電源電圧
+#define VOLTAGE_LIMIT 12  // モータ印加電圧制限
+
 // モータ極数
 BLDCMotor motor = BLDCMotor(7);
 
@@ -23,9 +31,7 @@ Commander command = Commander(Serial);
 // 速度制御（rad/s）
 void doVelocity(char *cmd) {
     float v = atof(cmd);
-    // 入力値の制限(rad/s)
-    int speed_limit = 100;
-    v = constrain(v, -speed_limit, speed_limit);
+    v = constrain(v, -SPEED_LIMIT, SPEED_LIMIT);
     motor.controller = MotionControlType::velocity;
     motor.target = v;
 }
@@ -34,9 +40,8 @@ void doVelocity(char *cmd) {
 void doPosition(char *cmd) {
     float deg = atof(cmd);
     float rad = deg * _PI / 180.0;
-    rad = constrain(rad, -_PI, _PI); // ±180°
     motor.controller = MotionControlType::angle;
-    motor.target = rad;
+    motor.target = rad * GEAR_RATIO;
 }
 
 void setup() {
@@ -46,10 +51,8 @@ void setup() {
     encoder.enableInterrupts(doA, doB, doIndex);
     motor.linkSensor(&encoder);
 
-    // ！！注意！！
-    //  ここの設定を間違えるとドライバが燃えます
-    driver.voltage_power_supply = 24;
-    motor.voltage_limit = 12;
+    driver.voltage_power_supply = VOLTAGE_SUPPLY;
+    motor.voltage_limit = VOLTAGE_LIMIT;
 
     driver.init();
     motor.linkDriver(&driver);
