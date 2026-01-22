@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <SimpleFOC.h>
 
-#define SPEED_LIMIT 100 // 入力値の制限(rad/s)
+#define SPEED_LIMIT 100 // 速度制限(rad/s)
 #define GEAR_RATIO 1.0  // ギア比
 
 // ！！注意！！
 //  ここの設定を間違えるとドライバが燃えます
 #define VOLTAGE_SUPPLY 24 // 電源電圧
-#define VOLTAGE_LIMIT 12  // モータ印加電圧制限
+#define VOLTAGE_LIMIT 12  // モータ印加電圧制限（もう少し攻めてもいいかも）
 
 // モータ極数
 BLDCMotor motor = BLDCMotor(7);
@@ -31,7 +31,7 @@ Commander command = Commander(Serial);
 // 速度制御（rad/s）
 void doVelocity(char *cmd) {
     float v = atof(cmd);
-    v = constrain(v, -SPEED_LIMIT, SPEED_LIMIT);
+    v = constrain(v, -SPEED_LIMIT, SPEED_LIMIT); // 速度制限，削除予定
     motor.controller = MotionControlType::velocity;
     motor.target = v;
 }
@@ -39,7 +39,7 @@ void doVelocity(char *cmd) {
 // 位置制御（deg）
 void doPosition(char *cmd) {
     float deg = atof(cmd);
-    float rad = deg * _PI / 180.0;
+    float rad = deg * _PI / 180.0; // deg to rad
     motor.controller = MotionControlType::angle;
     motor.target = rad * GEAR_RATIO;
 }
