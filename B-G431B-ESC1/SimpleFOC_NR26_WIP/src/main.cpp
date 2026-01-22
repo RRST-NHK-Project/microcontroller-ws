@@ -1,31 +1,19 @@
 #include <Arduino.h>
 #include <SimpleFOC.h>
 
-// =====================
-// モータ・ドライバ定義
-// =====================
-
-// 極対数
 BLDCMotor motor = BLDCMotor(7);
 
-// 6PWMドライバ
 BLDCDriver6PWM driver = BLDCDriver6PWM(
     A_PHASE_UH, A_PHASE_UL,
     A_PHASE_VH, A_PHASE_VL,
     A_PHASE_WH, A_PHASE_WL);
 
-// =====================
-// エンコーダ（AB + Index）
-// =====================
 Encoder encoder = Encoder(A_HALL1, A_HALL2, 2048, A_HALL3);
 
 void doA() { encoder.handleA(); }
 void doB() { encoder.handleB(); }
 void doIndex() { encoder.handleIndex(); }
 
-// =====================
-// Commander
-// =====================
 Commander command = Commander(Serial);
 
 int speed_limit = 100;
@@ -47,26 +35,19 @@ void doPosition(char *cmd) {
     motor.target = rad;
 }
 
-// =====================
-// SETUP
-// =====================
 void setup() {
     Serial.begin(115200);
 
-    // ===== センサ初期化 =====
     encoder.init();
     encoder.enableInterrupts(doA, doB, doIndex);
     motor.linkSensor(&encoder);
 
-    // ===== ドライバ =====
     driver.voltage_power_supply = 18;
     driver.init();
     motor.linkDriver(&driver);
 
-    // ===== 制御方式 =====
     motor.torque_controller = TorqueControlType::voltage;
 
-    // ---- 速度制御パラメータ ----
     motor.PID_velocity.P = 1.0;
     motor.PID_velocity.I = 0.0;
     motor.PID_velocity.D = 0;
@@ -74,18 +55,14 @@ void setup() {
     motor.LPF_velocity.Tf = 0.01;
     motor.velocity_limit = 500; // rad/s
 
-    // ---- 位置制御パラメータ ----
     motor.P_angle.P = 5.0;
 
-    // ---- 電圧制限 ----
     motor.voltage_limit = 12;
 
-    // ===== 初期化 =====
     motor.useMonitoring(Serial);
     motor.init();
     motor.initFOC();
 
-    // ===== コマンド登録 =====
     command.add('V', doVelocity, "velocity rad/s");
     command.add('P', doPosition, "position deg");
 
@@ -94,9 +71,6 @@ void setup() {
     Serial.println("Px  : position [deg]");
 }
 
-// =====================
-// LOOP
-// =====================
 void loop() {
     motor.loopFOC();
     motor.move();
