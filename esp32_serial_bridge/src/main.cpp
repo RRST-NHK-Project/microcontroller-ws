@@ -74,18 +74,18 @@ void setup() {
     xTaskCreate(
         serialTask,   // タスク関数
         "serialTask", // タスク名
-        1024,         // スタックサイズ（words）
+        2048,         // スタックサイズ（words）
         NULL,
         10, // 優先度
         NULL);
 
-    // xTaskCreate(
-    //     Output_Task,   // タスク関数
-    //     "Output_Task", // タスク名
-    //     512,           // スタックサイズ（words）
-    //     NULL,
-    //     5, // 優先度
-    //     NULL);
+    xTaskCreate(
+        Output_Task,   // タスク関数
+        "Output_Task", // タスク名
+        1024,          // スタックサイズ（words）
+        NULL,
+        4, // 優先度
+        NULL);
 
     // xTaskCreate(
     //     Input_Task,   // タスク関数
