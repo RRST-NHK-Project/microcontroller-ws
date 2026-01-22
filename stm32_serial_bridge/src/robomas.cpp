@@ -117,7 +117,7 @@ float constrain_double(float val, float min_val, float max_val)
 }
 
 // M3508制御タスク
-void M3508_Task()
+void M3508_Task(void *)
 {
     static unsigned long lastPidTime = 0;
 
@@ -178,7 +178,7 @@ void M3508_Task()
 }
 
 // M3508からのCAN受信タスク
-void M3508_RX()
+void M3508_RX(void *)
 {
     while (true)
     {
@@ -234,8 +234,6 @@ void M3508_RX()
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
-
-
 
 /*====================================================================
 

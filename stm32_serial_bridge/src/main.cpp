@@ -29,6 +29,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
+#include <CAN.h> // STM32 Arduino CAN
 #include <defs.hpp>
 #include <led_task.hpp>
 #include <pin_ctrl_task.hpp>
@@ -45,6 +46,7 @@ void setup()
 
     // ボーレートは実機テストしながら調整する予定
     Serial.begin(115200);
+    CAN.begin(1000000); // ← これが無いと CANは沈黙
 
     pinMode(F446RE_BUILTIN_LED, OUTPUT);
 
@@ -106,21 +108,21 @@ void setup()
     //     8, // 優先度
     //     NULL);
 
-    // xTaskCreate(
-    //     M3508_Task,   // タスク関数
-    //     "M3508_Task", // タスク名
-    //     2048,         // スタックサイズ（words）
-    //     NULL,
-    //     9, // 優先度
-    //     NULL);
+    xTaskCreate(
+        M3508_Task,   // タスク関数
+        "M3508_Task", // タスク名
+        2048,         // スタックサイズ（words）
+        NULL,
+        9, // 優先度
+        NULL);
 
-    // xTaskCreate(
-    //     M3508_RX,   // タスク関数
-    //     "M3508_RX", // タスク名
-    //     2048,       // スタックサイズ（words）
-    //     NULL,
-    //     9, // 優先度
-    //     NULL);
+    xTaskCreate(
+        M3508_RX,   // タスク関数
+        "M3508_RX", // タスク名
+        2048,       // スタックサイズ（words）
+        NULL,
+        9, // 優先度
+        NULL);
 
     vTaskStartScheduler();
 }
