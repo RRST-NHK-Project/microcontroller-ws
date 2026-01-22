@@ -36,110 +36,91 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 // ================= SETUP =================
 
-void setup()
-{
+void setup() {
 
-  // プログラムが書き込めなくなるバグの応急処置
-  delay(2000); // 安定待ち
+    // プログラムが書き込めなくなるバグの応急処置
+    delay(2000); // 安定待ち
 
-  // ボーレートは実機テストしながら調整する予定
-  Serial.begin(115200);
+    // ボーレートは実機テストしながら調整する予定
+    Serial.begin(115200);
 
-  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
-  twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
-  twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    pinMode(LED, OUTPUT);
 
-  if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK)
-  {
-  }
-  else
-  {
-  }
+    // 以降FreeRTOSタスク関連
 
-  if (twai_start() != ESP_OK)
-  {
-  }
-  else
-  {
-  }
+    // xTaskCreate(
+    //     LED_Blink100_Task,   // タスク関数
+    //     "LED_Blink100_Task", // タスク名
+    //     256,                 // スタックサイズ（words）
+    //     NULL,
+    //     1, // 優先度
+    //     NULL);
 
-  pinMode(LED, OUTPUT);
+    // xTaskCreate(
+    //     txTask,   // タスク関数
+    //     "txTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
 
-  // 以降FreeRTOSタスク関連
+    // xTaskCreate(
+    //     rxTask,   // タスク関数
+    //     "rxTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
 
-  // xTaskCreate(
-  //     LED_Blink100_Task,   // タスク関数
-  //     "LED_Blink100_Task", // タスク名
-  //     256,                 // スタックサイズ（words）
-  //     NULL,
-  //     1, // 優先度
-  //     NULL);
+    xTaskCreate(
+        serialTask,   // タスク関数
+        "serialTask", // タスク名
+        2048,         // スタックサイズ（words）
+        NULL,
+        10, // 優先度
+        NULL);
 
-  // xTaskCreate(
-  //     txTask,   // タスク関数
-  //     "txTask", // タスク名
-  //     256,      // スタックサイズ（words）
-  //     NULL,
-  //     10, // 優先度
-  //     NULL);
+    xTaskCreate(
+        Output_Task,   // タスク関数
+        "Output_Task", // タスク名
+        1024,          // スタックサイズ（words）
+        NULL,
+        4, // 優先度
+        NULL);
 
-  // xTaskCreate(
-  //     rxTask,   // タスク関数
-  //     "rxTask", // タスク名
-  //     256,      // スタックサイズ（words）
-  //     NULL,
-  //     10, // 優先度
-  //     NULL);
+    // xTaskCreate(
+    //     Input_Task,   // タスク関数
+    //     "Input_Task", // タスク名
+    //     1024,         // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
 
-  xTaskCreate(
-      serialTask,   // タスク関数
-      "serialTask", // タスク名
-      1024,         // スタックサイズ（words）
-      NULL,
-      8, // 優先度
-      NULL);
+    // xTaskCreate(
+    //     Pin_Ctrl_Task,   // タスク関数
+    //     "Pin_Ctrl_Task", // タスク名
+    //     2048,            // スタックサイズ（words）
+    //     NULL,
+    //     8, // 優先度
+    //     NULL);
 
-  // xTaskCreate(
-  //     Output_Task,   // タスク関数
-  //     "Output_Task", // タスク名
-  //     512,           // スタックサイズ（words）
-  //     NULL,
-  //     5, // 優先度
-  //     NULL);
+    // xTaskCreate(
+    //     M3508_Task,   // タスク関数
+    //     "M3508_Task", // タスク名
+    //     2048,         // スタックサイズ（words）
+    //     NULL,
+    //     9, // 優先度
+    //     NULL);
 
-  // xTaskCreate(
-  //     Input_Task,   // タスク関数
-  //     "Input_Task", // タスク名
-  //     1024,         // スタックサイズ（words）
-  //     NULL,
-  //     4, // 優先度
-  //     NULL);
+    // xTaskCreate(
+    //     M3508_RX,   // タスク関数
+    //     "M3508_RX", // タスク名
+    //     2048,       // スタックサイズ（words）
+    //     NULL,
+    //     9, // 優先度
+    //     NULL);
 
-  // xTaskCreate(
-  //     Pin_Ctrl_Task,   // タスク関数
-  //     "Pin_Ctrl_Task", // タスク名
-  //     2048,            // スタックサイズ（words）
-  //     NULL,
-  //     8, // 優先度
-  //     NULL);
-
-  xTaskCreate(
-      M3508_Task,   // タスク関数
-      "M3508_Task", // タスク名
-      2048,         // スタックサイズ（words）
-      NULL,
-      9, // 優先度
-      NULL);
-
-  xTaskCreate(
-      M3508_RX,   // タスク関数
-      "M3508_RX", // タスク名
-      2048,       // スタックサイズ（words）
-      NULL,
-      10, // 優先度
-      NULL);
-
-  vTaskStartScheduler();
+    // vTaskStartScheduler();
 }
 
 // ================= LOOP =================

@@ -48,7 +48,7 @@ void Output_Task(void *) {
     Output_init();
 
     while (1) {
-        MD_Output();
+        // MD_Output();
         Servo_Output();
         TR_Output();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
@@ -149,32 +149,35 @@ void Output_init() {
 
 void MD_Output() {
 
+    // ローカル変数にコピーして使う、RTOSとの競合回避
+    int Rx16Data_local[Rx16NUM];
+
     // MD出力の制限
-    Rx_16Data[1] = constrain(Rx_16Data[1], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[2] = constrain(Rx_16Data[2], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[3] = constrain(Rx_16Data[3], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[4] = constrain(Rx_16Data[4], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[5] = constrain(Rx_16Data[5], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[6] = constrain(Rx_16Data[6], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[7] = constrain(Rx_16Data[7], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx_16Data[8] = constrain(Rx_16Data[8], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[1] = constrain(Rx_16Data[1], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[2] = constrain(Rx_16Data[2], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[3] = constrain(Rx_16Data[3], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[4] = constrain(Rx_16Data[4], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[5] = constrain(Rx_16Data[5], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[6] = constrain(Rx_16Data[6], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[7] = constrain(Rx_16Data[7], -MD_PWM_MAX, MD_PWM_MAX);
+    Rx16Data_local[8] = constrain(Rx_16Data[8], -MD_PWM_MAX, MD_PWM_MAX);
 
     // 通信状態の表示を実装予定
 
     // // ピンの操作
-    digitalWrite(MD1D, Rx_16Data[1] > 0 ? HIGH : LOW);
-    digitalWrite(MD2D, Rx_16Data[2] > 0 ? HIGH : LOW);
-    digitalWrite(MD3D, Rx_16Data[3] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, Rx_16Data[4] > 0 ? HIGH : LOW);
+    digitalWrite(MD1D, Rx16Data_local[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, Rx16Data_local[2] > 0 ? HIGH : LOW);
+    digitalWrite(MD3D, Rx16Data_local[3] > 0 ? HIGH : LOW);
+    digitalWrite(MD4D, Rx16Data_local[4] > 0 ? HIGH : LOW);
 
     // PWM周波数、分解能の切り替え
     // analogWriteFrequency(MD_PWM_FREQ);
     // analogWriteResolution(MD_PWM_RESOLUTION);
 
-    ledcWrite(MD1P, abs(Rx_16Data[1]));
-    ledcWrite(MD2P, abs(Rx_16Data[2]));
-    ledcWrite(MD3P, abs(Rx_16Data[3]));
-    ledcWrite(MD4P, abs(Rx_16Data[4]));
+    ledcWrite(MD1P, abs(Rx16Data_local[1]));
+    ledcWrite(MD2P, abs(Rx16Data_local[2]));
+    ledcWrite(MD3P, abs(Rx16Data_local[3]));
+    ledcWrite(MD4P, abs(Rx16Data_local[4]));
 }
 
 void Servo_Output() {
