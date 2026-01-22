@@ -9,46 +9,45 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <defs.hpp>
 #include "robomas.hpp"
 
-// 状態量 / CAN受信関連
-int encoder_count[NUM_MOTOR] = {0};
-int rpm[NUM_MOTOR] = {0};
-int current[NUM_MOTOR] = {0};
+// -------- 状態量 / CAN受信関連 -------- //
+int encoder_count[NUM_MOTOR] = {0};  // エンコーダ値
+int rpm[NUM_MOTOR] = {0};            // 回転速度
+int current[NUM_MOTOR] = {0};        // 電流値
+bool offset_ok[NUM_MOTOR] = {false}; // オフセット完了フラグ
+int encoder_offset[NUM_MOTOR] = {0}; // エンコーダオフセット
+int last_encoder[NUM_MOTOR];         // 前回エンコーダ値
+int rotation_count[NUM_MOTOR] = {0}; // 回転数
+long total_encoder[NUM_MOTOR] = {0}; // 累積エンコーダ値
+float angle[NUM_MOTOR] = {0};        // 角度
+float vel[NUM_MOTOR] = {0};          // 速度
 
-bool offset_ok[NUM_MOTOR] = {false};
-int encoder_offset[NUM_MOTOR] = {0};
-int last_encoder[NUM_MOTOR] = {-1, -1, -1, -1};
-int rotation_count[NUM_MOTOR] = {0};
-long total_encoder[NUM_MOTOR] = {0};
+// -------- PID関連変数 -------- //
+float target_angle[NUM_MOTOR] = {0};   // 目標角度
+float pos_error_prev[NUM_MOTOR] = {0}; // 前回角度誤差
+float cur_error_prev[NUM_MOTOR] = {0}; // 前回角度誤差
+float pos_integral[NUM_MOTOR] = {0};   // 角度積分項
+float vel_integral[NUM_MOTOR] = {0};
+float cur_integral[NUM_MOTOR] = {0};
+float pos_output[NUM_MOTOR] = {0};           // PID出力
+float cur_output[NUM_MOTOR] = {0};           // PID出力
+float motor_output_current[NUM_MOTOR] = {0}; // 出力電流
+float output[NUM_MOTOR] = {0};
 
-// // float angle[NUM_MOTOR] = {0.0f};
-// float vel[NUM_MOTOR] = {0.0f};
+// 速度PID
+float target_rpm[NUM_MOTOR] = {0};     // 目標速度
+float vel_error_prev[NUM_MOTOR] = {0}; // 前回速度誤差
+float vel_prop_prev[NUM_MOTOR] = {0};  // 速度比例項
+float vel_output[NUM_MOTOR] = {0};     // 速度PID出力
+float vel_out[NUM_MOTOR] = {0};        // 最終速度出力
 
-// PID関連
-float target_rpm[NUM_MOTOR] = {0.0f};
+// -------- 状態量 / CAN受信関連 -------- //
+float angle_m3508[NUM_MOTOR] = {0}; // 角度
+float vel_m3508[NUM_MOTOR] = {0};   // 速度
+float c[NUM_MOTOR] = {0};           //
 
-float pos_error_prev[NUM_MOTOR] = {0.0f};
-float vel_error_prev[NUM_MOTOR] = {0.0f};
-float cur_error_prev[NUM_MOTOR] = {0.0f};
+unsigned long lastPidTime = 0; // PID制御用タイマー
 
-float vel_prop_prev[NUM_MOTOR] = {0}; // 速度比例項
-
-float pos_integral[NUM_MOTOR] = {0.0f};
-float vel_integral[NUM_MOTOR] = {0.0f};
-float cur_integral[NUM_MOTOR] = {0.0f};
-
-float vel_out[NUM_MOTOR] = {0.0f};
-float vel_output[NUM_MOTOR] = {0.0f};
-float pos_output[NUM_MOTOR] = {0.0f};
-float cur_output[NUM_MOTOR] = {0.0f};
-
-float motor_output_current[NUM_MOTOR] = {0.0f};
-
-// M3508物理量
-float angle_m3508[NUM_MOTOR] = {0.0f};
-float vel_m3508[NUM_MOTOR] = {0.0f};
-float c[NUM_MOTOR] = {0.0f};
-
-//-- -- -- --PIDゲイン-- -- -- -- //
+// -------- PIDゲイン -------- //
 float kp_pos = 0.8f;  // 角度比例ゲイン
 float ki_pos = 0.01f; // 角度積分ゲイン
 float kd_pos = 0.02f; // 角度微分ゲイン
@@ -62,9 +61,6 @@ float kd_vel = 0.05; // 微分は控えめに
 float kp_cur = 0.01;
 float ki_cur = 0.0;
 float kd_cur = 0.0; // 微分は控えめに
-
-// タイマー
-unsigned long lastPidTime = 0;
 
 float constrain_double(float val, float min_val, float max_val)
 {
@@ -99,6 +95,16 @@ void send_cur_all(float cur_array[NUM_MOTOR])
     }
 }
 
+float pid(float setpoint, float input, float &error_prev, float &integral,
+          float kp, float ki, float kd, float dt)
+{
+    float error = setpoint - input;
+    integral += ((error + error_prev) * dt / 2.0f); // 台形積分
+    float derivative = (error - error_prev) / dt;
+    error_prev = error;
+    return kp * error + ki * integral + kd * derivative;
+}
+
 float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, float &output,
               float kp, float ki, float kd, float dt)
 {
@@ -115,107 +121,149 @@ float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, 
 }
 
 // M3508制御タスク
-void M3508_Task(void *)
+void M3508_Task(void *pvParameters)
 {
-    static unsigned long lastPidTime = 0;
 
     // 初期化
     lastPidTime = millis();
 
     while (true)
     {
-        // 時間差分 dt 計算
+        for (int i = 0; i < NUM_MOTOR; i++)
+        {
+            target_rpm[i] = 100; // Rx_16Data[i + 1];
+        }
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
-
-        if (dt <= 0.0f)
-            dt = 0.000001f; // 0除算防止
+        if (dt <= 0)
+            dt = 0.000001f;
         if (dt > 0.02f)
-            dt = 0.02f; // 最大20ms制限
-
+            dt = 0.02f;
         lastPidTime = now;
 
-        // 目標回転数生成
+        // TWAI受信処理
+        twai_receive_feedback();
+
+        // // 5秒後にターゲットRPM増加
         for (int i = 0; i < NUM_MOTOR; i++)
         {
+            //     static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
 
-            target_rpm[i] = Rx_16Data[i + 1]; // Rx_16Data[1]～[4]に目標回転数が入っている想定
+            //     if (now < 5000)
+            //     {
+            //         target_rpm[i] = 0;
+            //     }
+            //     else
+            //     {
+            //         if (rpm_step[i] < 300)
+            //             rpm_step[i] += 0.1;
+            //         target_rpm[i] = rpm_step[i];
+            //     }
+
+            vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i], vel_output[i], kp_vel, ki_vel, kd_vel, dt);
+
+            motor_output_current[i] = constrain_double(vel_out[i] * 10, -20, 20);
         }
 
-        /* ================= PID制御 ================= */
-        for (int i = 0; i < NUM_MOTOR; i++)
-        {
-            // 速度PID
-            vel_out[i] = pid_vel(
-                target_rpm[i],
-                vel_m3508[i],
-                vel_error_prev[i],
-                vel_prop_prev[i],
-                vel_output[i],
-                kp_vel, ki_vel, kd_vel,
-                dt);
-
-            // 電流指令へ変換
-            motor_output_current[i] = vel_out[i] * 10.0f;
-
-            constrain_double(motor_output_current[i], -20.0f, 20.0f);
-        }
-
-        /* ================= CAN送信 ================= */
+        // 送信
         send_cur_all(motor_output_current);
 
-        /* ================= デバッグ ================= */
-        Serial.print("vel:");
-        Serial.print(vel_m3508[0]);
-        Serial.print("\tcur:");
-        Serial.println(current[0]);
+        // debug
+        // Serial.print(vel_m3508[0]);
+        // Serial.print("\t");
+        // Serial.println(current[0]);
 
-        /* ================= タスク周期 ================= */
-        vTaskDelay(pdMS_TO_TICKS(10)); // 10ms周期
+        vTaskDelay(1);
+    }
+}
+
+void twai_receive_feedback()
+{
+    twai_message_t rx_msg;
+
+    while (twai_receive(&rx_msg, 0) == ESP_OK)
+    {
+        if (rx_msg.data_length_code != 8)
+            continue;
+        if (rx_msg.identifier < 0x201 || rx_msg.identifier > 0x204)
+            continue;
+
+        int m = rx_msg.identifier - 0x201;
+
+        encoder_count[m] = (int16_t)(rx_msg.data[0] << 8 | rx_msg.data[1]);
+        rpm[m] = (int16_t)(rx_msg.data[2] << 8 | rx_msg.data[3]);
+        current[m] = (int16_t)(rx_msg.data[4] << 8 | rx_msg.data[5]);
+
+        // エンコーダ回転数計算
+        int diff = encoder_count[m] - last_encoder[m];
+        if (diff > HALF_ENCODER)
+            rotation_count[m]--;
+        else if (diff < -HALF_ENCODER)
+            rotation_count[m]++;
+
+        last_encoder[m] = encoder_count[m];
+
+        total_encoder[m] =
+            rotation_count[m] * ENCODER_MAX + encoder_count[m];
+
+        angle_m3508[m] = total_encoder[m] * (360.0f / (ENCODER_MAX * gear_m3508));
+        vel_m3508[m] = rpm[m] / gear_m3508;
+        c[m] = current[m] * 20.0f / 16384.0f;
     }
 }
 
 // M3508からのCAN受信タスク
-void M3508_RX(void *)
-{
-    while (true)
-    {
-        twai_message_t rx_msg;
+// void M3508_RX(void *)
+// {
+//     while (true)
+//     {
+//         for (int i = 0; i < NUM_MOTOR; i++)
+//         {
+//             target_rpm[i] = received_data[i + 1];
+//         }
+//         unsigned long now = millis();
+//         float dt = (now - lastPidTime) / 1000.0f;
+//         if (dt <= 0)
+//             dt = 0.000001f;
+//         if (dt > 0.02f)
+//             dt = 0.02f;
+//         lastPidTime = now;
 
-        while (twai_receive(&rx_msg, 0) == ESP_OK)
-        {
-            if (rx_msg.data_length_code != 8)
-                continue;
-            if (rx_msg.identifier < 0x201 || rx_msg.identifier > 0x204)
-                continue;
+//         // TWAI受信処理
+//         twai_receive_feedback();
 
-            int m = rx_msg.identifier - 0x201;
+//         // // 5秒後にターゲットRPM増加
+//         for (int i = 0; i < NUM_MOTOR; i++)
+//         {
+//             //     static float rpm_step[NUM_MOTOR] = {100, 100, 100, 100};
 
-            encoder_count[m] = (int16_t)(rx_msg.data[0] << 8 | rx_msg.data[1]);
-            rpm[m] = (int16_t)(rx_msg.data[2] << 8 | rx_msg.data[3]);
-            current[m] = (int16_t)(rx_msg.data[4] << 8 | rx_msg.data[5]);
+//             //     if (now < 5000)
+//             //     {
+//             //         target_rpm[i] = 0;
+//             //     }
+//             //     else
+//             //     {
+//             //         if (rpm_step[i] < 300)
+//             //             rpm_step[i] += 0.1;
+//             //         target_rpm[i] = rpm_step[i];
+//             //     }
 
-            // エンコーダ回転数計算
-            int diff = encoder_count[m] - last_encoder[m];
-            if (diff > HALF_ENCODER)
-                rotation_count[m]--;
-            else if (diff < -HALF_ENCODER)
-                rotation_count[m]++;
+//             vel_out[i] = pid_vel(target_rpm[i], vel_m3508[i], vel_error_prev[i], vel_prop_prev[i], vel_output[i], kp_vel, ki_vel, kd_vel, dt);
 
-            last_encoder[m] = encoder_count[m];
+//             motor_output_current[i] = constrain_double(vel_out[i] * 10, -20, 20);
+//         }
 
-            total_encoder[m] =
-                rotation_count[m] * ENCODER_MAX + encoder_count[m];
+//         // 送信
+//         send_cur_all(motor_output_current);
 
-            angle_m3508[m] = total_encoder[m] * (360.0f / (ENCODER_MAX * gear_m3508));
-            vel_m3508[m] = rpm[m] / gear_m3508;
-            c[m] = current[m] * 20.0f / 16384.0f;
-        }
+//         // debug
+//         // Serial.print(vel_m3508[0]);
+//         // Serial.print("\t");
+//         // Serial.println(current[0]);
 
-        /* CPUを占有しないように */
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
-}
+//         vTaskDelay(1);
+//     }
+// }
 
 /*====================================================================
 
