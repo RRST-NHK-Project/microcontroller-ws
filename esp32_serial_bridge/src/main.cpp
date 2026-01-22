@@ -32,6 +32,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <led_task.hpp>
 #include <pin_ctrl_task.hpp>
 #include <serial_task.hpp>
+#include <robomas.hpp>
 
 // ================= SETUP =================
 
@@ -124,7 +125,8 @@ void setup() {
 
 // ================= LOOP =================
 
-void loop() {
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
+void loop()
+{
+  vTaskDelay(pdMS_TO_TICKS(1000));
+  // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }
