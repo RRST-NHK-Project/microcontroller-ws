@@ -48,6 +48,21 @@ void setup()
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
   twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+
+  if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK)
+  {
+  }
+  else
+  {
+  }
+
+  if (twai_start() != ESP_OK)
+  {
+  }
+  else
+  {
+  }
+
   pinMode(LED, OUTPUT);
 
   // 以降FreeRTOSタスク関連
@@ -81,7 +96,7 @@ void setup()
       "serialTask", // タスク名
       1024,         // スタックサイズ（words）
       NULL,
-      10, // 優先度
+      8, // 優先度
       NULL);
 
   // xTaskCreate(
@@ -121,10 +136,10 @@ void setup()
       "M3508_RX", // タスク名
       2048,       // スタックサイズ（words）
       NULL,
-      9, // 優先度
+      10, // 優先度
       NULL);
 
-  // vTaskStartScheduler();
+  vTaskStartScheduler();
 }
 
 // ================= LOOP =================
