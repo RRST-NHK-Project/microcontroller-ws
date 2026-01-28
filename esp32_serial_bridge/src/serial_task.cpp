@@ -1,6 +1,40 @@
 /*====================================================================
-<>
-・
+<serial_task.cpp>
+・シリアル通信まわりのタスク実装
+
+PCから送信されるデータ構造（フレーム）は以下のとおり。
+
+Frame Structure:
+[START_BYTE][DEVICE_ID][LENGTH][DATA...][CHECKSUM]
+- START_BYTE: 0xAA
+- DEVICE_ID: 0x02
+- LENGTH: Number of data bytes (Tx16NUM * 2)
+- DATA: int16 data (big-endian)
+- CHECKSUM: XOR of all bytes except START_BYTE
+
+START_BYTE（1バイト）
+   - フレームの開始を示す固定値（ROS側とマイコンで揃える）
+   - 0xAA
+
+ID（1バイト）
+   - 送信元または宛先デバイスID（マイコンごとに異なる値を設定する）
+   - 例: DEVICE_ID
+
+LEN（1バイト）
+   - データ部分（DATA）の長さ（バイト単位）
+   - 例: Tx16NUM * 2（16bitデータをバイト数に換算）
+
+DATA（可変長）
+   - 16bit単位のデータ配列
+   - Tx16NUM / Rx16NUM の数だけ送信
+   - 1つの16bitデータは
+        上位バイト: (data >> 8)
+        下位バイト: (data & 0xFF)
+
+CHECKSUM（1バイト）
+   - フレームの整合性チェック用
+   - 計算方法: ID ^ LEN ^ DATA[0] ^ DATA[1] ^ ... ^ DATA[n]
+
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 

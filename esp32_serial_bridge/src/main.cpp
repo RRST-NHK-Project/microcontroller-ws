@@ -1,28 +1,11 @@
 /*====================================================================
 Project: stm32_serial_bridge
-Target board: NUCLEO-F446RE
-
-コメント整備中
+Target board: ESP32 Dev Module
 
 Description:
   ROS 2・マイコン間の通信を行うserial_bridgeパッケージのマイコン側プログラム。
   PCから送られてくるバイナリデータを受信、デコードしマイコンのGPIO出力に反映させる。
-
-  This is a simple serial communication example between a microcontroller
-  and a PC using a custom binary protocol. The microcontroller sends and
-  receives frames containing int16 data.
-
-  Frame Structure:
-  [START_BYTE][DEVICE_ID][LENGTH][DATA...][CHECKSUM]
-    - START_BYTE: 0xAA
-    - DEVICE_ID: 0x02
-    - LENGTH: Number of data bytes (Tx16NUM * 2)
-    - DATA: int16 data (big-endian)
-    - CHECKSUM: XOR of all bytes except START_BYTE
-
-  The microcontroller sends Tx16NUM int16 values to the PC and listens for
-  incoming frames from the PC. Received frames are validated using the
-  checksum and stored in Rx_16Data array.
+  config.hppで各種設定をするのみで使用可能です。このファイル(main.cpp)を直接編集しないこと。
 
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
@@ -108,82 +91,6 @@ void setup() {
         NULL);
 #elif defined(MODE_DEBUG)
     // デバッグモード初期化
-
-    // 以降FreeRTOSタスク関連
-
-    // xTaskCreate(
-    //     LED_Blink100_Task,   // タスク関数
-    //     "LED_Blink100_Task", // タスク名
-    //     256,                 // スタックサイズ（words）
-    //     NULL,
-    //     1, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     txTask,   // タスク関数
-    //     "txTask", // タスク名
-    //     256,      // スタックサイズ（words）
-    //     NULL,
-    //     10, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     rxTask,   // タスク関数
-    //     "rxTask", // タスク名
-    //     256,      // スタックサイズ（words）
-    //     NULL,
-    //     10, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     serialTask,   // タスク関数
-    //     "serialTask", // タスク名
-    //     2048,         // スタックサイズ（words）
-    //     NULL,
-    //     10, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     Output_Task,   // タスク関数
-    //     "Output_Task", // タスク名
-    //     1024,          // スタックサイズ（words）
-    //     NULL,
-    //     4, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     Input_Task,   // タスク関数
-    //     "Input_Task", // タスク名
-    //     1024,         // スタックサイズ（words）
-    //     NULL,
-    //     4, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     Pin_Ctrl_Task,   // タスク関数
-    //     "Pin_Ctrl_Task", // タスク名
-    //     2048,            // スタックサイズ（words）
-    //     NULL,
-    //     8, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     M3508_Task,   // タスク関数
-    //     "M3508_Task", // タスク名
-    //     2048,         // スタックサイズ（words）
-    //     NULL,
-    //     9, // 優先度
-    //     NULL);
-
-    // xTaskCreate(
-    //     M3508_RX,   // タスク関数
-    //     "M3508_RX", // タスク名
-    //     2048,       // スタックサイズ（words）
-    //     NULL,
-    //     9, // 優先度
-    //     NULL);
-
-    // vTaskStartScheduler(); //必要なら戻す
 #else
 #error "No mode defined. Please define one mode in config.hpp."
 #endif
