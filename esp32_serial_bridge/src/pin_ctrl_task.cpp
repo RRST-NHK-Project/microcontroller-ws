@@ -23,7 +23,7 @@ void enc_init_half();
 
 // ================= TASK =================
 
-// 入力・出力統合タスク（現状動かない）
+// 入力・出力統合タスク（現状動かない）というかESP32ではピンが足りない
 void Pin_Ctrl_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     Output_init();
@@ -63,19 +63,8 @@ void Input_Task(void *) {
 }
 
 void Input_init() {
-
-    // エンコーダー 初期化、割り込み有効化
-    enc_init_all();
-
-    // SW ピン初期化
-    pinMode(SW1, INPUT_PULLUP);
-    pinMode(SW2, INPUT_PULLUP);
-    pinMode(SW3, INPUT_PULLUP);
-    pinMode(SW4, INPUT_PULLUP);
-    pinMode(SW5, INPUT_PULLUP);
-    pinMode(SW6, INPUT_PULLUP);
-    pinMode(SW7, INPUT_PULLUP);
-    pinMode(SW8, INPUT_PULLUP);
+    // エンコーダとスイッチの初期化
+    ENCx2_SWx8_init();
 }
 
 void ENC_Input() {
@@ -231,7 +220,15 @@ void TR_Output() {
     digitalWrite(TR7, Rx_16Data[23] ? HIGH : LOW);
 }
 
-void enc_init_all() {
+// エンコーダ4つ分の初期化
+void ENCx4_SWx4_init() {
+
+    // SW ピン初期化
+    pinMode(SW1, INPUT_PULLUP);
+    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
+
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
@@ -377,8 +374,19 @@ void enc_init_all() {
     pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
 }
 
-// 削除予定
-void enc_init_half() {
+// エンコーダ2つ分の初期化
+void ENCx2_SWx8_init() {
+
+    // SW ピン初期化
+    pinMode(SW1, INPUT_PULLUP);
+    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
+    pinMode(SW5, INPUT_PULLUP);
+    pinMode(SW6, INPUT_PULLUP);
+    pinMode(SW7, INPUT_PULLUP);
+    pinMode(SW8, INPUT_PULLUP);
+
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
