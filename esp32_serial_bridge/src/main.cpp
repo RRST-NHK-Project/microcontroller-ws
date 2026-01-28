@@ -44,28 +44,28 @@ void setup() {
     // ボーレートは実機テストしながら調整する予定
     Serial.begin(115200);
 
-    // // これどこかに移してくれませんか？ //
-    // twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
-    // twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
-    // twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
-    // if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
-    //     // Serial.println("TWAI install failed");
-    //     while (1)
-    //         ;
-    // }
-    // if (twai_start() != ESP_OK) {
-    //     // Serial.println("TWAI start failed");
-    //     while (1)
-    //         ;
-    // }
-    // // ここまで //
+    // これどこかに移してくれませんか？ //
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
+    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+        // Serial.println("TWAI install failed");
+        while (1)
+            ;
+    }
+    if (twai_start() != ESP_OK) {
+        // Serial.println("TWAI start failed");
+        while (1)
+            ;
+    }
+    // ここまで //
 
     pinMode(LED, OUTPUT);
 
     xTaskCreate(
         serialTask,   // タスク関数
         "serialTask", // タスク名
-        4096,         // スタックサイズ（words）
+        2048,         // スタックサイズ（words）
         NULL,
         10, // 優先度
         NULL);
@@ -76,7 +76,7 @@ void setup() {
     xTaskCreate(
         Output_Task,   // タスク関数
         "Output_Task", // タスク名
-        4096,          // スタックサイズ（words）
+        1024,          // スタックサイズ（words）
         NULL,
         4, // 優先度
         NULL);
@@ -108,8 +108,82 @@ void setup() {
         NULL);
 #elif defined(MODE_DEBUG)
     // デバッグモード初期化
-    Output_init();
 
+    // 以降FreeRTOSタスク関連
+
+    // xTaskCreate(
+    //     LED_Blink100_Task,   // タスク関数
+    //     "LED_Blink100_Task", // タスク名
+    //     256,                 // スタックサイズ（words）
+    //     NULL,
+    //     1, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     txTask,   // タスク関数
+    //     "txTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     rxTask,   // タスク関数
+    //     "rxTask", // タスク名
+    //     256,      // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     serialTask,   // タスク関数
+    //     "serialTask", // タスク名
+    //     2048,         // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     Output_Task,   // タスク関数
+    //     "Output_Task", // タスク名
+    //     1024,          // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     Input_Task,   // タスク関数
+    //     "Input_Task", // タスク名
+    //     1024,         // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     Pin_Ctrl_Task,   // タスク関数
+    //     "Pin_Ctrl_Task", // タスク名
+    //     2048,            // スタックサイズ（words）
+    //     NULL,
+    //     8, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     M3508_Task,   // タスク関数
+    //     "M3508_Task", // タスク名
+    //     2048,         // スタックサイズ（words）
+    //     NULL,
+    //     9, // 優先度
+    //     NULL);
+
+    // xTaskCreate(
+    //     M3508_RX,   // タスク関数
+    //     "M3508_RX", // タスク名
+    //     2048,       // スタックサイズ（words）
+    //     NULL,
+    //     9, // 優先度
+    //     NULL);
+
+    // vTaskStartScheduler(); //必要なら戻す
 #else
 #error "No mode defined. Please define one mode in config.hpp."
 #endif
@@ -122,17 +196,7 @@ void setup() {
 
 // ================= LOOP =================
 
-constexpr uint32_t CTRL_PERIOD_MS = 10; // 周期 [ms]
-
 void loop() {
-    static uint32_t last_ms = 0;
-    uint32_t now = millis();
-
-    if (now - last_ms >= CTRL_PERIOD_MS) {
-        last_ms = now;
-
-        MD_Output();
-        Servo_Output();
-        TR_Output();
-    }
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }
