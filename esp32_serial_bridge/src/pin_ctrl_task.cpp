@@ -9,7 +9,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 #include <defs.hpp>
 
-constexpr uint32_t CTRL_PERIOD_MS = 20; // ピン更新周期（ミリ秒）
+constexpr uint32_t CTRL_PERIOD_MS = 5; // ピン更新周期（ミリ秒）
 
 void MD_Output();
 void Output_init();
@@ -20,10 +20,6 @@ void ENC_Input();
 void SW_Input();
 void enc_init_all();
 void enc_init_half();
-
-// ================= エンコーダー 定義 =================
-
-// ================= 割り込みハンドラ =================
 
 // ================= TASK =================
 
@@ -149,35 +145,37 @@ void Output_init() {
 
 void MD_Output() {
 
-    // ローカル変数にコピーして使う、RTOSとの競合回避
-    int Rx16Data_local[Rx16NUM];
+    // PWMの更新を毎回行わないようにする予定
 
-    // MD出力の制限
-    Rx16Data_local[1] = constrain(Rx_16Data[1], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[2] = constrain(Rx_16Data[2], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[3] = constrain(Rx_16Data[3], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[4] = constrain(Rx_16Data[4], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[5] = constrain(Rx_16Data[5], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[6] = constrain(Rx_16Data[6], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[7] = constrain(Rx_16Data[7], -MD_PWM_MAX, MD_PWM_MAX);
-    Rx16Data_local[8] = constrain(Rx_16Data[8], -MD_PWM_MAX, MD_PWM_MAX);
+    // // ローカル変数にコピーして使う、RTOSとの競合回避
+    // int Rx16Data_local[Rx16NUM];
 
-    // 通信状態の表示を実装予定
+    // // MD出力の制限
+    // Rx16Data_local[1] = constrain(Rx_16Data[1], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[2] = constrain(Rx_16Data[2], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[3] = constrain(Rx_16Data[3], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[4] = constrain(Rx_16Data[4], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[5] = constrain(Rx_16Data[5], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[6] = constrain(Rx_16Data[6], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[7] = constrain(Rx_16Data[7], -MD_PWM_MAX, MD_PWM_MAX);
+    // Rx16Data_local[8] = constrain(Rx_16Data[8], -MD_PWM_MAX, MD_PWM_MAX);
 
-    // // ピンの操作
-    digitalWrite(MD1D, Rx16Data_local[1] > 0 ? HIGH : LOW);
-    digitalWrite(MD2D, Rx16Data_local[2] > 0 ? HIGH : LOW);
-    digitalWrite(MD3D, Rx16Data_local[3] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, Rx16Data_local[4] > 0 ? HIGH : LOW);
+    // // 通信状態の表示を実装予定
 
-    // PWM周波数、分解能の切り替え
-    // analogWriteFrequency(MD_PWM_FREQ);
-    // analogWriteResolution(MD_PWM_RESOLUTION);
+    // // // ピンの操作
+    // digitalWrite(MD1D, Rx16Data_local[1] > 0 ? HIGH : LOW);
+    // digitalWrite(MD2D, Rx16Data_local[2] > 0 ? HIGH : LOW);
+    // digitalWrite(MD3D, Rx16Data_local[3] > 0 ? HIGH : LOW);
+    // digitalWrite(MD4D, Rx16Data_local[4] > 0 ? HIGH : LOW);
 
-    ledcWrite(MD1P, abs(Rx16Data_local[1]));
-    ledcWrite(MD2P, abs(Rx16Data_local[2]));
-    ledcWrite(MD3P, abs(Rx16Data_local[3]));
-    ledcWrite(MD4P, abs(Rx16Data_local[4]));
+    // // PWM周波数、分解能の切り替え
+    // // analogWriteFrequency(MD_PWM_FREQ);
+    // // analogWriteResolution(MD_PWM_RESOLUTION);
+
+    // ledcWrite(MD1P, abs(Rx16Data_local[1]));
+    // ledcWrite(MD2P, abs(Rx16Data_local[2]));
+    // ledcWrite(MD3P, abs(Rx16Data_local[3]));
+    // ledcWrite(MD4P, abs(Rx16Data_local[4]));
 }
 
 void Servo_Output() {
@@ -379,6 +377,7 @@ void enc_init_all() {
     pcnt_set_filter_value(PCNT_UNIT_3, PCNT_FILTER_VALUE);
 }
 
+// 削除予定
 void enc_init_half() {
     // プルアップを有効化
     gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
