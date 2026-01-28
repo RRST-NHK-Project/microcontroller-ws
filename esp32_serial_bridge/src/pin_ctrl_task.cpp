@@ -119,39 +119,21 @@ void Output_init() {
 void MD_Output() {
 
     static int Rx16Data_local[Rx16NUM];
-    static int last_pwm[4] = {0};
 
     for (int i = 1; i <= 8; i++) {
         Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
     }
 
-    digitalWrite(MD1D, Rx16Data_local[1] > 0);
-    digitalWrite(MD2D, Rx16Data_local[2] > 0);
-    digitalWrite(MD3D, Rx16Data_local[3] > 0);
-    digitalWrite(MD4D, Rx16Data_local[4] > 0);
+    digitalWrite(MD1D, Rx16Data_local[1] ? HIGH : LOW);
+    digitalWrite(MD2D, Rx16Data_local[2] ? HIGH : LOW);
+    digitalWrite(MD3D, Rx16Data_local[3] ? HIGH : LOW);
+    digitalWrite(MD4D, Rx16Data_local[4] ? HIGH : LOW);
 
-    int pwm[4] = {
-        abs(Rx16Data_local[1]),
-        abs(Rx16Data_local[2]),
-        abs(Rx16Data_local[3]),
-        abs(Rx16Data_local[4])};
+    ledcWrite(0, abs(Rx16Data_local[1]));
+    ledcWrite(1, abs(Rx16Data_local[2]));
+    ledcWrite(2, abs(Rx16Data_local[3]));
+    ledcWrite(3, abs(Rx16Data_local[4]));
 
-    if (pwm[0] != last_pwm[0]) {
-        ledcWrite(0, pwm[0]);
-        last_pwm[0] = pwm[0];
-    }
-    if (pwm[1] != last_pwm[1]) {
-        ledcWrite(1, pwm[1]);
-        last_pwm[1] = pwm[1];
-    }
-    if (pwm[2] != last_pwm[2]) {
-        ledcWrite(2, pwm[2]);
-        last_pwm[2] = pwm[2];
-    }
-    if (pwm[3] != last_pwm[3]) {
-        ledcWrite(3, pwm[3]);
-        last_pwm[3] = pwm[3];
-    }
 }
 
 void Servo_Output() {
