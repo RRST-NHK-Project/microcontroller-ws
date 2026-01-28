@@ -44,21 +44,21 @@ void setup() {
     // ボーレートは実機テストしながら調整する予定
     Serial.begin(115200);
 
-    // これどこかに移してくれませんか？ //
-    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
-    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
-    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
-    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
-        // Serial.println("TWAI install failed");
-        while (1)
-            ;
-    }
-    if (twai_start() != ESP_OK) {
-        // Serial.println("TWAI start failed");
-        while (1)
-            ;
-    }
-    // ここまで //
+    // // これどこかに移してくれませんか？ //
+    // twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX, (gpio_num_t)CAN_RX, TWAI_MODE_NORMAL);
+    // twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+    // twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    // if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+    //     // Serial.println("TWAI install failed");
+    //     while (1)
+    //         ;
+    // }
+    // if (twai_start() != ESP_OK) {
+    //     // Serial.println("TWAI start failed");
+    //     while (1)
+    //         ;
+    // }
+    // // ここまで //
 
     pinMode(LED, OUTPUT);
 
@@ -76,9 +76,9 @@ void setup() {
     xTaskCreate(
         Output_Task,   // タスク関数
         "Output_Task", // タスク名
-        1024,          // スタックサイズ（words）
+        2048,          // スタックサイズ（words）
         NULL,
-        4, // 優先度
+        9, // 優先度
         NULL);
 #elif defined(MODE_INPUT)
     // 入力モード初期化
