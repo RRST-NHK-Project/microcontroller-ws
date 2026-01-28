@@ -1,6 +1,6 @@
 /*====================================================================
 <config.h>
-
+書き込み前にここでIDと動作モードを設定してください．
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
@@ -14,4 +14,4 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define MODE_OUTPUT
 // #define MODE_INPUT
 // #define MODE_ROBOMAS
-// #define MODE_STOP
+// #define MODE_DEBUG

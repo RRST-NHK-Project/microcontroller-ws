@@ -106,17 +106,8 @@ void setup() {
         NULL,
         9, // 優先度
         NULL);
-#elif defined(MODE_STOP)
-    // 停止モード初期化
-    ;
-#else
-#error "No mode defined. Please define one mode in config.hpp."
-#endif
-
-#if (defined(MODE_OUTPUT) + defined(MODE_INPUT) + \
-     defined(MODE_ROBOMAS) + defined(MODE_STOP)) != 1
-#error "Invalid mode configuration. Please define exactly *one mode* in config.hpp."
-#endif
+#elif defined(MODE_DEBUG)
+    // デバッグモード初期化
 
     // 以降FreeRTOSタスク関連
 
@@ -193,6 +184,14 @@ void setup() {
     //     NULL);
 
     // vTaskStartScheduler(); //必要なら戻す
+#else
+#error "No mode defined. Please define one mode in config.hpp."
+#endif
+
+#if (defined(MODE_OUTPUT) + defined(MODE_INPUT) + \
+     defined(MODE_ROBOMAS) + defined(MODE_DEBUG)) != 1
+#error "Invalid mode configuration. Please define exactly *one mode* in config.hpp."
+#endif
 }
 
 // ================= LOOP =================
