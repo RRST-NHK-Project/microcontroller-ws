@@ -27,13 +27,13 @@ Description:
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
+#include "config.hpp"
+#include "defs.hpp"
+#include "led_task.hpp"
+#include "pin_ctrl_task.hpp"
+#include "robomas.hpp"
+#include "serial_task.hpp"
 #include <Arduino.h>
-#include <defs.hpp>
-#include <led_task.hpp>
-#include <pin_ctrl_task.hpp>
-#include <robomas.hpp>
-#include <serial_task.hpp>
-
 // ================= SETUP =================
 
 void setup() {
@@ -62,6 +62,62 @@ void setup() {
 
     pinMode(LED, OUTPUT);
 
+    xTaskCreate(
+        serialTask,   // タスク関数
+        "serialTask", // タスク名
+        2048,         // スタックサイズ（words）
+        NULL,
+        10, // 優先度
+        NULL);
+
+// モードに応じた初期化
+#if defined(MODE_OUTPUT)
+    // 出力モード初期化
+    xTaskCreate(
+        Output_Task,   // タスク関数
+        "Output_Task", // タスク名
+        1024,          // スタックサイズ（words）
+        NULL,
+        4, // 優先度
+        NULL);
+#elif defined(MODE_INPUT)
+    // 入力モード初期化
+    xTaskCreate(
+        Input_Task,   // タスク関数
+        "Input_Task", // タスク名
+        1024,         // スタックサイズ（words）
+        NULL,
+        4, // 優先度
+        NULL);
+#elif defined(MODE_ROBOMAS)
+    // ロボマスモード初期化
+    xTaskCreate(
+        M3508_Task,   // タスク関数
+        "M3508_Task", // タスク名
+        2048,         // スタックサイズ（words）
+        NULL,
+        9, // 優先度
+        NULL);
+
+    xTaskCreate(
+        M3508_RX,   // タスク関数
+        "M3508_RX", // タスク名
+        2048,       // スタックサイズ（words）
+        NULL,
+        9, // 優先度
+        NULL);
+#elif defined(MODE_STOP)
+    // 停止モード初期化
+    ;
+#else
+#error "No mode defined. Please define one mode in config.hpp."
+#endif
+
+#if (defined(MODE_OUTPUT) + defined(MODE_INPUT) + \
+     defined(MODE_ROBOMAS) + defined(MODE_STOP)) != 1
+#error "Invalid mode configuration. Please define exactly *one mode* in config.hpp."
+#endif
+
     // 以降FreeRTOSタスク関連
 
     // xTaskCreate(
@@ -88,21 +144,21 @@ void setup() {
     //     10, // 優先度
     //     NULL);
 
-    xTaskCreate(
-        serialTask,   // タスク関数
-        "serialTask", // タスク名
-        2048,         // スタックサイズ（words）
-        NULL,
-        10, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     serialTask,   // タスク関数
+    //     "serialTask", // タスク名
+    //     2048,         // スタックサイズ（words）
+    //     NULL,
+    //     10, // 優先度
+    //     NULL);
 
-    xTaskCreate(
-        Output_Task,   // タスク関数
-        "Output_Task", // タスク名
-        1024,          // スタックサイズ（words）
-        NULL,
-        4, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     Output_Task,   // タスク関数
+    //     "Output_Task", // タスク名
+    //     1024,          // スタックサイズ（words）
+    //     NULL,
+    //     4, // 優先度
+    //     NULL);
 
     // xTaskCreate(
     //     Input_Task,   // タスク関数
@@ -136,7 +192,7 @@ void setup() {
     //     9, // 優先度
     //     NULL);
 
-    // vTaskStartScheduler();
+    // vTaskStartScheduler(); //必要なら戻す
 }
 
 // ================= LOOP =================

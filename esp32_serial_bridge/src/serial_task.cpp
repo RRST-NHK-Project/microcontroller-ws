@@ -4,12 +4,12 @@
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
+#include "config.hpp"
+#include "defs.hpp"
 #include "frame_data.hpp"
 #include <Arduino.h>
-#include <defs.hpp>
 
 #define START_BYTE 0xAA
-#define DEVICE_ID 0x02
 
 // ループバックの有効化設定（実装途中）
 #define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
