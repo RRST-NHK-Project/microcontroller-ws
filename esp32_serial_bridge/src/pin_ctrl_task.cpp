@@ -23,22 +23,6 @@ void ENCx2_SWx8_init();
 
 // ================= TASK =================
 
-// 入力・出力統合タスク（現状動かない）というかESP32ではピンが足りない
-void Pin_Ctrl_Task(void *) {
-    TickType_t last_wake = xTaskGetTickCount();
-    Output_init();
-    Input_init();
-
-    while (1) {
-        MD_Output();
-        Servo_Output();
-        TR_Output();
-        ENC_Input();
-        SW_Input();
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
-    }
-}
-
 void Output_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     Output_init();
