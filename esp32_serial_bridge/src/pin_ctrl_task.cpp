@@ -133,7 +133,6 @@ void MD_Output() {
     ledcWrite(1, abs(Rx16Data_local[2]));
     ledcWrite(2, abs(Rx16Data_local[3]));
     ledcWrite(3, abs(Rx16Data_local[4]));
-
 }
 
 void Servo_Output() {
