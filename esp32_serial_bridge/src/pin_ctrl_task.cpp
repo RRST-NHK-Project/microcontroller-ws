@@ -120,8 +120,9 @@ void MD_Output() {
 
     // PWMの更新を毎回行わないようにする予定
 
-    // // ローカル変数にコピーして使う、RTOSとの競合回避
-    // int Rx16Data_local[Rx16NUM];
+    // 旧出力関数ここから
+    //  // ローカル変数にコピーして使う、RTOSとの競合回避
+    //  int Rx16Data_local[Rx16NUM];
 
     // // MD出力の制限
     // Rx16Data_local[1] = constrain(Rx_16Data[1], -MD_PWM_MAX, MD_PWM_MAX);
@@ -149,9 +150,12 @@ void MD_Output() {
     // ledcWrite(MD2P, abs(Rx16Data_local[2]));
     // ledcWrite(MD3P, abs(Rx16Data_local[3]));
     // ledcWrite(MD4P, abs(Rx16Data_local[4]));
+    // 旧出力関数ここまで
 }
 
 void Servo_Output() {
+
+    // PWM毎回更新するのやめたい
 
     // サーボ1
     int angle1 = Rx_16Data[9];
