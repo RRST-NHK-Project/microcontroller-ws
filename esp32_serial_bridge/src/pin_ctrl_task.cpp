@@ -18,8 +18,8 @@ void TR_Output();
 void Input_init();
 void ENC_Input();
 void SW_Input();
-void enc_init_all();
-void enc_init_half();
+void ENCx4_SWx4_init();
+void ENCx2_SWx8_init();
 
 // ================= TASK =================
 
