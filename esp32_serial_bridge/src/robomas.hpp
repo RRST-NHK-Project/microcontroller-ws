@@ -6,8 +6,10 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 
 #pragma once
 
+#include "defs.hpp"
 #include "driver/gpio.h"
 #include "driver/twai.h"
+#include "frame_data.hpp"
 #include <Arduino.h>
 
 void send_cur_all(float cur_array[NUM_MOTOR]);
