@@ -124,10 +124,10 @@ void MD_Output() {
         Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
     }
 
-    digitalWrite(MD1D, Rx16Data_local[1] ? HIGH : LOW);
-    digitalWrite(MD2D, Rx16Data_local[2] ? HIGH : LOW);
-    digitalWrite(MD3D, Rx16Data_local[3] ? HIGH : LOW);
-    digitalWrite(MD4D, Rx16Data_local[4] ? HIGH : LOW);
+    digitalWrite(MD1D, Rx16Data_local[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, Rx16Data_local[2] > 0 ? HIGH : LOW);
+    digitalWrite(MD3D, Rx16Data_local[3] > 0 ? HIGH : LOW);
+    digitalWrite(MD4D, Rx16Data_local[4] > 0 ? HIGH : LOW);
 
     ledcWrite(0, abs(Rx16Data_local[1]));
     ledcWrite(1, abs(Rx16Data_local[2]));
