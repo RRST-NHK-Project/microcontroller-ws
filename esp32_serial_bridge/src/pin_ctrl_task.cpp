@@ -145,7 +145,7 @@ void Servo_Output() {
         angle1 = SERVO1_MAX_DEG;
     int us1 = map(angle1, SERVO1_MIN_DEG, SERVO1_MAX_DEG, SERVO1_MIN_US, SERVO1_MAX_US);
     int duty1 = (int)(us1 * SERVO_PWM_SCALE);
-    ledcWrite(SERVO1, duty1);
+    ledcWrite(4, duty1);
 
     // サーボ2
     int angle2 = Rx_16Data[10];
@@ -155,7 +155,7 @@ void Servo_Output() {
         angle2 = SERVO2_MAX_DEG;
     int us2 = map(angle2, SERVO2_MIN_DEG, SERVO2_MAX_DEG, SERVO2_MIN_US, SERVO2_MAX_US);
     int duty2 = (int)(us2 * SERVO_PWM_SCALE);
-    ledcWrite(SERVO2, duty2);
+    ledcWrite(5, duty2);
 
     // サーボ3
     int angle3 = Rx_16Data[11];
@@ -165,7 +165,7 @@ void Servo_Output() {
         angle3 = SERVO3_MAX_DEG;
     int us3 = map(angle3, SERVO3_MIN_DEG, SERVO3_MAX_DEG, SERVO3_MIN_US, SERVO3_MAX_US);
     int duty3 = (int)(us3 * SERVO_PWM_SCALE);
-    ledcWrite(SERVO3, duty3);
+    ledcWrite(6, duty3);
 
     // サーボ4
     int angle4 = Rx_16Data[12];
@@ -175,7 +175,7 @@ void Servo_Output() {
         angle4 = SERVO4_MAX_DEG;
     int us4 = map(angle4, SERVO4_MIN_DEG, SERVO4_MAX_DEG, SERVO4_MIN_US, SERVO4_MAX_US);
     int duty4 = (int)(us4 * SERVO_PWM_SCALE);
-    ledcWrite(SERVO4, duty4);
+    ledcWrite(7, duty4);
 }
 
 void TR_Output() {
