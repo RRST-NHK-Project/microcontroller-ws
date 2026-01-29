@@ -11,9 +11,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 void LED_Blink100_Task(void *pvParameters) {
     while (1) {
         digitalWrite(LED, HIGH);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(1000));
         digitalWrite(LED, LOW);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 

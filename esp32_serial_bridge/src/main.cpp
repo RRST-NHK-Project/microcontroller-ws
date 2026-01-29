@@ -48,6 +48,7 @@ void setup() {
         NULL,
         11, // 優先度
         NULL);
+
 #elif defined(MODE_INPUT)
     // 入力モード初期化
     xTaskCreate(
