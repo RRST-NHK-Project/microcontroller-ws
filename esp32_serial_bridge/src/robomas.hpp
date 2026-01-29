@@ -17,5 +17,6 @@ void send_cur_all(float cur_array[NUM_MOTOR]);
 // 関数のプロトタイプ宣言
 void M3508_Task(void *pvParameters);
 void M3508_RX(void *);
+void robomas_init();
 
 void twai_receive_feedback();

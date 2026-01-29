@@ -120,7 +120,7 @@ void MD_Output() {
 
     static int Rx16Data_local[Rx16NUM];
 
-    for (int i = 1; i <= 8; i++) {
+    for (int i = 1; i <= 4; i++) {
         Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
     }
 

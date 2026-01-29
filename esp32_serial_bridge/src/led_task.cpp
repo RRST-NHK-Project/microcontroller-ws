@@ -11,9 +11,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 void LED_Blink100_Task(void *pvParameters) {
     while (1) {
         digitalWrite(LED, HIGH);
-        delay(100);
+        vTaskDelay(pdMS_TO_TICKS(100));
         digitalWrite(LED, LOW);
-        delay(100);
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -21,12 +21,12 @@ void LED_Blink100_Task(void *pvParameters) {
 void LED_PWM_Task(void *pvParameters) {
     while (1) {
         for (int val = 0; val <= 255; val++) {
-            analogWrite(LED, val);
-            delay(5);
+            ledcWrite(8, val);
+            vTaskDelay(pdMS_TO_TICKS(5));
         }
         for (int val = 255; val >= 0; val--) {
-            analogWrite(LED, val);
-            delay(5);
+            ledcWrite(8, val);
+            vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
 }
