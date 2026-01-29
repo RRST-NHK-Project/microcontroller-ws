@@ -6,8 +6,8 @@
 
 // ！！注意！！
 //  ここの設定を間違えるとドライバが燃えます
-#define VOLTAGE_SUPPLY 24 // 電源電圧
-#define VOLTAGE_LIMIT 12  // モータ印加電圧制限（もう少し攻めてもいいかも）
+#define VOLTAGE_SUPPLY 12 // 電源電圧
+#define VOLTAGE_LIMIT 6   // モータ印加電圧制限（もう少し攻めてもいいかも）
 
 // モータ極数
 BLDCMotor motor = BLDCMotor(7);
