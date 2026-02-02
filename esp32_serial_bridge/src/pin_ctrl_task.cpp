@@ -54,14 +54,12 @@ void Input_Task(void *)
 void PID_Task(void *)
 {
     TickType_t last_wake = xTaskGetTickCount();
-
+    Input_init();
     while (1)
     {
         // PID制御処理をここに実装予定
         ENC_Input();
         pid_control();
-        digitalWrite(MD1D, output > 0 ? HIGH : LOW);
-
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
@@ -71,7 +69,6 @@ void Input_init()
     // エンコーダとスイッチの初期化
     ENCx2_SWx8_init();
 }
-
 void ENC_Input()
 {
     // ENC入力処理
@@ -471,17 +468,44 @@ void ENCx2_SWx8_init()
 void pid_control()
 {
 
-    float kp = Rx_16Data[21];
-    float ki = Rx_16Data[22];
-    float kd = Rx_16Data[23];
+    float kp = 0.3;  // Rx_16Data[21];
+    float ki = 0.0;  // Rx_16Data[22];
+    float kd = 0.02; // Rx_16Data[23];
     float dt = CTRL_PERIOD_MS / 1000.0f;
-    int target = Rx_16Data[1];
-    int16_t enc_cnt = Tx_16Data[1];
+    int target = 180; // deg;
 
-    float error = target - enc_cnt;
+    static int32_t enc_total = 0;
+    static int16_t enc_prev = 0;
+
+    int16_t enc_now;
+
+    // ここで使う
+
+    int16_t diff = enc_now - enc_prev;
+
+    // オーバーフロー補正
+    if (diff > 32768)
+        diff -= 65536;
+    if (diff < -32768)
+        diff += 65536;
+
+    enc_total += diff;
+    enc_prev = enc_now;
+
+    int16_t current = enc_total * (360.0f / 8192.0f); // deg
+    pcnt_get_counter_value(PCNT_UNIT_0, &current);
+
+    // constexpr float RAD_PER_CNT = 2.0f * PI / 8192.0f;
+    // float current_rad = enc_total * RAD_PER_CNT;
+    // float target_rad = 2.0f * PI;
+    float error = target - current;
     static float integral = 0;
     static float error_prev = 0;
+
+    integral += error * dt;
     float derivative = (error - error_prev) / dt;
     float output = kp * error + ki * integral + kd * derivative;
     output = constrain(output, -MD_PWM_MAX, MD_PWM_MAX);
+    error_prev = error;
+    Rx_16Data[1] = (int16_t)output;
 }
