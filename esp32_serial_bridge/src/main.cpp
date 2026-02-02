@@ -75,13 +75,13 @@ void setup()
 #elif defined(MODE_DEBUG)
     // デバッグモード初期化
 
-    xTaskCreate(
-        LED_PWM_Task,   // タスク関数
-        "LED_PWM_Task", // タスク名
-        512,            // スタックサイズ（words）
-        NULL,
-        9, // 優先度
-        NULL);
+    // xTaskCreate(
+    //     LED_PWM_Task,   // タスク関数
+    //     "LED_PWM_Task", // タスク名
+    //     512,            // スタックサイズ（words）
+    //     NULL,
+    //     9, // 優先度
+    //     NULL);
 
     // xTaskCreate(
     //     LED_Blink100_Task,   // タスク関数
@@ -90,12 +90,13 @@ void setup()
     //     NULL,
     //     9, // 優先度
     //     NULL);
+    
     xTaskCreate(
         PID_Task,   // タスク関数
         "PID_Task", // タスク名
-        2048,       // スタックサイズ（words）
+        1024,       // スタックサイズ（words）
         NULL,
-        11, // 優先度
+        4, // 優先度
         NULL);
 
 #else
