@@ -19,7 +19,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 // ================= SETUP =================
 
-void setup() {
+void setup()
+{
 
     delay(200); // 安定待ち
 
@@ -89,6 +90,13 @@ void setup() {
     //     NULL,
     //     9, // 優先度
     //     NULL);
+    xTaskCreate(
+        PID_Task,   // タスク関数
+        "PID_Task", // タスク名
+        2048,       // スタックサイズ（words）
+        NULL,
+        11, // 優先度
+        NULL);
 
 #else
 #error "No mode defined. Please define one mode in config.hpp."
@@ -102,7 +110,8 @@ void setup() {
 
 // ================= LOOP =================
 
-void loop() {
+void loop()
+{
     vTaskDelay(pdMS_TO_TICKS(1000));
     // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }

@@ -20,14 +20,16 @@ void ENC_Input();
 void SW_Input();
 void ENCx4_SWx4_init();
 void ENCx2_SWx8_init();
-
+void pid_control();
 // ================= TASK =================
 
-void Output_Task(void *) {
+void Output_Task(void *)
+{
     TickType_t last_wake = xTaskGetTickCount();
     Output_init();
 
-    while (1) {
+    while (1)
+    {
         MD_Output();
         Servo_Output();
         TR_Output();
@@ -35,23 +37,43 @@ void Output_Task(void *) {
     }
 }
 
-void Input_Task(void *) {
+void Input_Task(void *)
+{
     TickType_t last_wake = xTaskGetTickCount();
     Input_init();
 
-    while (1) {
+    while (1)
+    {
         ENC_Input();
         SW_Input();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
 
-void Input_init() {
+// PID制御タスク馬渕385
+void PID_Task(void *)
+{
+    TickType_t last_wake = xTaskGetTickCount();
+
+    while (1)
+    {
+        // PID制御処理をここに実装予定
+        ENC_Input();
+        pid_control();
+        digitalWrite(MD1D, output > 0 ? HIGH : LOW);
+
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
+    }
+}
+
+void Input_init()
+{
     // エンコーダとスイッチの初期化
     ENCx2_SWx8_init();
 }
 
-void ENC_Input() {
+void ENC_Input()
+{
     // ENC入力処理
     // taskENTER_CRITICAL();
     pcnt_get_counter_value(PCNT_UNIT_0, (int16_t *)&Tx_16Data[1]);
@@ -61,7 +83,8 @@ void ENC_Input() {
     // taskEXIT_CRITICAL();
 }
 
-void SW_Input() {
+void SW_Input()
+{
     // SW入力処理
     Tx_16Data[9] = !digitalRead(SW1);
     Tx_16Data[10] = !digitalRead(SW2);
@@ -76,7 +99,8 @@ void SW_Input() {
 // ================= 関数 =================
 // マイコンや基板の不具合に対応するためにfor文は使っていない
 
-void Output_init() {
+void Output_init()
+{
 
     // MDの方向ピンを出力に設定
     pinMode(MD1D, OUTPUT);
@@ -116,11 +140,13 @@ void Output_init() {
     pinMode(TR7, OUTPUT);
 }
 
-void MD_Output() {
+void MD_Output()
+{
 
     static int Rx16Data_local[Rx16NUM];
 
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i <= 4; i++)
+    {
         Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
     }
 
@@ -135,7 +161,8 @@ void MD_Output() {
     ledcWrite(3, abs(Rx16Data_local[4]));
 }
 
-void Servo_Output() {
+void Servo_Output()
+{
 
     // サーボ1
     int angle1 = Rx_16Data[9];
@@ -178,7 +205,8 @@ void Servo_Output() {
     ledcWrite(7, duty4);
 }
 
-void TR_Output() {
+void TR_Output()
+{
     digitalWrite(TR1, Rx_16Data[17] ? HIGH : LOW);
     digitalWrite(TR2, Rx_16Data[18] ? HIGH : LOW);
     digitalWrite(TR3, Rx_16Data[19] ? HIGH : LOW);
@@ -189,7 +217,8 @@ void TR_Output() {
 }
 
 // エンコーダ4つ分の初期化
-void ENCx4_SWx4_init() {
+void ENCx4_SWx4_init()
+{
 
     // SW ピン初期化
     pinMode(SW1, INPUT_PULLUP);
@@ -343,7 +372,8 @@ void ENCx4_SWx4_init() {
 }
 
 // エンコーダ2つ分の初期化
-void ENCx2_SWx8_init() {
+void ENCx2_SWx8_init()
+{
 
     // SW ピン初期化
     pinMode(SW1, INPUT_PULLUP);
@@ -436,4 +466,22 @@ void ENCx2_SWx8_init() {
     // フィルター値を設定
     pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
     pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
+}
+
+void pid_control()
+{
+
+    float kp = Rx_16Data[21];
+    float ki = Rx_16Data[22];
+    float kd = Rx_16Data[23];
+    float dt = CTRL_PERIOD_MS / 1000.0f;
+    int target = Rx_16Data[1];
+    int16_t enc_cnt = Tx_16Data[1];
+
+    float error = target - enc_cnt;
+    static float integral = 0;
+    static float error_prev = 0;
+    float derivative = (error - error_prev) / dt;
+    float output = kp * error + ki * integral + kd * derivative;
+    output = constrain(output, -MD_PWM_MAX, MD_PWM_MAX);
 }

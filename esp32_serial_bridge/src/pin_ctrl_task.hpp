@@ -12,6 +12,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 void Pin_Ctrl_Task(void *); // 入出力タスク
 void Input_Task(void *);    // 入力タスク
 void Output_Task(void *);   // 出力タスク
+void PID_Task(void *);      // PID制御タスク
 void MD_Output();
 void Output_init();
 void Servo_Output();
