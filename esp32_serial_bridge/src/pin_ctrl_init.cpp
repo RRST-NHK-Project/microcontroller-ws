@@ -4,10 +4,10 @@
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
+#include "defs.hpp"
 #include "driver/pcnt.h"
 #include "frame_data.hpp"
 #include <Arduino.h>
-#include <defs.hpp>
 
 constexpr uint32_t CTRL_PERIOD_MS = 5; // ピン更新周期（ミリ秒）
 
