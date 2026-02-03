@@ -58,6 +58,17 @@ void setup() {
         NULL,
         4, // 優先度
         NULL);
+
+#elif defined(MODE_IO)
+    // 入出力モード初期化
+    xTaskCreate(
+        IO_Task,   // タスク関数
+        "IO_Task", // タスク名
+        2048,      // スタックサイズ（words）
+        NULL,
+        11, // 優先度
+        NULL);
+
 #elif defined(MODE_ROBOMAS)
     // ロボマスモード初期化
 
@@ -102,7 +113,7 @@ void setup() {
 #error "No mode defined. Please define one mode in config.hpp."
 #endif
 
-#if (defined(MODE_OUTPUT) + defined(MODE_INPUT) + \
+#if (defined(MODE_OUTPUT) + defined(MODE_INPUT) + defined(MODE_IO) + \
      defined(MODE_ROBOMAS) + defined(MODE_DEBUG)) != 1
 #error "Invalid mode configuration. Please define exactly *one mode* in config.hpp."
 #endif

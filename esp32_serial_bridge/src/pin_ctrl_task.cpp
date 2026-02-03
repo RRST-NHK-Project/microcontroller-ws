@@ -20,16 +20,20 @@ void ENC_Input();
 void SW_Input();
 void ENCx4_SWx4_init();
 void ENCx2_SWx8_init();
+void ENCx2_init();
 void pid_control();
+void IO_MD_Output();
+void IO_ENC_Input();
+void IO_SW_Input();
+void IO_init();
+
 // ================= TASK =================
 
-void Output_Task(void *)
-{
+void Output_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     Output_init();
 
-    while (1)
-    {
+    while (1) {
         MD_Output();
         Servo_Output();
         TR_Output();
@@ -37,26 +41,34 @@ void Output_Task(void *)
     }
 }
 
-void Input_Task(void *)
-{
+void Input_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     Input_init();
 
-    while (1)
-    {
+    while (1) {
         ENC_Input();
         SW_Input();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
 
+void IO_Task(void *) {
+    TickType_t last_wake = xTaskGetTickCount();
+    IO_init();
+
+    while (1) {
+        IO_MD_Output();
+        IO_ENC_Input();
+        IO_SW_Input();
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
+    }
+}
+
 // PID制御タスク馬渕385
-void PID_Task(void *)
-{
+void PID_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     Input_init();
-    while (1)
-    {
+    while (1) {
         // PID制御処理をここに実装予定
         // ENC_Input();
         pid_control();
@@ -64,13 +76,11 @@ void PID_Task(void *)
     }
 }
 
-void Input_init()
-{
+void Input_init() {
     // エンコーダとスイッチの初期化
     ENCx2_SWx8_init();
 }
-void ENC_Input()
-{
+void ENC_Input() {
     // ENC入力処理
     // taskENTER_CRITICAL();
     pcnt_get_counter_value(PCNT_UNIT_0, (int16_t *)&Tx_16Data[1]);
@@ -80,8 +90,7 @@ void ENC_Input()
     // taskEXIT_CRITICAL();
 }
 
-void SW_Input()
-{
+void SW_Input() {
     // SW入力処理
     Tx_16Data[9] = !digitalRead(SW1);
     Tx_16Data[10] = !digitalRead(SW2);
@@ -96,8 +105,7 @@ void SW_Input()
 // ================= 関数 =================
 // マイコンや基板の不具合に対応するためにfor文は使っていない
 
-void Output_init()
-{
+void Output_init() {
 
     // MDの方向ピンを出力に設定
     pinMode(MD1D, OUTPUT);
@@ -137,13 +145,32 @@ void Output_init()
     pinMode(TR7, OUTPUT);
 }
 
-void MD_Output()
-{
+void IO_init() {
+    // MDの方向ピンを出力に設定
+    pinMode(MD1D, OUTPUT);
+    pinMode(MD2D, OUTPUT);
+
+    // PWMの初期化
+    ledcSetup(0, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcSetup(1, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+
+    ledcAttachPin(MD1P, 0);
+    ledcAttachPin(MD2P, 1);
+
+    ENCx2_init();
+
+    // SW ピン初期化
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
+    pinMode(SW7, INPUT_PULLUP);
+    pinMode(SW8, INPUT_PULLUP);
+}
+
+void MD_Output() {
 
     static int Rx16Data_local[Rx16NUM];
 
-    for (int i = 1; i <= 4; i++)
-    {
+    for (int i = 1; i <= 4; i++) {
         Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
     }
 
@@ -158,8 +185,7 @@ void MD_Output()
     ledcWrite(3, abs(Rx16Data_local[4]));
 }
 
-void Servo_Output()
-{
+void Servo_Output() {
 
     // サーボ1
     int angle1 = Rx_16Data[9];
@@ -202,8 +228,7 @@ void Servo_Output()
     ledcWrite(7, duty4);
 }
 
-void TR_Output()
-{
+void TR_Output() {
     digitalWrite(TR1, Rx_16Data[17] ? HIGH : LOW);
     digitalWrite(TR2, Rx_16Data[18] ? HIGH : LOW);
     digitalWrite(TR3, Rx_16Data[19] ? HIGH : LOW);
@@ -213,9 +238,39 @@ void TR_Output()
     digitalWrite(TR7, Rx_16Data[23] ? HIGH : LOW);
 }
 
+void IO_MD_Output() {
+
+    static int Rx16Data_local[Rx16NUM];
+
+    for (int i = 1; i <= 2; i++) {
+        Rx16Data_local[i] = constrain(Rx_16Data[i], -MD_PWM_MAX, MD_PWM_MAX);
+    }
+
+    digitalWrite(MD1D, Rx16Data_local[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, Rx16Data_local[2] > 0 ? HIGH : LOW);
+
+    ledcWrite(0, abs(Rx16Data_local[1]));
+    ledcWrite(1, abs(Rx16Data_local[2]));
+}
+
+void IO_ENC_Input() {
+    // ENC入力処理
+    // taskENTER_CRITICAL();
+    pcnt_get_counter_value(PCNT_UNIT_0, (int16_t *)&Tx_16Data[1]);
+    pcnt_get_counter_value(PCNT_UNIT_1, (int16_t *)&Tx_16Data[2]);
+    // taskEXIT_CRITICAL();
+}
+
+void IO_SW_Input() {
+    // SW入力処理
+    Tx_16Data[11] = !digitalRead(SW3);
+    Tx_16Data[12] = !digitalRead(SW4);
+    Tx_16Data[15] = !digitalRead(SW7);
+    Tx_16Data[16] = !digitalRead(SW8);
+}
+
 // エンコーダ4つ分の初期化
-void ENCx4_SWx4_init()
-{
+void ENCx4_SWx4_init() {
 
     // SW ピン初期化
     pinMode(SW1, INPUT_PULLUP);
@@ -369,8 +424,7 @@ void ENCx4_SWx4_init()
 }
 
 // エンコーダ2つ分の初期化
-void ENCx2_SWx8_init()
-{
+void ENCx2_SWx8_init() {
 
     // SW ピン初期化
     pinMode(SW1, INPUT_PULLUP);
@@ -387,10 +441,6 @@ void ENCx2_SWx8_init()
     gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC3_B, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_A, GPIO_PULLUP_ONLY);
-    gpio_set_pull_mode((gpio_num_t)ENC4_B, GPIO_PULLUP_ONLY);
 
     // パルスカウンタの設定
     pcnt_config_t pcnt_config1 = {};
@@ -465,12 +515,92 @@ void ENCx2_SWx8_init()
     pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
 }
 
-void pid_control()
-{
+void ENCx2_init() {
 
-     int16_t enc_now;
+    // プルアップを有効化
+    gpio_set_pull_mode((gpio_num_t)ENC1_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC1_B, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_A, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode((gpio_num_t)ENC2_B, GPIO_PULLUP_ONLY);
+
+    // パルスカウンタの設定
+    pcnt_config_t pcnt_config1 = {};
+    pcnt_config1.pulse_gpio_num = ENC1_A;
+    pcnt_config1.ctrl_gpio_num = ENC1_B;
+    pcnt_config1.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config1.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config1.pos_mode = PCNT_COUNT_INC;
+    pcnt_config1.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config1.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config1.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config1.unit = PCNT_UNIT_0;
+    pcnt_config1.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config2 = {};
+    pcnt_config2.pulse_gpio_num = ENC1_B;
+    pcnt_config2.ctrl_gpio_num = ENC1_A;
+    pcnt_config2.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config2.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config2.pos_mode = PCNT_COUNT_INC;
+    pcnt_config2.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config2.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config2.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config2.unit = PCNT_UNIT_0;
+    pcnt_config2.channel = PCNT_CHANNEL_1;
+
+    pcnt_config_t pcnt_config3 = {};
+    pcnt_config3.pulse_gpio_num = ENC2_A;
+    pcnt_config3.ctrl_gpio_num = ENC2_B;
+    pcnt_config3.lctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config3.hctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config3.pos_mode = PCNT_COUNT_INC;
+    pcnt_config3.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config3.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config3.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config3.unit = PCNT_UNIT_1;
+    pcnt_config3.channel = PCNT_CHANNEL_0;
+
+    pcnt_config_t pcnt_config4 = {};
+    pcnt_config4.pulse_gpio_num = ENC2_B;
+    pcnt_config4.ctrl_gpio_num = ENC2_A;
+    pcnt_config4.lctrl_mode = PCNT_MODE_REVERSE;
+    pcnt_config4.hctrl_mode = PCNT_MODE_KEEP;
+    pcnt_config4.pos_mode = PCNT_COUNT_INC;
+    pcnt_config4.neg_mode = PCNT_COUNT_DEC;
+    pcnt_config4.counter_h_lim = COUNTER_H_LIM;
+    pcnt_config4.counter_l_lim = COUNTER_L_LIM;
+    pcnt_config4.unit = PCNT_UNIT_1;
+    pcnt_config4.channel = PCNT_CHANNEL_1;
+
+    // パルスカウンタの初期化
+    pcnt_unit_config(&pcnt_config1);
+    pcnt_unit_config(&pcnt_config2);
+    pcnt_unit_config(&pcnt_config3);
+    pcnt_unit_config(&pcnt_config4);
+
+    pcnt_counter_pause(PCNT_UNIT_0);
+    pcnt_counter_pause(PCNT_UNIT_1);
+
+    pcnt_counter_clear(PCNT_UNIT_0);
+    pcnt_counter_clear(PCNT_UNIT_1);
+
+    pcnt_counter_resume(PCNT_UNIT_0);
+    pcnt_counter_resume(PCNT_UNIT_1);
+
+    // チャタリング防止のフィルターを有効化
+    pcnt_filter_enable(PCNT_UNIT_0);
+    pcnt_filter_enable(PCNT_UNIT_1);
+
+    // フィルター値を設定
+    pcnt_set_filter_value(PCNT_UNIT_0, PCNT_FILTER_VALUE);
+    pcnt_set_filter_value(PCNT_UNIT_1, PCNT_FILTER_VALUE);
+}
+
+void pid_control() {
+
+    int16_t enc_now;
     static int16_t enc_prev = 0;
-     static int32_t enc_total;
+    static int32_t enc_total;
     pcnt_get_counter_value(PCNT_UNIT_0, (int16_t *)&Tx_16Data[1]);
     int32_t diff = Tx_16Data[1] - enc_prev;
 
@@ -480,16 +610,15 @@ void pid_control()
     if (diff < -32768)
         diff += 65536;
 
-   
-    enc_total+= diff;
+    enc_total += diff;
     enc_prev = enc_now;
 
-    Tx_16Data[6] = (int16_t)(enc_total& 0xFFFF);         // low
-    Tx_16Data[5] = (int16_t)((enc_total>> 16) & 0xFFFF); // high
+    Tx_16Data[6] = (int16_t)(enc_total & 0xFFFF);         // low
+    Tx_16Data[5] = (int16_t)((enc_total >> 16) & 0xFFFF); // high
 
-    //int32_t enc_cnt = Tx_16Data[5]*1000 + Tx_16Data[6];//エンコーダカウント値
-    float kp = 1.0;  // Rx_16Data[21];
-    float ki = 0.0;  // Rx_16Data[22];
+    // int32_t enc_cnt = Tx_16Data[5]*1000 + Tx_16Data[6];//エンコーダカウント値
+    float kp = 1.0; // Rx_16Data[21];
+    float ki = 0.0; // Rx_16Data[22];
     float kd = 0.0; // Rx_16Data[23];
     float dt = CTRL_PERIOD_MS / 1000.0f;
     int target = 180; // deg;
@@ -516,4 +645,3 @@ void pid_control()
     // ledcWrite(0, abs((int)output));
     error_prev = error;
 }
-
