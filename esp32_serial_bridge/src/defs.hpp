@@ -15,6 +15,12 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define COUNTER_L_LIM -32768
 #define PCNT_FILTER_VALUE 1023 // 0~1023, 1 = 12.5ns
 
+#define ENC_PPR_SPEC 2048      // エンコーダの設定値
+#define PPR (ENC_PPR_SPEC * 4) // 実効PPR（x4カウント）
+
+#define DEG_PER_COUNT (360.0f / PPR)
+#define HALF_PPR (PPR / 2)
+
 // MD出力の上限値
 #define MD_PWM_MAX 255 // 8bit
 

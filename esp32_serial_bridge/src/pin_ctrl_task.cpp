@@ -171,12 +171,48 @@ void IO_MD_Output() {
 }
 
 void IO_ENC_Input() {
-    // ENC入力処理
-    // taskENTER_CRITICAL();
-    pcnt_get_counter_value(PCNT_UNIT_0, (int16_t *)&Tx_16Data[1]);
-    pcnt_get_counter_value(PCNT_UNIT_1, (int16_t *)&Tx_16Data[2]);
-    // taskEXIT_CRITICAL();
+
+    int16_t cnt0, cnt1;
+    static int32_t total_cnt0 = 0;
+    static int32_t total_cnt1 = 0;
+
+    pcnt_get_counter_value(PCNT_UNIT_0, &cnt0);
+    pcnt_get_counter_value(PCNT_UNIT_1, &cnt1);
+
+    pcnt_counter_clear(PCNT_UNIT_0);
+    pcnt_counter_clear(PCNT_UNIT_1);
+
+    total_cnt0 += cnt0;
+    total_cnt1 += cnt1;
+
+    float angle0 = total_cnt0 * DEG_PER_COUNT;
+    float angle1 = total_cnt1 * DEG_PER_COUNT;
+
+    // オーバーフロー対策が甘いがとりあえずそのまま送る
+    Tx_16Data[1] = static_cast<int16_t>(angle0);
+    Tx_16Data[2] = static_cast<int16_t>(angle1);
 }
+
+// void IO_ENC_Input() {
+//     // ENC入力処理
+//     // taskENTER_CRITICAL();
+
+//     int16_t cnt0, cnt1;
+//     float angle0, angle1;
+
+//     // カウント取得
+//     pcnt_get_counter_value(PCNT_UNIT_0, &cnt0);
+//     pcnt_get_counter_value(PCNT_UNIT_1, &cnt1);
+
+//     // 度数法変換
+//     angle0 = cnt0 * DEG_PER_COUNT;
+//     angle1 = cnt1 * DEG_PER_COUNT;
+
+//     Tx_16Data[1] = static_cast<int16_t>(angle0);
+//     Tx_16Data[2] = static_cast<int16_t>(angle1);
+
+//     // taskEXIT_CRITICAL();
+// }
 
 void IO_SW_Input() {
     // SW入力処理
