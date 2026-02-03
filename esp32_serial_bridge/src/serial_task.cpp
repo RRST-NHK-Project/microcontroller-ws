@@ -197,6 +197,18 @@ void receive_frame() {
         case WAIT_CHECKSUM:
             if (rx_checksum == b && rx_id == DEVICE_ID) { // データが破損していないこと，IDが自機と一致することを確認
 
+                // LEDで受信表示
+                // digitalWrite(LED, !digitalRead(LED));
+
+                uint32_t LED_TOGGLE_MS = 500;
+                static uint32_t last_led_toggle_ms = 0;
+
+                uint32_t now = millis();
+                if (now - last_led_toggle_ms >= LED_TOGGLE_MS) {
+                    digitalWrite(LED, !digitalRead(LED));
+                    last_led_toggle_ms = now;
+                }
+
                 // ===== 生フレームの保存（受信したデータをフレーム形式に復元） =====
                 Rx_raw_frame[0] = START_BYTE;
                 Rx_raw_frame[1] = rx_id;
