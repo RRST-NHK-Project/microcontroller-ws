@@ -65,6 +65,14 @@ void pid_control()
     angle[0] = total_cnt0 * DEG_PER_COUNT;
     angle[1] = total_cnt1 * DEG_PER_COUNT;
 
+    Tx_16Data[11] = !digitalRead(SW3);
+    if (digitalRead(SW3) == HIGH)
+    {
+        // リセット処理
+        total_cnt0 = 0;
+        total_cnt1 = 0;
+    }
+
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
