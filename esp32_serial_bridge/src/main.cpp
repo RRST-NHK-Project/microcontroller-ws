@@ -102,13 +102,13 @@ void setup() {
     //     9, // 優先度
     //     NULL);
 
-    // xTaskCreate(
-    //     PID_Task,   // タスク関数
-    //     "PID_Task", // タスク名
-    //     1024,       // スタックサイズ（words）
-    //     NULL,
-    //     4, // 優先度
-    //     NULL);
+    xTaskCreate(
+        PID_Task,   // タスク関数
+        "PID_Task", // タスク名
+        2048,       // スタックサイズ（words）
+        NULL,
+        11, // 優先度
+        NULL);
 
 #else
 #error "No mode defined. Please define one mode in config.hpp."

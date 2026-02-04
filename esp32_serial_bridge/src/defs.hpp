@@ -82,6 +82,9 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define SW7 17
 #define SW8 18
 
+// モータ数
+#define motor 2
+
 // ロボマス
 #define CAN_RX 2
 #define CAN_TX 4
