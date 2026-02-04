@@ -156,5 +156,6 @@ extern float angle_m3508[NUM_MOTOR];
 extern float vel_m3508[NUM_MOTOR];
 extern float c[NUM_MOTOR];
 extern float output[NUM_MOTOR];
+extern float angle[NUM_MOTOR];
 
 extern unsigned long lastPidTime;
