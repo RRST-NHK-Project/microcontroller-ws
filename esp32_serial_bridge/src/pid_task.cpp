@@ -67,6 +67,7 @@ void pid_control()
 
     static uint8_t sw3_prev = HIGH;
 
+    // swがncのときこれ
     uint8_t sw3_now = digitalRead(SW3);
     Tx_16Data[11] = !digitalRead(SW3);
     if (sw3_prev == LOW && sw3_now == HIGH)
@@ -81,14 +82,6 @@ void pid_control()
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
 
-    // float error = target - angle0;
-    // static float integral = 0;
-    // static float error_prev = 0;
-
-    // integral += error * dt;
-    // float derivative = (error - error_prev) / dt;
-    // float output = kp * error + ki * integral + kd * derivative;
-
     output[0] = pid_calculate(target_angle[0], angle[0], pos_error_prev[0], pos_integral[0],
                               kp, ki, kd, dt);
     output[0] = constrain(output[0], -MD_PWM_MAX, MD_PWM_MAX);
@@ -102,6 +95,4 @@ void pid_control()
 
     ledcWrite(0, abs(output[0]));
     ledcWrite(1, abs(output[1]));
-
-    //  error_prev = error;
 }
