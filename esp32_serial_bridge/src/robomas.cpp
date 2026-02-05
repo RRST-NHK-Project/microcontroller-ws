@@ -5,6 +5,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
 #include "robomas.hpp"
+#include "pid_task.hpp"
+#include "pin_ctrl_init.hpp"
 #include "frame_data.hpp"
 #include <Arduino.h>
 #include <defs.hpp>
@@ -124,6 +126,7 @@ float pid_vel(float setpoint, float input, float &error_prev, float &prop_prev, 
 void M3508_Task(void *pvParameters)
 {
 
+    md_enc_init();
     // 初期化
     lastPidTime = millis();
 
@@ -131,7 +134,7 @@ void M3508_Task(void *pvParameters)
     {
         for (int i = 0; i < NUM_MOTOR; i++)
         {
-            target_rpm[i] = Rx_16Data[i + 1];
+            target_rpm[i] = Rx_16Data[i + 7];
         }
         unsigned long now = millis();
         float dt = (now - lastPidTime) / 1000.0f;
