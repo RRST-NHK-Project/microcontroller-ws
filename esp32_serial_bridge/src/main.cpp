@@ -1,5 +1,5 @@
 /*====================================================================
-Project: stm32_serial_bridge
+Project: esp32_serial_bridge
 Target board: ESP32 Dev Module
 
 Description:
