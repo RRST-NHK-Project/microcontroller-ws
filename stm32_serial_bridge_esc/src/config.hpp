@@ -11,6 +11,6 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define DEVICE_ID 0x02
 
 // モードの設定，どれか一つをコメントアウト解除する
-#define MODE_VELOSITY_CONTROL
+// #define MODE_VELOCITY_CONTROL
 // #define MODE_POSITION_CONTROL
-// #define MODE_DEBUG
+#define MODE_DEBUG

@@ -42,7 +42,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include "defs.hpp"
 #include "frame_data.hpp"
 #include <Arduino.h>
-#include <STM32FreeRTOS.h>
+// #include <STM32FreeRTOS.h>
 
 #define START_BYTE 0xAA // ROS側と揃える，基本的に変更する必要はない，フレーム破損時の復帰に使用
 
@@ -76,53 +76,10 @@ uint8_t rx_buf[Rx16NUM * 2];
 uint8_t rx_index = 0;
 uint8_t rx_checksum = 0;
 
-constexpr uint32_t TX_PERIOD_MS = 20; // 送信周期（ミリ秒）
-constexpr uint32_t RX_PERIOD_MS = 10; // 受信周期（ミリ秒）未使用なので削除予定
-
 void send_frame();
 void receive_frame();
 
 // ================= TASK =================
-
-// 送受信タスク
-void serialTask(void *) {
-    TickType_t last_tx = xTaskGetTickCount();
-
-    while (1) {
-        // RXは毎ループ呼び出す
-        receive_frame();
-
-        // TXのみ周期管理
-        if (xTaskGetTickCount() - last_tx >= pdMS_TO_TICKS(TX_PERIOD_MS)) {
-            send_frame();
-            last_tx = xTaskGetTickCount();
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
-}
-
-// TX,RXでタスクを分けると不具合が発生、シリアルに２つのタスクからアクセスしているのが原因？
-// 以下２つのタスクは削除予定
-
-// 送信タスク（削除予定）
-void txTask(void *) {
-    TickType_t last_wake = xTaskGetTickCount();
-
-    while (1) {
-        send_frame();
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(TX_PERIOD_MS));
-    }
-}
-// 受信タスク（削除予定）
-void rxTask(void *) {
-    TickType_t last_wake = xTaskGetTickCount();
-
-    while (1) {
-        receive_frame();
-        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(RX_PERIOD_MS));
-    }
-}
 
 // ================= TX =================
 // 送信用関数
