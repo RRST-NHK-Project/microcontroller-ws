@@ -58,8 +58,8 @@ void md_enc_init()
     // SW ピン初期化
     pinMode(SW1, INPUT_PULLUP);
     pinMode(SW2, INPUT_PULLUP);
-    pinMode(SW7, INPUT_PULLUP);
-    pinMode(SW8, INPUT_PULLUP);
+    // pinMode(SW7, INPUT_PULLUP);
+    // pinMode(SW8, INPUT_PULLUP);
 }
 
 void pid_control()
@@ -67,7 +67,7 @@ void pid_control()
 
     float kp = 3.0; // Rx_16Data[21];
     float ki = 0.0; // Rx_16Data[22];
-    float kd = 0.0; // Rx_16Data[23];
+    float kd = 0.1; // Rx_16Data[23];
     float dt = CTRL_PERIOD_MS / 1000.0f;
 
     target_angle[0] = Rx_16Data[1]; // deg;
@@ -137,20 +137,22 @@ void pid_control()
     // ===== 目標角ランプ生成 =====
     static float target_angle_cur[2] = {0.0f, 0.0f};
 
-    float target_cmd0 = Rx_16Data[1];
-    float target_cmd1 = Rx_16Data[2];
+    target_angle_cur[0] = Rx_16Data[1];
+    target_angle_cur[1] = Rx_16Data[2];
 
-    constexpr float MAX_STEP_DEG = 1.0f;
+    // target_angle_cur[0] = Rx_16Data[1];
+    // target_angle_cur[1] = Rx_16Data[2];
+    // constexpr float MAX_STEP_DEG = 1.0f;
 
-    target_angle_cur[0] += constrain(
-        target_cmd0 - target_angle_cur[0],
-        -MAX_STEP_DEG,
-        +MAX_STEP_DEG);
+    // target_angle_cur[0] += constrain(
+    //     target_cmd0 - target_angle_cur[0],
+    //     -MAX_STEP_DEG,
+    //     +MAX_STEP_DEG);
 
-    target_angle_cur[1] += constrain(
-        target_cmd1 - target_angle_cur[1],
-        -MAX_STEP_DEG,
-        +MAX_STEP_DEG);
+    // target_angle_cur[1] += constrain(
+    //     target_cmd1 - target_angle_cur[1],
+    //     -MAX_STEP_DEG,
+    //     +MAX_STEP_DEG);
 
     output[0] = pid_calculate(target_angle_cur[0], angle[0], pos_error_prev[0], pos_integral[0],
                               kp, ki, kd, dt);
@@ -163,6 +165,9 @@ void pid_control()
     digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
     digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
 
-    ledcWrite(2, output[0]);
-    ledcWrite(3, output[1]);
+    Tx_16Data[3] = static_cast<int16_t>(output[0]);
+    Tx_16Data[4] = static_cast<int16_t>(output[1]);
+
+    ledcWrite(2, abs(output[0]));
+    ledcWrite(3, abs(output[1]));
 }
