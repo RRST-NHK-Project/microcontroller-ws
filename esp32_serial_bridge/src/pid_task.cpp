@@ -17,20 +17,17 @@ void pid_calculate();
 //  ================= TASK =================
 
 // PID制御タスク馬渕385
-void PID_Task(void *)
-{
+void PID_Task(void *) {
     TickType_t last_wake = xTaskGetTickCount();
     IO_init();
-    while (1)
-    {
+    while (1) {
         pid_control();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
 
 float pid_calculate(float setpoint, float input, float &error_prev, float &integral,
-                    float kp, float ki, float kd, float dt)
-{
+                    float kp, float ki, float kd, float dt) {
     float error = setpoint - input;
     integral += (error + error_prev) * dt;
     float derivative = (error - error_prev) / dt;
@@ -38,8 +35,7 @@ float pid_calculate(float setpoint, float input, float &error_prev, float &integ
     return kp * error + ki * integral + kd * derivative;
 }
 
-void pid_control()
-{
+void pid_control() {
 
     float kp = 3.0; // Rx_16Data[21];
     float ki = 0.0; // Rx_16Data[22];
@@ -70,8 +66,7 @@ void pid_control()
     // swがncのときこれ
     uint8_t sw3_now = digitalRead(SW3);
     Tx_16Data[11] = !digitalRead(SW3);
-    if (sw3_prev == LOW && sw3_now == HIGH)
-    {
+    if (sw3_prev == LOW && sw3_now == HIGH) {
         // リセット処理
         total_cnt0 = 0;
         total_cnt1 = 0;
