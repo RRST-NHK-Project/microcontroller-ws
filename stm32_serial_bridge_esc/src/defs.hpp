@@ -13,3 +13,5 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 // ピンの定義 //
 // 状態表示LED
 #define LED LED_BUILTIN
+
+#define TX_PERIOD_MS 50 // 送信周期（ミリ秒）
