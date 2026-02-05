@@ -10,13 +10,11 @@ Description:
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
-// #include "config.hpp"
-#include "defs.hpp"
-#include "frame_data.hpp"
-#include <Arduino.h>
-// #include <STM32FreeRTOS.h>
 #include "config.hpp"
+#include "defs.hpp"
 #include "serial_task.hpp"
+#include <Arduino.h>
+#include <STM32FreeRTOS.h>
 #include <SimpleFOC.h>
 
 // モータ極数
@@ -35,10 +33,30 @@ void doA() { encoder.handleA(); }
 void doB() { encoder.handleB(); }
 void doIndex() { encoder.handleIndex(); }
 
-// Commander command = Commander(Serial);
-// void doTarget(char *cmd) { command.motion(&motor, cmd); }
+Commander command = Commander(Serial);
+void doTarget(char *cmd) { command.motion(&motor, cmd); }
+
+// ================= SETUP =================
 
 void setup() {
+
+    delay(200); // 安定待ち
+
+    // ボーレートは実機テストしながら調整する予定
+    Serial.begin(115200);
+
+    pinMode(LED, OUTPUT);
+    // ledcSetup(1, 20000, 8);
+    // ledcAttachPin(LED, 1);
+
+    xTaskCreate(
+        serialTask,   // タスク関数
+        "serialTask", // タスク名
+        2048,         // スタックサイズ（words）
+        NULL,
+        10, // 優先度
+        NULL);
+
     encoder.init();
     encoder.enableInterrupts(doA, doB, doIndex);
 
@@ -46,6 +64,8 @@ void setup() {
 
     // 電源電圧設定
     driver.voltage_power_supply = 12;
+    // モータの電圧の制限
+    motor.voltage_limit = 6;
 
     driver.init();
     motor.linkDriver(&driver);
@@ -58,24 +78,35 @@ void setup() {
     motor.voltage_sensor_align = 1;
     motor.velocity_index_search = 3;
 
-    // モータの電圧の制限
-    motor.voltage_limit = 6;
     // モータの速度の制限？
     motor.velocity_limit = 1000;
     // モータの電流の制限
     // motor.current_limit = 40;
 
-    // 以下コントローラ設定、コメントアウトで速度、位置制御の切り替え
-    // 速度制御
+// モードに応じた初期化
+#if defined(MODE_VELOSITY_CONTROL)
+
     motor.controller = MotionControlType::velocity;
 
-    // 位置制御
-    //  motor.controller = MotionControlType::angle;
+#elif defined(MODE_POSITION_CONTROL)
+
+    motor.controller = MotionControlType::angle;
+
+#elif defined(MODE_DEBUG)
+    // デバッグモード初期化
+
+#else
+#error "No mode defined. Please define one mode in config.hpp."
+#endif
+
+#if (defined(MODE_VELOSITY_CONTROL) + defined(MODE_POSITION_CONTROL) + defined(MODE_DEBUG)) != 1
+#error "Invalid mode configuration. Please define exactly *one mode* in config.hpp."
+#endif
 
     // トルク制御方式の設定
     motor.torque_controller = TorqueControlType::foc_current;
 
-    // q軸,d軸のPIDゲイン設定（q軸,d軸ってなんですか？）
+    // q軸,d軸のPIDゲイン設定
     motor.PID_current_q.P = motor.PID_current_d.P = 0.1;
     motor.PID_current_q.I = motor.PID_current_d.I = 10;
     motor.PID_current_q.D = motor.PID_current_d.D = 0;
@@ -86,7 +117,7 @@ void setup() {
     motor.PID_velocity.D = 0;
 
     // 速度制御の出力変化速度制限
-    motor.PID_velocity.output_ramp = 1000;
+    motor.PID_velocity.output_ramp = 200;
 
     // LPFの設定
     motor.LPF_velocity.Tf = 0.01;
@@ -94,8 +125,8 @@ void setup() {
     // 位置制御のPゲイン設定、SimpleFOCの位置制御はP制御のみらしい
     motor.P_angle.P = 9;
 
-    Serial.begin(115200);
-    // motor.useMonitoring(Serial);
+    // Serial.begin(115200);
+    //  motor.useMonitoring(Serial);
 
     motor.init();
     motor.initFOC();
@@ -106,21 +137,12 @@ void setup() {
     _delay(1000);
 }
 
+// ================= LOOP =================
+
 void loop() {
-
-    static uint32_t last_tx_ms = 0;
-
-    // ===== モータ制御（最優先） =====
+    // vTaskDelay(pdMS_TO_TICKS(1000));
+    // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
     motor.loopFOC();
-    motor.move(Rx_16Data[1]);
-
-    // ===== RX（毎ループ） =====
-    receive_frame();
-
-    // ===== TX（周期送信） =====
-    uint32_t now = millis();
-    if (now - last_tx_ms >= TX_PERIOD_MS) {
-        send_frame();
-        last_tx_ms = now;
-    }
+    motor.move();
+    // command.run();
 }

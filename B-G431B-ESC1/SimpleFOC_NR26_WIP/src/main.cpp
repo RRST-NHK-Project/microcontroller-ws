@@ -17,8 +17,8 @@ void doA() { encoder.handleA(); }
 void doB() { encoder.handleB(); }
 void doIndex() { encoder.handleIndex(); }
 
-//Commander command = Commander(Serial);
-//void doTarget(char *cmd) { command.motion(&motor, cmd); }
+Commander command = Commander(Serial);
+void doTarget(char *cmd) { command.motion(&motor, cmd); }
 
 void setup() {
     encoder.init();
@@ -77,19 +77,19 @@ void setup() {
     motor.P_angle.P = 9;
 
     Serial.begin(115200);
-    //motor.useMonitoring(Serial);
+    motor.useMonitoring(Serial);
 
     motor.init();
     motor.initFOC();
-    //command.add('T', doTarget, "target angle");
+    command.add('T', doTarget, "target angle");
 
-    //Serial.println(F("Motor ready."));
-    //Serial.println(F("Set the target angle using serial terminal:"));
+    Serial.println(F("Motor ready."));
+    Serial.println(F("Set the target angle using serial terminal:"));
     _delay(1000);
 }
 
 void loop() {
     motor.loopFOC();
-    motor.move(50);
-    // command.run();
+    motor.move();
+    command.run();
 }
