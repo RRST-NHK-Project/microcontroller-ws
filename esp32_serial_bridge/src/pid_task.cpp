@@ -67,11 +67,28 @@ void pid_control()
 
     float kp = 3.0; // Rx_16Data[21];
     float ki = 0.0; // Rx_16Data[22];
-    float kd = 0.1; // Rx_16Data[23];
+    float kd = 0.0; // Rx_16Data[23];
     float dt = CTRL_PERIOD_MS / 1000.0f;
 
-    target_angle[0] = Rx_16Data[0]; // deg;
-    target_angle[1] = Rx_16Data[1]; // deg;
+    target_angle[0] = Rx_16Data[1]; // deg;
+    target_angle[1] = Rx_16Data[2]; // deg;
+
+    // static int16_t last_target0 = 0;
+    // static int16_t last_target1 = 0;
+
+    // if (Rx_16Data[1] != last_target0)
+    // {
+    //     pos_integral[0] = 0;
+    //     pos_error_prev[0] = 0;
+    // }
+    // if (Rx_16Data[2] != last_target1)
+    // {
+    //     pos_integral[1] = 0;
+    //     pos_error_prev[1] = 0;
+    // }
+
+    // last_target0 = Rx_16Data[1];
+    // last_target1 = Rx_16Data[2];
 
     int16_t cnt0, cnt1;
     static int32_t total_cnt0 = 0;
@@ -84,47 +101,68 @@ void pid_control()
     pcnt_counter_clear(PCNT_UNIT_1);
 
     total_cnt0 += cnt0;
-    total_cnt1 += cnt1;
+    total_cnt1 -= cnt1;
 
     angle[0] = total_cnt0 * DEG_PER_COUNT;
     angle[1] = total_cnt1 * DEG_PER_COUNT;
 
-    static uint8_t sw1_prev = HIGH;
-    static uint8_t sw2_prev = HIGH;
+    float angle1 = angle[0];
+    float angle2 = angle[1];
 
-    // swがncのときこれ
-    uint8_t sw1_now = digitalRead(SW1);
-    Tx_16Data[11] = !digitalRead(SW1);
-    if (sw1_prev == LOW && sw1_now == HIGH)
-    {
-        // リセット処理
-        total_cnt0 = 0;
-    }
-    uint8_t sw2_now = digitalRead(SW2);
-    Tx_16Data[12] = !digitalRead(SW2);
-    if (sw2_prev == LOW && sw2_now == HIGH)
-    {
-        // リセット処理
-        total_cnt1 = 0;
-    }
+    // static uint8_t sw1_prev = HIGH;
+    // static uint8_t sw2_prev = HIGH;
 
-    sw1_prev = sw1_now;
-    sw2_prev = sw2_now;
+    // // swがncのときこれ
+    // uint8_t sw1_now = digitalRead(SW1);
+    // Tx_16Data[11] = !digitalRead(SW1);
+    // if (sw1_prev == LOW && sw1_now == HIGH)
+    // {
+    //     // リセット処理
+    //     angle1 = 0;
+    // }
+    // uint8_t sw2_now = digitalRead(SW2);
+    // Tx_16Data[12] = !digitalRead(SW2);
+    // if (sw2_prev == LOW && sw2_now == HIGH)
+    // {
+    //     // リセット処理
+    //     angle2 = 0;
+    // }
+
+    // sw1_prev = sw1_now;
+    // sw2_prev = sw2_now;
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
 
-    output[0] = pid_calculate(target_angle[0], angle[0], pos_error_prev[0], pos_integral[0],
+    // ===== 目標角ランプ生成 =====
+    static float target_angle_cur[2] = {0.0f, 0.0f};
+
+    float target_cmd0 = Rx_16Data[1];
+    float target_cmd1 = Rx_16Data[2];
+
+    constexpr float MAX_STEP_DEG = 1.0f;
+
+    target_angle_cur[0] += constrain(
+        target_cmd0 - target_angle_cur[0],
+        -MAX_STEP_DEG,
+        +MAX_STEP_DEG);
+
+    target_angle_cur[1] += constrain(
+        target_cmd1 - target_angle_cur[1],
+        -MAX_STEP_DEG,
+        +MAX_STEP_DEG);
+
+    output[0] = pid_calculate(target_angle_cur[0], angle[0], pos_error_prev[0], pos_integral[0],
                               kp, ki, kd, dt);
     output[0] = constrain(output[0], -MD_PWM_MAX, MD_PWM_MAX);
 
-    output[1] = pid_calculate(target_angle[1], angle[1], pos_error_prev[1], pos_integral[1],
+    output[1] = pid_calculate(target_angle_cur[1], angle[1], pos_error_prev[1], pos_integral[1],
                               kp, ki, kd, dt);
     output[1] = constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
 
     digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
     digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
 
-    ledcWrite(0, abs(output[0]));
-    ledcWrite(1, abs(output[1]));
+    ledcWrite(2, output[0]);
+    ledcWrite(3, output[1]);
 }
