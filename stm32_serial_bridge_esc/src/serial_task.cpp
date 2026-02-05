@@ -1,18 +1,52 @@
 /*====================================================================
-<>
-・
+<serial_task.cpp>
+・シリアル通信まわりのタスク実装
+
+PCから送信されるデータ構造（フレーム）は以下のとおり．
+
+Frame Structure:
+[START_BYTE][DEVICE_ID][LENGTH][DATA...][CHECKSUM]
+- START_BYTE: 0xAA
+- DEVICE_ID: 0x02
+- LENGTH: Number of data bytes (Tx16NUM * 2)
+- DATA: int16 data (big-endian)
+- CHECKSUM: XOR of all bytes except START_BYTE
+
+START_BYTE（1バイト）
+   - フレームの開始を示す固定値（ROS側とマイコンで揃える）
+   - 0xAA
+
+ID（1バイト）
+   - 送信元または宛先デバイスID（マイコンごとに異なる値を設定する）
+   - 例: DEVICE_ID
+
+LEN（1バイト）
+   - データ部分（DATA）の長さ（バイト単位）
+   - 例: Tx16NUM * 2（16bitデータをバイト数に換算）
+
+DATA（可変長）
+   - 16bit単位のデータ配列
+   - Tx16NUM / Rx16NUM の数だけ送信
+   - 1つの16bitデータは
+        上位バイト: (data >> 8)
+        下位バイト: (data & 0xFF)
+
+CHECKSUM（1バイト）
+   - フレームの整合性チェック用
+   - 計算方法: ID ^ LEN ^ DATA[0] ^ DATA[1] ^ ... ^ DATA[n]
+
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
+#include "config.hpp"
+#include "defs.hpp"
 #include "frame_data.hpp"
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <defs.hpp>
 
-#define START_BYTE 0xAA
-#define DEVICE_ID 0x02
+#define START_BYTE 0xAA // ROS側と揃える，基本的に変更する必要はない，フレーム破損時の復帰に使用
 
-// ループバックの有効化設定（実装途中）
+// ループバックの有効化設定（実装途中　→　消すかも）
 #define ENABLE_LOOPBACK 0 // 受信したデータをそのまま送り返す
 
 // ================= TX =================
@@ -43,7 +77,7 @@ uint8_t rx_index = 0;
 uint8_t rx_checksum = 0;
 
 constexpr uint32_t TX_PERIOD_MS = 20; // 送信周期（ミリ秒）
-constexpr uint32_t RX_PERIOD_MS = 10; // 受信周期（ミリ秒）
+constexpr uint32_t RX_PERIOD_MS = 10; // 受信周期（ミリ秒）未使用なので削除予定
 
 void send_frame();
 void receive_frame();
@@ -91,7 +125,7 @@ void rxTask(void *) {
 }
 
 // ================= TX =================
-
+// 送信用関数
 void send_frame() {
     Tx_8Data[0] = START_BYTE;
     Tx_8Data[1] = DEVICE_ID;
@@ -118,53 +152,65 @@ void send_frame() {
 }
 
 // ================= RX =================
-
+// 受信用関数
 void receive_frame() {
     while (Serial.available()) {
         uint8_t b = Serial.read();
 
+        // 以下ステートマシン，1バイトずつ処理し，状態を遷移させる．
+        // １バイトずつ確実にフレームを積み上げる
+
         switch (rx_state) {
 
-        case WAIT_START:
+        case WAIT_START: // 同期点を待つ
             if (b == START_BYTE) {
-                rx_state = WAIT_ID;
+                rx_state = WAIT_ID; // 同期できたら次の状態へ遷移
             }
             break;
 
-        case WAIT_ID:
-            rx_id = b;
-            rx_checksum = b;
-            rx_state = WAIT_LEN;
+        case WAIT_ID:            // IDを受信
+            rx_id = b;           // IDを格納
+            rx_checksum = b;     // チェックサムを更新
+            rx_state = WAIT_LEN; // 次の状態へ遷移
             break;
 
         case WAIT_LEN:
-            rx_len = b;
-            rx_checksum ^= b;
+            rx_len = b;       // データ長を格納
+            rx_checksum ^= b; // チェックサムを更新
 
             if (rx_len > Rx16NUM * 2) {
-                rx_state = WAIT_START; // 不正LEN
+                rx_state = WAIT_START; // データ長が不正な場合は同期からやり直し
             } else {
                 rx_index = 0;
-                rx_state = WAIT_DATA;
+                rx_state = WAIT_DATA; // データ長が問題ない場合は次の状態に遷移
             }
             break;
 
         case WAIT_DATA:
-            rx_buf[rx_index++] = b;
-            rx_checksum ^= b;
+            rx_buf[rx_index++] = b; // インデックスを更新しながらデータを順番に格納する
+            rx_checksum ^= b;       // チェックサムを更新
 
             if (rx_index >= rx_len) {
-                rx_state = WAIT_CHECKSUM;
+                rx_state = WAIT_CHECKSUM; // データの格納が終わったら次の状態に遷移
             }
             break;
 
         case WAIT_CHECKSUM:
-            if (rx_checksum == b && rx_id == DEVICE_ID) {
+            if (rx_checksum == b && rx_id == DEVICE_ID) { // データが破損していないこと，IDが自機と一致することを確認
 
-                // digitalWrite(F446RE_BUILTIN_LED, !digitalRead(F446RE_BUILTIN_LED));
-                //    digitalWrite(F446RE_BUILTIN_LED, HIGH); // これはテスト用、消して！
+                // LEDで受信表示
+                // digitalWrite(LED, !digitalRead(LED));
 
-                // ===== RAW フレーム保存 =====
+                uint32_t LED_TOGGLE_MS = 500;
+                static uint32_t last_led_toggle_ms = 0;
+
+                uint32_t now = millis();
+                if (now - last_led_toggle_ms >= LED_TOGGLE_MS) {
+                    digitalWrite(LED, !digitalRead(LED));
+                    last_led_toggle_ms = now;
+                }
+
+                // ===== 生フレームの保存（受信したデータをフレーム形式に復元） =====
                 Rx_raw_frame[0] = START_BYTE;
                 Rx_raw_frame[1] = rx_id;
                 Rx_raw_frame[2] = rx_len;
@@ -177,6 +223,7 @@ void receive_frame() {
                 Rx_raw_len = 1 + 1 + 1 + rx_len + 1;
 
                 // ===== int16 デコード =====
+                // 上位・下位で分割されたデータを復元
                 for (int i = 0; i < rx_len / 2; i++) {
                     Rx_16Data[i] =
                         (int16_t)((rx_buf[i * 2] << 8) |
@@ -189,7 +236,7 @@ void receive_frame() {
 #endif
             }
 
-            rx_state = WAIT_START;
+            rx_state = WAIT_START; // 最初の状態に戻す
             break;
         }
     }

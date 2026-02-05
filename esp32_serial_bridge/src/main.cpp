@@ -5,7 +5,7 @@ Target board: ESP32 Dev Module
 Description:
   ROS 2・マイコン間の通信を行うserial_bridgeパッケージのマイコン側プログラム。
   PCから送られてくるバイナリデータを受信、デコードしマイコンのGPIO出力に反映させる。
-  config.hppで各種設定をするのみで使用可能です。このファイル(main.cpp)を直接編集しないこと。
+  config.hppで各種設定をするだけで使用可能です。このファイル(main.cpp)を直接編集しないこと。
 
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
