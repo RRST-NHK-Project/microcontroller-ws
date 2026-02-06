@@ -95,36 +95,40 @@ void pid_control()
         first = false;
     }
 
-    // static uint8_t sw1_prev = HIGH;
-    // static uint8_t sw2_prev = HIGH;
+    /* ===== SW 原点リセット（エッジ検出） ===== */
+    static uint8_t sw1_prev = LOW;
+    static uint8_t sw2_prev = LOW;
 
-    // // swがncのときこれ
-    // uint8_t sw1_now = digitalRead(SW1);
-    // if (sw1_prev == LOW && sw1_now == HIGH)
-    // {
-    //     total_cnt0 = 0;
-    //     angle[0] = 0;
-    //     target_angle_cur[0] = 0;
-    //     pos_integral[0] = 0;
-    //     pos_error_prev[0] = 0;
-    // }
-    // uint8_t sw2_now = digitalRead(SW2);
-    // if (sw2_prev == LOW && sw2_now == HIGH)
-    // {
-    //     total_cnt1 = 0;
-    //     angle[1] = 0;
-    //     target_angle_cur[1] = 0;
-    //     pos_integral[1] = 0;
-    //     pos_error_prev[1] = 0;
-    // }
+    uint8_t sw1_now = digitalRead(SW1);
+    uint8_t sw2_now = digitalRead(SW2);
 
-    // sw1_prev = sw1_now;
-    // sw2_prev = sw2_now;
+    // NC想定：押すと LOW
+    if (sw1_prev == LOW && sw1_now == HIGH)
+    {
+        total_cnt0 = 0;
+        angle[0] = 0.0f;
+        target_angle_cur[0] = 0.0f;
+        pos_integral[0] = 0.0f;
+        pos_error_prev[0] = 0.0f;
+    }
+
+    if (sw2_prev == LOW && sw2_now == HIGH)
+    {
+        total_cnt1 = 0;
+        angle[1] = 0.0f;
+        target_angle_cur[1] = 0.0f;
+        pos_integral[1] = 0.0f;
+        pos_error_prev[1] = 0.0f;
+    }
+
+    sw1_prev = sw1_now;
+    sw2_prev = sw2_now;
+
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
-    Tx_16Data[9] = !digitalRead(SW1);
-    Tx_16Data[19] = !digitalRead(SW2);
+    Tx_16Data[9] = digitalRead(SW1);
+    Tx_16Data[10] = digitalRead(SW2);
 
     // ===== 目標角ランプ生成 =====
     target_angle[0] = Rx_16Data[1];
@@ -138,11 +142,11 @@ void pid_control()
 
     output[0] = pid_calculate(target_angle_cur[0], angle[0], pos_error_prev[0], pos_integral[0],
                               kp, ki, kd, dt);
-    output[0] = 100;//constrain(output[0], -MD_PWM_MAX, MD_PWM_MAX);
+    output[0] = constrain(output[0], -MD_PWM_MAX, MD_PWM_MAX);
 
     output[1] = pid_calculate(target_angle_cur[1], angle[1], pos_error_prev[1], pos_integral[1],
                               kp, ki, kd, dt);
-    output[1] = 100;//constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
+    output[1] = constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
 
     digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
     digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);

@@ -20,7 +20,8 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 // ================= SETUP =================
 
-void setup() {
+void setup()
+{
 
     delay(200); // 安定待ち
 
@@ -83,6 +84,13 @@ void setup() {
         9, // 優先度
         NULL);
 
+    xTaskCreate(
+        PID_Task,   // タスク関数
+        "PID_Task", // タスク名
+        2048,       // スタックサイズ（words）
+        NULL,
+        11, // 優先度
+        NULL);
 #elif defined(MODE_DEBUG)
     // デバッグモード初期化
 
@@ -122,7 +130,8 @@ void setup() {
 
 // ================= LOOP =================
 
-void loop() {
+void loop()
+{
     vTaskDelay(pdMS_TO_TICKS(1000));
     // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }
