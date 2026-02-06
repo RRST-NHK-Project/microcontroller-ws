@@ -199,8 +199,8 @@ void pid_vel_control()
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
-    Tx_16Data[9] = digitalRead(SW1);
-    Tx_16Data[10] = digitalRead(SW2);
+    Tx_16Data[9] = static_cast<int16_t>(vel[0]);
+    Tx_16Data[10] = static_cast<int16_t>(vel[1]);
 
     output[0] = pid_calculate(vel_target0, vel[0], vel_error_prev[0], vel_integral[0], kp_v, 0.0f, kd_v, dt);
 
