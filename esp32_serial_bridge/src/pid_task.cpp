@@ -25,8 +25,8 @@ void PID_Task(void *)
     md_enc_init();
     while (1)
     {
-        pid_control();
-        // pid_vel_control();
+        //pid_control();
+        pid_vel_control();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
@@ -160,7 +160,7 @@ void pid_vel_control()
 {
 
     float kp_v = 0.8f;
-    float kd_v = 0.02f;
+    float kd_v = 0.0f;
     float dt = CTRL_PERIOD_MS / 1000.0f;
 
     int16_t cnt0, cnt1;
