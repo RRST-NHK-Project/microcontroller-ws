@@ -59,8 +59,8 @@ void Output_init() {
     pinMode(TR3, OUTPUT);
     pinMode(TR4, OUTPUT);
     pinMode(TR5, OUTPUT);
-    pinMode(TR6, OUTPUT);
-    pinMode(TR7, OUTPUT);
+    // pinMode(TR6, OUTPUT);
+    // pinMode(TR7, OUTPUT);
 }
 
 void IO_init() {

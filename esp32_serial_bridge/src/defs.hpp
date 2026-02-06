@@ -105,22 +105,22 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #define SERVO1_MIN_US 500
 #define SERVO1_MAX_US 2500
 #define SERVO1_MIN_DEG 0
-#define SERVO1_MAX_DEG 180
+#define SERVO1_MAX_DEG 270
 
 #define SERVO2_MIN_US 500
 #define SERVO2_MAX_US 2500
 #define SERVO2_MIN_DEG 0
-#define SERVO2_MAX_DEG 180
+#define SERVO2_MAX_DEG 270
 
 #define SERVO3_MIN_US 500
 #define SERVO3_MAX_US 2500
 #define SERVO3_MIN_DEG 0
-#define SERVO3_MAX_DEG 180
+#define SERVO3_MAX_DEG 270
 
 #define SERVO4_MIN_US 500
 #define SERVO4_MAX_US 2500
 #define SERVO4_MIN_DEG 0
-#define SERVO4_MAX_DEG 180
+#define SERVO4_MAX_DEG 270
 
 // ロボマス
 #define NUM_MOTOR 4                    // モーター数
