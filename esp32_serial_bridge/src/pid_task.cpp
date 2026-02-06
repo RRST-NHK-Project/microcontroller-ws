@@ -14,6 +14,7 @@ constexpr uint32_t CTRL_PERIOD_MS = 5; // ピン更新周期（ミリ秒）
 void pid_control();
 void pid_calculate();
 void md_enc_init();
+void pid_vel_control();
 // エンコーダのDIPスイッチをすべてoffにすること
 //  ================= TASK =================
 
@@ -25,6 +26,7 @@ void PID_Task(void *)
     while (1)
     {
         pid_control();
+        // pid_vel_control();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
@@ -62,12 +64,13 @@ void md_enc_init()
     // pinMode(SW8, INPUT_PULLUP);
 }
 
+// PID制御関数
 void pid_control()
 {
-
-    float kp = 3.0; // Rx_16Data[21];
+    //////////////定義
+    float kp = 1.0; // 3.0// Rx_16Data[21];
     float ki = 0.0; // Rx_16Data[22];
-    float kd = 0.1; // Rx_16Data[23];
+    float kd = 0.3; // 0.1 Rx_16Data[23];
     float dt = CTRL_PERIOD_MS / 1000.0f;
 
     int16_t cnt0, cnt1;
@@ -87,6 +90,8 @@ void pid_control()
     angle[0] = total_cnt0 * DEG_PER_COUNT;
     angle[1] = total_cnt1 * DEG_PER_COUNT;
 
+    ////////////////////
+    // 起動時の調整
     static bool first = true;
     if (first)
     {
@@ -94,16 +99,9 @@ void pid_control()
         target_angle_cur[1] = angle[1];
         first = false;
     }
+    // スイッチでゼロリセット
 
-    /* ===== SW 原点リセット（エッジ検出） ===== */
-    static uint8_t sw1_prev = LOW;
-    static uint8_t sw2_prev = LOW;
-
-    uint8_t sw1_now = digitalRead(SW1);
-    uint8_t sw2_now = digitalRead(SW2);
-
-    // NC想定：押すと LOW
-    if (sw1_prev == LOW && sw1_now == HIGH)
+    if (Rx_16Data[5] == 1)
     {
         total_cnt0 = 0;
         angle[0] = 0.0f;
@@ -111,8 +109,7 @@ void pid_control()
         pos_integral[0] = 0.0f;
         pos_error_prev[0] = 0.0f;
     }
-
-    if (sw2_prev == LOW && sw2_now == HIGH)
+    if (Rx_16Data[6] == 1)
     {
         total_cnt1 = 0;
         angle[1] = 0.0f;
@@ -120,9 +117,6 @@ void pid_control()
         pos_integral[1] = 0.0f;
         pos_error_prev[1] = 0.0f;
     }
-
-    sw1_prev = sw1_now;
-    sw2_prev = sw2_now;
 
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
@@ -134,8 +128,11 @@ void pid_control()
     target_angle[0] = Rx_16Data[1];
     target_angle[1] = Rx_16Data[2];
 
+    float currnt0 = Rx_16Data[3];
+    float currnt1 = Rx_16Data[4];
+
     // ランプ後の目標角度
-    constexpr float MAX_STEP_DEG = 1.0f;
+    constexpr float MAX_STEP_DEG = 0.2f;
 
     target_angle_cur[0] += constrain(target_angle[0] - target_angle_cur[0], -MAX_STEP_DEG, +MAX_STEP_DEG);
     target_angle_cur[1] += constrain(target_angle[1] - target_angle_cur[1], -MAX_STEP_DEG, +MAX_STEP_DEG);
@@ -153,6 +150,67 @@ void pid_control()
 
     Tx_16Data[3] = static_cast<int16_t>(output[0]);
     Tx_16Data[4] = static_cast<int16_t>(output[1]);
+
+    ledcWrite(2, abs(output[0]));
+    ledcWrite(3, abs(output[1]));
+}
+
+// PID制御関数
+void pid_vel_control()
+{
+
+    float kp_v = 0.8f;
+    float kd_v = 0.02f;
+    float dt = CTRL_PERIOD_MS / 1000.0f;
+
+    int16_t cnt0, cnt1;
+    static int32_t total_cnt0 = 0;
+    static int32_t total_cnt1 = 0;
+    static float target_angle_cur[2] = {0.0f, 0.0f};
+
+    static float angle_prev[2] = {0.0f, 0.0f};
+    static float vel_error_prev[2] = {0.0f, 0.0f};
+    static float vel_integral[2] = {0.0f, 0.0f};
+
+    float vel[2];
+    // ===== 目標速度 rpm → deg/s =====
+    float vel_target0 = Rx_16Data[1] * 6.0f; // rpm → deg/s
+    float vel_target1 = Rx_16Data[2] * 6.0f;
+
+    pcnt_get_counter_value(PCNT_UNIT_0, &cnt0);
+    pcnt_get_counter_value(PCNT_UNIT_1, &cnt1);
+
+    pcnt_counter_clear(PCNT_UNIT_0);
+    pcnt_counter_clear(PCNT_UNIT_1);
+
+    total_cnt0 += cnt0;
+    total_cnt1 -= cnt1;
+
+    angle[0] = total_cnt0 * DEG_PER_COUNT;
+    angle[1] = total_cnt1 * DEG_PER_COUNT;
+
+    // 角速度計算
+    vel[0] = (angle[0] - angle_prev[0]) / dt;
+    vel[1] = (angle[1] - angle_prev[1]) / dt;
+
+    angle_prev[0] = angle[0];
+    angle_prev[1] = angle[1];
+
+    // オーバーフロー対策が甘いがとりあえずそのまま送る
+    Tx_16Data[1] = static_cast<int16_t>(angle[0]);
+    Tx_16Data[2] = static_cast<int16_t>(angle[1]);
+    Tx_16Data[9] = digitalRead(SW1);
+    Tx_16Data[10] = digitalRead(SW2);
+
+    output[0] = pid_calculate(vel_target0, vel[0], vel_error_prev[0], vel_integral[0], kp_v, 0.0f, kd_v, dt);
+
+    output[1] = pid_calculate(vel_target1, vel[1], vel_error_prev[1], vel_integral[1], kp_v, 0.0f, kd_v, dt);
+    output[0] = constrain(output[0], -MD_PWM_MAX, MD_PWM_MAX);
+
+    output[1] = constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
+
+    digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
+    digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
 
     ledcWrite(2, abs(output[0]));
     ledcWrite(3, abs(output[1]));
