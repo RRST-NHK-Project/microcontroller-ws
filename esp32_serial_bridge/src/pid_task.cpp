@@ -1,6 +1,6 @@
 /*====================================================================
 <>
-・
+・使用しているMDとswが異なるので注意!!!
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 #include "defs.hpp"
@@ -118,30 +118,28 @@ void pid_control()
         pos_error_prev[1] = 0.0f;
     }
 
-    if (angle[0] > 300.0f)
-    {
-        angle[0] -= 360.0f;
-        target_angle_cur[0] -= 360.0f;
-    }
-
-    if (angle[1] > 300.0f)
-    {
-        angle[1] -= 360.0f;
-        target_angle_cur[1] -= 360.0f;
-    }
-
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
     Tx_16Data[9] = digitalRead(SW1);
     Tx_16Data[10] = digitalRead(SW2);
 
+
+    // ===== 360度オーバーフロー処理 =====
+    if (Rx_16Data[3] > 300.0f)
+    {
+        angle[0] -= 360.0f;
+        target_angle_cur[0] -= 360.0f;
+    }
+    else if (Rx_16Data[4] > 300.0f)
+    {
+        angle[1] -= 360.0f;
+        target_angle_cur[1] -= 360.0f;
+    }
+
     // ===== 目標角ランプ生成 =====
     target_angle[0] = Rx_16Data[1];
     target_angle[1] = Rx_16Data[2];
-
-    float currnt0 = Rx_16Data[3];
-    float currnt1 = Rx_16Data[4];
 
     // ランプ後の目標角度
     constexpr float MAX_STEP_DEG = 0.2f;
@@ -159,9 +157,6 @@ void pid_control()
 
     digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
     digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
-
-    // Tx_16Data[3] = static_cast<int16_t>(output[0]);
-    // Tx_16Data[4] = static_cast<int16_t>(output[1]);
 
     ledcWrite(2, abs(output[0]));
     ledcWrite(3, abs(output[1]));
