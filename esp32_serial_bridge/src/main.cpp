@@ -20,8 +20,7 @@ Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 #include <Arduino.h>
 // ================= SETUP =================
 
-void setup()
-{
+void setup() {
 
     delay(200); // 安定待ち
 
@@ -91,6 +90,7 @@ void setup()
         NULL,
         11, // 優先度
         NULL);
+
 #elif defined(MODE_DEBUG)
     // デバッグモード初期化
 
@@ -100,7 +100,7 @@ void setup()
     //     1024,           // スタックサイズ（words）
     //     NULL,
     //     9, // 優先度
-    //     NULL);
+    //     NULL)0;
 
     // xTaskCreate(
     //     LED_Blink100_Task,   // タスク関数
@@ -130,8 +130,7 @@ void setup()
 
 // ================= LOOP =================
 
-void loop()
-{
+void loop() {
     vTaskDelay(pdMS_TO_TICKS(1000));
     // メインループはなにもしない、処理はすべてFreeRTOSタスクで行う
 }

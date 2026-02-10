@@ -4,6 +4,7 @@
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
 
+#include "config.hpp"
 #include "defs.hpp"
 #include "driver/pcnt.h"
 #include "frame_data.hpp"
@@ -45,13 +46,17 @@ void Output_init() {
     // サーボのPWMの初期化
     ledcSetup(4, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
     ledcSetup(5, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcSetup(6, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
-    ledcSetup(7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    if (!ENABLE_EXTRA_TR_PIN) {
+        ledcSetup(6, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+        ledcSetup(7, SERVO_PWM_FREQ, SERVO_PWM_RESOLUTION);
+    }
 
     ledcAttachPin(SERVO1, 4);
     ledcAttachPin(SERVO2, 5);
-    ledcAttachPin(SERVO3, 6);
-    ledcAttachPin(SERVO4, 7);
+    if (!ENABLE_EXTRA_TR_PIN) {
+        ledcAttachPin(SERVO3, 6);
+        ledcAttachPin(SERVO4, 7);
+    }
 
     // トランジスタのピンを出力に設定
     pinMode(TR1, OUTPUT);
@@ -59,8 +64,10 @@ void Output_init() {
     pinMode(TR3, OUTPUT);
     pinMode(TR4, OUTPUT);
     pinMode(TR5, OUTPUT);
-    // pinMode(TR6, OUTPUT);
-    // pinMode(TR7, OUTPUT);
+    if (ENABLE_EXTRA_TR_PIN) {
+        pinMode(TR6, OUTPUT);
+        pinMode(TR7, OUTPUT);
+    }
 }
 
 void IO_init() {
