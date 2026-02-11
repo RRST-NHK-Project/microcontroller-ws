@@ -1,6 +1,5 @@
 /*====================================================================
-<pid_task.cpp>
-・PID制御タスク関連の関数実装ファイル
+<>
 ・使用しているMDとswが異なるので注意!!!
 Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
 ====================================================================*/
@@ -20,10 +19,12 @@ void pid_vel_control();
 //  ================= TASK =================
 
 // PID制御タスク馬渕385
-void PID_Task(void *) {
+void PID_Task(void *)
+{
     TickType_t last_wake = xTaskGetTickCount();
     md_enc_init();
-    while (1) {
+    while (1)
+    {
         pid_control();
         // pid_vel_control();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CTRL_PERIOD_MS));
@@ -31,7 +32,8 @@ void PID_Task(void *) {
 }
 
 float pid_calculate(float setpoint, float input, float &error_prev, float &integral,
-                    float kp, float ki, float kd, float dt) {
+                    float kp, float ki, float kd, float dt)
+{
     float error = setpoint - input;
     integral += (error + error_prev) * dt;
     float derivative = (error - error_prev) / dt;
@@ -40,29 +42,31 @@ float pid_calculate(float setpoint, float input, float &error_prev, float &integ
 }
 
 // 半田ミスったから使うの変更
-void md_enc_init() {
+void md_enc_init()
+{
     // MDの方向ピンを出力に設定
-    pinMode(MD3D, OUTPUT);
-    pinMode(MD4D, OUTPUT);
+    pinMode(MD1D, OUTPUT);
+    pinMode(MD2D, OUTPUT);
 
     // PWMの初期化
-    ledcSetup(2, MD_PWM_FREQ, MD_PWM_RESOLUTION);
-    ledcSetup(3, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcSetup(0, MD_PWM_FREQ, MD_PWM_RESOLUTION);
+    ledcSetup(1, MD_PWM_FREQ, MD_PWM_RESOLUTION);
 
-    ledcAttachPin(MD3P, 2);
-    ledcAttachPin(MD4P, 3);
+    ledcAttachPin(MD1P, 0);
+    ledcAttachPin(MD2P, 1);
 
     ENCx2_init();
 
     // SW ピン初期化
-    pinMode(SW1, INPUT_PULLUP);
-    pinMode(SW2, INPUT_PULLUP);
+    pinMode(SW3, INPUT_PULLUP);
+    pinMode(SW4, INPUT_PULLUP);
     // pinMode(SW7, INPUT_PULLUP);
     // pinMode(SW8, INPUT_PULLUP);
 }
 
 // PID制御関数
-void pid_control() {
+void pid_control()
+{
     //////////////定義
     float kp = 1.0; // 3.0// Rx_16Data[21];
     float ki = 0.0; // Rx_16Data[22];
@@ -89,21 +93,24 @@ void pid_control() {
     ////////////////////
     // 起動時の調整
     static bool first = true;
-    if (first) {
+    if (first)
+    {
         target_angle_cur[0] = angle[0];
         target_angle_cur[1] = angle[1];
         first = false;
     }
     // スイッチでゼロリセット
 
-    if (Rx_16Data[5] == 1) {
+    if (Rx_16Data[5] == 1)
+    {
         total_cnt0 = 0;
         angle[0] = 0.0f;
         target_angle_cur[0] = 0.0f;
         pos_integral[0] = 0.0f;
         pos_error_prev[0] = 0.0f;
     }
-    if (Rx_16Data[6] == 1) {
+    if (Rx_16Data[6] == 1)
+    {
         total_cnt1 = 0;
         angle[1] = 0.0f;
         target_angle_cur[1] = 0.0f;
@@ -114,17 +121,20 @@ void pid_control() {
     // オーバーフロー対策が甘いがとりあえずそのまま送る
     Tx_16Data[1] = static_cast<int16_t>(angle[0]);
     Tx_16Data[2] = static_cast<int16_t>(angle[1]);
-    Tx_16Data[9] = digitalRead(SW1);
-    Tx_16Data[10] = digitalRead(SW2);
+    Tx_16Data[11] = digitalRead(SW3);
+    Tx_16Data[12] = digitalRead(SW4);
 
     // ===== 360度オーバーフロー処理 =====
-    if (Rx_16Data[3] > 300.0f) {
-        angle[0] -= 360.0f;
-        target_angle_cur[0] -= 360.0f;
-    } else if (Rx_16Data[4] > 300.0f) {
-        angle[1] -= 360.0f;
-        target_angle_cur[1] -= 360.0f;
-    }
+    // if (Rx_16Data[3] > 300.0f)
+    // {
+    //     angle[0] -= 360.0f;
+    //     target_angle_cur[0] -= 360.0f;
+    // }
+    // else if (Rx_16Data[4] > 300.0f)
+    // {
+    //     angle[1] -= 360.0f;
+    //     target_angle_cur[1] -= 360.0f;
+    // }
 
     // ===== 目標角ランプ生成 =====
     target_angle[0] = Rx_16Data[1];
@@ -144,15 +154,16 @@ void pid_control() {
                               kp, ki, kd, dt);
     output[1] = constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
 
-    digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD1D, output[0] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, output[1] > 0 ? HIGH : LOW);
 
-    ledcWrite(2, abs(output[0]));
-    ledcWrite(3, abs(output[1]));
+    ledcWrite(0, abs(output[0]));
+    ledcWrite(1, abs(output[1]));
 }
 
 // PID制御関数
-void pid_vel_control() {
+void pid_vel_control()
+{
 
     float kp_v = 0.8f;
     float kd_v = 0.0f;
@@ -204,9 +215,10 @@ void pid_vel_control() {
 
     output[1] = constrain(output[1], -MD_PWM_MAX, MD_PWM_MAX);
 
-    digitalWrite(MD3D, output[0] > 0 ? HIGH : LOW);
-    digitalWrite(MD4D, output[1] > 0 ? HIGH : LOW);
+    digitalWrite(MD1D, output[0] > 0 ? HIGH : LOW);
+    digitalWrite(MD2D, output[1] > 0 ? HIGH : LOW);
 
-    ledcWrite(2, abs(output[0]));
-    ledcWrite(3, abs(output[1]));
+    ledcWrite(0, abs(output[0]));
+    ledcWrite(1, abs(output[1]));
+    
 }

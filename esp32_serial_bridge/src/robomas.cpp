@@ -151,10 +151,10 @@ void M3508_Task(void *pvParameters) {
 
         // debug
 
-        Rx_16Data[3] = static_cast<int16_t>(vel_m3508[0]);
-        Rx_16Data[4] = static_cast<int16_t>(vel_m3508[1]);
-        Rx_16Data[5] = static_cast<int16_t>(vel_m3508[2]);
-        Rx_16Data[6] = static_cast<int16_t>(vel_m3508[3]);
+        // Rx_16Data[3] = static_cast<int16_t>(vel_m3508[0]);
+        // Rx_16Data[4] = static_cast<int16_t>(vel_m3508[1]);
+        // Rx_16Data[5] = static_cast<int16_t>(vel_m3508[2]);
+        // Rx_16Data[6] = static_cast<int16_t>(vel_m3508[3]);
 
         // Serial.print(vel_m3508[0]);
         // Serial.print("\t");
