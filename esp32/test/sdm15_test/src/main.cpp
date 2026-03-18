@@ -8,7 +8,8 @@ void setup() {
     Serial.begin(115200);
 
     // UART2: RX=21, TX=19
-    SerialSDM.begin(460800, SERIAL_8N1, 19, 21);
+    // SerialSDM.begin(460800, SERIAL_8N1, 19, 21);
+    SerialSDM.begin(460800, SERIAL_8N1, 22, 23);
 
     // 高速通信対策（重要）
     SerialSDM.setRxBufferSize(2048);
