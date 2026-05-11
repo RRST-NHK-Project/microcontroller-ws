@@ -56,12 +56,16 @@ enum ControlMode {
 static enum ControlMode control_mode = MODE_VELOCITY;
 static float target_velocity = 0.0f;
 static float target_angle = 0.0f;
+static enum ControlMode requested_control_mode = MODE_VELOCITY;
+static float requested_velocity = 0.0f;
+static float requested_angle = 0.0f;
 
 static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
 
 static float last_angle = 0.0f;
 static uint32_t last_angle_sample_ms = 0;
 static float estimated_velocity = 0.0f;
+static uint32_t last_target_update_ms = 0;
 
 static constexpr float kDegToRad = PI / 180.0f;
 static constexpr float kRadToDeg = 180.0f / PI;
@@ -76,18 +80,38 @@ static inline int16_t clamp_i16(long v) {
     return (int16_t)v;
 }
 
-static void set_velocity_target(float v_rad_per_s) {
+static float ramp_towards(float current, float target, float max_delta) {
+    if (max_delta <= 0.0f)
+        return target;
+    if (target > current + max_delta)
+        return current + max_delta;
+    if (target < current - max_delta)
+        return current - max_delta;
+    return target;
+}
+
+static void apply_velocity_target(float v_rad_per_s) {
     control_mode = MODE_VELOCITY;
     target_velocity = v_rad_per_s;
     motor.controller = MotionControlType::velocity;
     motor.target = target_velocity;
 }
 
-static void set_angle_target(float a_rad) {
+static void apply_angle_target(float a_rad) {
     control_mode = MODE_ANGLE;
     target_angle = a_rad;
     motor.controller = MotionControlType::angle;
     motor.target = target_angle;
+}
+
+static void request_velocity_target(float v_rad_per_s) {
+    requested_control_mode = MODE_VELOCITY;
+    requested_velocity = v_rad_per_s;
+}
+
+static void request_angle_target(float a_rad) {
+    requested_control_mode = MODE_ANGLE;
+    requested_angle = a_rad;
 }
 
 static void update_velocity_estimate() {
@@ -103,6 +127,36 @@ static void update_velocity_estimate() {
 
     last_angle = angle;
     last_angle_sample_ms = now;
+}
+
+static void update_ramped_target() {
+    const uint32_t now = millis();
+    if (last_target_update_ms == 0) {
+        last_target_update_ms = now;
+    }
+
+    float dt = (float)(now - last_target_update_ms) * 0.001f;
+    if (dt < 0.0f)
+        dt = 0.0f;
+    last_target_update_ms = now;
+
+    if (requested_control_mode != control_mode) {
+        if (requested_control_mode == MODE_ANGLE) {
+            // 位置モード切り替え時は現在角から追従開始して段差を避ける。
+            apply_angle_target(encoder.getAngle());
+        } else {
+            // 速度モード切り替え時は現在速度近傍から追従開始する。
+            apply_velocity_target(estimated_velocity);
+        }
+    }
+
+    if (control_mode == MODE_VELOCITY) {
+        const float max_delta = TARGET_VELOCITY_SLEW_RATE * dt;
+        apply_velocity_target(ramp_towards(target_velocity, requested_velocity, max_delta));
+    } else {
+        const float max_delta = TARGET_ANGLE_SLEW_RATE_DEG * kDegToRad * dt;
+        apply_angle_target(ramp_towards(target_angle, requested_angle, max_delta));
+    }
 }
 
 static void apply_commands_from_rx() {
@@ -124,7 +178,7 @@ static void apply_commands_from_rx() {
 
     if (!run) {
         // フェイルセーフ: stop
-        set_velocity_target(0.0f);
+        request_velocity_target(0.0f);
         return;
     }
 
@@ -132,11 +186,11 @@ static void apply_commands_from_rx() {
 
     if (mode == MODE_VELOCITY) {
         const float vel = (float)Rx_16Data[RX_TARGET_VELOCITY] * TARGET_VELOCITY_SCALE;
-        set_velocity_target(vel);
+        request_velocity_target(vel);
     } else {
         const float ang_deg = (float)Rx_16Data[RX_TARGET_ANGLE] * TARGET_ANGLE_SCALE;
         const float ang = ang_deg * kDegToRad;
-        set_angle_target(ang);
+        request_angle_target(ang);
     }
 }
 
@@ -221,13 +275,15 @@ void setup() {
     // 位置制御 (Pのみ)
     motor.P_angle.P = 9.0f;
 
-    set_velocity_target(0.0f);
+    apply_velocity_target(0.0f);
+    request_velocity_target(0.0f);
 
     motor.init();
     motor.initFOC();
 
     last_angle = encoder.getAngle();
     last_angle_sample_ms = millis();
+    last_target_update_ms = millis();
 }
 
 // ================= LOOP =================
@@ -242,6 +298,9 @@ void loop() {
 
     // Command apply
     apply_commands_from_rx();
+
+    // Internal command ramp
+    update_ramped_target();
 
     // Control
     motor.move();

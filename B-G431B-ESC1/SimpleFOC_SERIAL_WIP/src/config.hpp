@@ -15,7 +15,7 @@ Copyright (c) 2026.
 
 // IDの設定（ROS側からマイコンを識別するために使用）
 // すべてのマイコンで異なる値にすること
-#define DEVICE_ID 0x01
+#define DEVICE_ID 0x99
 
 // MCU -> PC 送信周期 (ms)
 #define TX_PERIOD_MS 20
@@ -29,6 +29,13 @@ Copyright (c) 2026.
 #define DEFAULT_VOLTAGE_SUPPLY 24.0f
 #define DEFAULT_VOLTAGE_LIMIT 12.0f
 #define DEFAULT_VELOCITY_LIMIT 1000.0f
+
+// ================= Command slew-rate limits =================
+// 急激な指令変化で電流制限に入りにくくするための内部ランプ制限。
+// - velocity: rad/s^2
+// - angle: deg/s
+#define TARGET_VELOCITY_SLEW_RATE 200.0f
+#define TARGET_ANGLE_SLEW_RATE_DEG 360.0f
 
 // ================= Slot Index (PC -> MCU) =================
 // Rx_16Data[0..23]

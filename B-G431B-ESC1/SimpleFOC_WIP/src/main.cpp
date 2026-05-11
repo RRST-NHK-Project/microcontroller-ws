@@ -37,7 +37,7 @@ void setup() {
     currentSense.skip_align = true;
     motor.linkCurrentSense(&currentSense);
 
-    motor.voltage_sensor_align = 1;
+    motor.voltage_sensor_align = 3;
     motor.velocity_index_search = 3;
 
     // モータの電圧の制限
