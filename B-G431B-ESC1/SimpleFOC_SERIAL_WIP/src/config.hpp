@@ -51,8 +51,8 @@ Copyright (c) 2026.
 // ================= Unit scaling =================
 // 受信側: int16 -> float
 // - velocity: 0.1 rad/s
-// - angle: mrad
+// - angle: 0.1 deg
 // - voltage_limit: 0.1 V
 #define TARGET_VELOCITY_SCALE 0.1f
-#define TARGET_ANGLE_SCALE 0.001f
+#define TARGET_ANGLE_SCALE 0.1f
 #define VOLTAGE_LIMIT_SCALE 0.1f

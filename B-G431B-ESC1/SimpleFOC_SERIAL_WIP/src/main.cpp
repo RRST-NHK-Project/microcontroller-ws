@@ -20,6 +20,10 @@ Copyright (c) 2026.
 #include <SimpleFOC.h>
 #include <math.h>
 
+#ifndef PI
+#define PI 3.14159265358979323846f
+#endif
+
 // ================= SimpleFOC objects =================
 
 // モータ極数
@@ -58,6 +62,9 @@ static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
 static float last_angle = 0.0f;
 static uint32_t last_angle_sample_ms = 0;
 static float estimated_velocity = 0.0f;
+
+static constexpr float kDegToRad = PI / 180.0f;
+static constexpr float kRadToDeg = 180.0f / PI;
 
 // ================= Helpers =================
 
@@ -127,7 +134,8 @@ static void apply_commands_from_rx() {
         const float vel = (float)Rx_16Data[RX_TARGET_VELOCITY] * TARGET_VELOCITY_SCALE;
         set_velocity_target(vel);
     } else {
-        const float ang = (float)Rx_16Data[RX_TARGET_ANGLE] * TARGET_ANGLE_SCALE;
+        const float ang_deg = (float)Rx_16Data[RX_TARGET_ANGLE] * TARGET_ANGLE_SCALE;
+        const float ang = ang_deg * kDegToRad;
         set_angle_target(ang);
     }
 }
@@ -139,8 +147,8 @@ static void update_tx_telemetry() {
 
     Tx_16Data[TX_DEBUG] = 0;
 
-    // angle [rad] -> mrad
-    Tx_16Data[TX_ANGLE] = clamp_i16(lroundf(angle * (1.0f / TARGET_ANGLE_SCALE)));
+    // angle [rad] -> 0.1 deg
+    Tx_16Data[TX_ANGLE] = clamp_i16(lroundf((angle * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
 
     // velocity [rad/s] -> 0.1 rad/s
     Tx_16Data[TX_VELOCITY] = clamp_i16(lroundf(vel * (1.0f / TARGET_VELOCITY_SCALE)));
@@ -149,7 +157,7 @@ static void update_tx_telemetry() {
     if (control_mode == MODE_VELOCITY) {
         Tx_16Data[TX_TARGET] = clamp_i16(lroundf(target * (1.0f / TARGET_VELOCITY_SCALE)));
     } else {
-        Tx_16Data[TX_TARGET] = clamp_i16(lroundf(target * (1.0f / TARGET_ANGLE_SCALE)));
+        Tx_16Data[TX_TARGET] = clamp_i16(lroundf((target * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
     }
 
     Tx_16Data[TX_MODE] = (int16_t)((control_mode == MODE_ANGLE) ? 1 : 0);
