@@ -49,10 +49,10 @@ void setup() {
 
     // 以下コントローラ設定、コメントアウトで速度、位置制御の切り替え
     // 速度制御
-    motor.controller = MotionControlType::velocity;
+    //motor.controller = MotionControlType::velocity;
 
     // 位置制御
-    //  motor.controller = MotionControlType::angle;
+    motor.controller = MotionControlType::angle;
 
     // トルク制御方式の設定
     motor.torque_controller = TorqueControlType::foc_current;

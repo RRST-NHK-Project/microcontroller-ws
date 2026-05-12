@@ -26,16 +26,43 @@ Copyright (c) 2026.
 
 // ================= デフォルト値 =================
 
+// C3542-920KV 想定の初期値
+// - 一般的な 14 極ロータを想定して pole pairs = 7
+// - まずは保守的なゲインと速度上限から開始する
+#define MOTOR_POLE_PAIRS 7
+
+// 速度制御の切り分け用。
+// `1` にすると RX_MODE を無視して常に速度制御を使う。
+#define FORCE_VELOCITY_MODE 1
+
 #define DEFAULT_VOLTAGE_SUPPLY 24.0f
 #define DEFAULT_VOLTAGE_LIMIT 12.0f
-#define DEFAULT_VELOCITY_LIMIT 1000.0f
+#define DEFAULT_VELOCITY_LIMIT 250.0f
 
 // ================= Command slew-rate limits =================
 // 急激な指令変化で電流制限に入りにくくするための内部ランプ制限。
+// `0` にすると内部ランプを無効化して、受信した目標値をそのまま適用する。
+#define ENABLE_TARGET_RAMP 0
 // - velocity: rad/s^2
 // - angle: deg/s
 #define TARGET_VELOCITY_SLEW_RATE 200.0f
 #define TARGET_ANGLE_SLEW_RATE_DEG 360.0f
+
+// ================= FOC gains =================
+// 電流ループ PID
+#define CURRENT_PID_P 0.1f
+#define CURRENT_PID_I 10.0f
+#define CURRENT_PID_D 0.0f
+
+// 速度ループ PID
+#define VELOCITY_PID_P 0.25f
+#define VELOCITY_PID_I 0.2f
+#define VELOCITY_PID_D 0.0f
+#define VELOCITY_PID_OUTPUT_RAMP 300.0f
+#define VELOCITY_LPF_TF 0.02f
+
+// 位置ループ P
+#define ANGLE_P_GAIN 9.0f
 
 // ================= Slot Index (PC -> MCU) =================
 // Rx_16Data[0..23]

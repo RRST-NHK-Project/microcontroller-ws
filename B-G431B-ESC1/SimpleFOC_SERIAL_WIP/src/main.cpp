@@ -27,7 +27,7 @@ Copyright (c) 2026.
 // ================= SimpleFOC objects =================
 
 // モータ極数
-BLDCMotor motor = BLDCMotor(7);
+BLDCMotor motor = BLDCMotor(MOTOR_POLE_PAIRS);
 
 // ドライバ設定
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL,
@@ -63,12 +63,13 @@ static float requested_angle = 0.0f;
 static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
 
 static float last_angle = 0.0f;
-static uint32_t last_angle_sample_ms = 0;
+static uint32_t last_angle_sample_us = 0;
 static float estimated_velocity = 0.0f;
-static uint32_t last_target_update_ms = 0;
+static uint32_t last_target_update_us = 0;
 
 static constexpr float kDegToRad = PI / 180.0f;
 static constexpr float kRadToDeg = 180.0f / PI;
+static constexpr float kMicrosToSeconds = 1.0e-6f;
 
 // ================= Helpers =================
 
@@ -78,6 +79,16 @@ static inline int16_t clamp_i16(long v) {
     if (v < -32768)
         return -32768;
     return (int16_t)v;
+}
+
+static float clamp_abs(float value, float limit) {
+    if (limit <= 0.0f)
+        return value;
+    if (value > limit)
+        return limit;
+    if (value < -limit)
+        return -limit;
+    return value;
 }
 
 static float ramp_towards(float current, float target, float max_delta) {
@@ -115,30 +126,38 @@ static void request_angle_target(float a_rad) {
 }
 
 static void update_velocity_estimate() {
-    const uint32_t now = millis();
+    const uint32_t now = micros();
     const float angle = encoder.getAngle();
 
-    if (last_angle_sample_ms != 0) {
-        const float dt = (float)(now - last_angle_sample_ms) * 0.001f;
+    if (last_angle_sample_us != 0) {
+        const float dt = (float)(now - last_angle_sample_us) * kMicrosToSeconds;
         if (dt > 0.0f) {
             estimated_velocity = (angle - last_angle) / dt;
         }
     }
 
     last_angle = angle;
-    last_angle_sample_ms = now;
+    last_angle_sample_us = now;
 }
 
 static void update_ramped_target() {
-    const uint32_t now = millis();
-    if (last_target_update_ms == 0) {
-        last_target_update_ms = now;
+#if !ENABLE_TARGET_RAMP
+    if (requested_control_mode == MODE_ANGLE) {
+        apply_angle_target(requested_angle);
+    } else {
+        apply_velocity_target(requested_velocity);
+    }
+    return;
+#else
+    const uint32_t now = micros();
+    if (last_target_update_us == 0) {
+        last_target_update_us = now;
     }
 
-    float dt = (float)(now - last_target_update_ms) * 0.001f;
+    float dt = (float)(now - last_target_update_us) * kMicrosToSeconds;
     if (dt < 0.0f)
         dt = 0.0f;
-    last_target_update_ms = now;
+    last_target_update_us = now;
 
     if (requested_control_mode != control_mode) {
         if (requested_control_mode == MODE_ANGLE) {
@@ -157,6 +176,7 @@ static void update_ramped_target() {
         const float max_delta = TARGET_ANGLE_SLEW_RATE_DEG * kDegToRad * dt;
         apply_angle_target(ramp_towards(target_angle, requested_angle, max_delta));
     }
+#endif
 }
 
 static void apply_commands_from_rx() {
@@ -182,10 +202,17 @@ static void apply_commands_from_rx() {
         return;
     }
 
-    const enum ControlMode mode = (mode_raw == 1) ? MODE_ANGLE : MODE_VELOCITY;
+    const enum ControlMode mode =
+#if FORCE_VELOCITY_MODE
+        MODE_VELOCITY;
+#else
+        (mode_raw == 1) ? MODE_ANGLE : MODE_VELOCITY;
+#endif
 
     if (mode == MODE_VELOCITY) {
-        const float vel = (float)Rx_16Data[RX_TARGET_VELOCITY] * TARGET_VELOCITY_SCALE;
+        const float vel = clamp_abs(
+            (float)Rx_16Data[RX_TARGET_VELOCITY] * TARGET_VELOCITY_SCALE,
+            DEFAULT_VELOCITY_LIMIT);
         request_velocity_target(vel);
     } else {
         const float ang_deg = (float)Rx_16Data[RX_TARGET_ANGLE] * TARGET_ANGLE_SCALE;
@@ -259,21 +286,21 @@ void setup() {
     motor.torque_controller = TorqueControlType::foc_current;
 
     // 電流制御 PID
-    motor.PID_current_q.P = motor.PID_current_d.P = 0.1f;
-    motor.PID_current_q.I = motor.PID_current_d.I = 10.0f;
-    motor.PID_current_q.D = motor.PID_current_d.D = 0.0f;
+    motor.PID_current_q.P = motor.PID_current_d.P = CURRENT_PID_P;
+    motor.PID_current_q.I = motor.PID_current_d.I = CURRENT_PID_I;
+    motor.PID_current_q.D = motor.PID_current_d.D = CURRENT_PID_D;
 
     // 速度制御 PID
-    motor.PID_velocity.P = 0.5f;
-    motor.PID_velocity.I = 1.0f;
-    motor.PID_velocity.D = 0.0f;
-    motor.PID_velocity.output_ramp = 1000.0f;
+    motor.PID_velocity.P = VELOCITY_PID_P;
+    motor.PID_velocity.I = VELOCITY_PID_I;
+    motor.PID_velocity.D = VELOCITY_PID_D;
+    motor.PID_velocity.output_ramp = VELOCITY_PID_OUTPUT_RAMP;
 
     // LPF
-    motor.LPF_velocity.Tf = 0.01f;
+    motor.LPF_velocity.Tf = VELOCITY_LPF_TF;
 
     // 位置制御 (Pのみ)
-    motor.P_angle.P = 9.0f;
+    motor.P_angle.P = ANGLE_P_GAIN;
 
     apply_velocity_target(0.0f);
     request_velocity_target(0.0f);
@@ -282,14 +309,13 @@ void setup() {
     motor.initFOC();
 
     last_angle = encoder.getAngle();
-    last_angle_sample_ms = millis();
-    last_target_update_ms = millis();
+    last_angle_sample_us = micros();
+    last_target_update_us = micros();
 }
 
 // ================= LOOP =================
 
 void loop() {
-
     // RX/TX
     serial_task_update();
 
