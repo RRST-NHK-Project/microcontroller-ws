@@ -70,6 +70,7 @@ static uint32_t last_target_update_us = 0;
 
 static constexpr float kDegToRad = PI / 180.0f;
 static constexpr float kRadToDeg = 180.0f / PI;
+static constexpr float kTwoPi = 2.0f * PI;
 static constexpr float kMicrosToSeconds = 1.0e-6f;
 
 // ================= Helpers =================
@@ -133,12 +134,25 @@ static void update_velocity_estimate() {
     if (last_angle_sample_us != 0) {
         const float dt = (float)(now - last_angle_sample_us) * kMicrosToSeconds;
         if (dt > 0.0f) {
-            estimated_velocity = (angle - last_angle) / dt;
+            float delta = angle - last_angle;
+            // If the sensor angle wraps at 2π, keep delta continuous.
+            if (delta > PI)
+                delta -= kTwoPi;
+            else if (delta < -PI)
+                delta += kTwoPi;
+            estimated_velocity = delta / dt;
         }
     }
 
     last_angle = angle;
     last_angle_sample_us = now;
+}
+
+static float wrap_0_to_2pi(float a_rad) {
+    float w = fmodf(a_rad, kTwoPi);
+    if (w < 0.0f)
+        w += kTwoPi;
+    return w;
 }
 
 static void update_ramped_target() {
@@ -234,13 +248,14 @@ static void apply_commands_from_rx() {
 
 static void update_tx_telemetry() {
     const float angle = encoder.getAngle();
+    const float angle_wrapped = wrap_0_to_2pi(angle);
     const float vel = estimated_velocity;
     const float target = (control_mode == MODE_VELOCITY) ? target_velocity : target_angle;
 
     Tx_16Data[TX_DEBUG] = debug_status;
 
-    // angle [rad] -> 0.1 deg
-    Tx_16Data[TX_ANGLE] = clamp_i16(lroundf((angle * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
+    // angle (wrapped) [rad] -> 0.1 deg
+    Tx_16Data[TX_ANGLE] = clamp_i16(lroundf((angle_wrapped * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
 
     // velocity [rad/s] -> 0.1 rad/s
     Tx_16Data[TX_VELOCITY] = clamp_i16(lroundf(vel * (1.0f / TARGET_VELOCITY_SCALE)));
@@ -249,7 +264,8 @@ static void update_tx_telemetry() {
     if (control_mode == MODE_VELOCITY) {
         Tx_16Data[TX_TARGET] = clamp_i16(lroundf(target * (1.0f / TARGET_VELOCITY_SCALE)));
     } else {
-        Tx_16Data[TX_TARGET] = clamp_i16(lroundf((target * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
+        const float target_wrapped = wrap_0_to_2pi(target);
+        Tx_16Data[TX_TARGET] = clamp_i16(lroundf((target_wrapped * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
     }
 
     Tx_16Data[TX_MODE] = (int16_t)((control_mode == MODE_ANGLE) ? 1 : 0);

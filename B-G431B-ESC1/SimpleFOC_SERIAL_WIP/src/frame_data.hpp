@@ -24,7 +24,7 @@ Copyright (c) 2026.
 extern volatile int16_t Tx_16Data[Tx16NUM];
 /*
 0: debug/reserved
-1: angle (mrad)
+1: angle (0.1 deg)
 2: velocity (0.1 rad/s)
 3: target (unit depends on mode)
 4: mode (0=velocity, 1=angle)
@@ -38,7 +38,7 @@ extern volatile int16_t Rx_16Data[Rx16NUM];
 1: enable (0=stop, 1=run)
 2: mode (0=velocity, 1=angle)
 3: target_velocity (0.1 rad/s)
-4: target_angle (mrad)
+4: target_angle (0.1 deg)
 5: voltage_limit (0.1 V)
 6..23: reserved
 */

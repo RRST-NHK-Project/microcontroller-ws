@@ -35,7 +35,7 @@ pio run
 - `Rx_16Data[RX_ENABLE]`  (=1): enable (0=stop, 1=run)
 - `Rx_16Data[RX_MODE]`    (=2): mode (0=velocity, 1=angle)
 - `Rx_16Data[RX_TARGET_VELOCITY]` (=3): target_velocity (0.1 rad/s)
-- `Rx_16Data[RX_TARGET_ANGLE]`    (=4): target_angle (mrad)
+- `Rx_16Data[RX_TARGET_ANGLE]`    (=4): target_angle (0.1 deg)
 - `Rx_16Data[RX_VOLTAGE_LIMIT]`   (=5): voltage_limit (0.1 V)
 
 ### MCU -> PC (telemetry)
@@ -44,7 +44,7 @@ pio run
 
 本ファームの割り当て:
 
-- `Tx_16Data[TX_ANGLE]`   (=1): angle (mrad)
+- `Tx_16Data[TX_ANGLE]`   (=1): angle (0.1 deg)
 - `Tx_16Data[TX_VELOCITY]` (=2): velocity (0.1 rad/s)
 - `Tx_16Data[TX_TARGET]`  (=3): target (mode に応じて単位が変化)
 - `Tx_16Data[TX_MODE]`    (=4): mode (0=velocity, 1=angle)
