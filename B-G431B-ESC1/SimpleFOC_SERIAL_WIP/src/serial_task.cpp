@@ -42,6 +42,7 @@ Copyright (c) 2026.
 #include <Arduino.h>
 
 #define START_BYTE 0xAA
+static const uint8_t kExpectedRxLen = Rx16NUM * 2;
 
 // ================= TX =================
 
@@ -72,7 +73,7 @@ uint32_t last_tx_ms = 0;
 // ================= Internal =================
 
 static void send_frame();
-static void receive_frame();
+static void receive_frame(uint8_t max_bytes);
 
 // ================= Public =================
 
@@ -84,7 +85,7 @@ void serial_task_init() {
 void serial_task_update() {
 
     // RXは毎ループ呼び出す
-    receive_frame();
+    receive_frame((uint8_t)(Rx16NUM * 2 + 4));
 
     // TXのみ周期管理
     const uint32_t now = millis();
@@ -106,6 +107,10 @@ uint32_t serial_last_rx_ms() {
 // ================= TX =================
 
 static void send_frame() {
+
+    if (Serial.availableForWrite() < (int)sizeof(Tx_8Data)) {
+        return;
+    }
 
     Tx_8Data[0] = START_BYTE;
     Tx_8Data[1] = DEVICE_ID;
@@ -129,11 +134,14 @@ static void send_frame() {
 
 // ================= RX =================
 
-static void receive_frame() {
+static void receive_frame(uint8_t max_bytes) {
 
-    while (Serial.available()) {
+    uint8_t bytes_processed = 0;
+
+    while (bytes_processed < max_bytes && Serial.available()) {
 
         uint8_t b = (uint8_t)Serial.read();
+        bytes_processed++;
 
         switch (rx_state) {
 
@@ -144,20 +152,24 @@ static void receive_frame() {
             break;
 
         case WAIT_ID:
-            rx_id = b;
-            rx_checksum = b;
-            rx_state = WAIT_LEN;
+            if (b == DEVICE_ID) {
+                rx_id = b;
+                rx_checksum = b;
+                rx_state = WAIT_LEN;
+            } else {
+                rx_state = WAIT_START;
+            }
             break;
 
         case WAIT_LEN:
             rx_len = b;
             rx_checksum ^= b;
 
-            if (rx_len > Rx16NUM * 2) {
+            if (rx_len != kExpectedRxLen) {
                 rx_state = WAIT_START;
             } else {
                 rx_index = 0;
-                rx_state = (rx_len == 0) ? WAIT_CHECKSUM : WAIT_DATA;
+                rx_state = WAIT_DATA;
             }
             break;
 

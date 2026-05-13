@@ -33,7 +33,7 @@ Copyright (c) 2026.
 
 // 速度制御の切り分け用。
 // `1` にすると RX_MODE を無視して常に速度制御を使う。
-#define FORCE_VELOCITY_MODE 1
+#define FORCE_VELOCITY_MODE 0
 
 #define DEFAULT_VOLTAGE_SUPPLY 24.0f
 #define DEFAULT_VOLTAGE_LIMIT 12.0f
@@ -45,7 +45,7 @@ Copyright (c) 2026.
 #define ENABLE_TARGET_RAMP 0
 // - velocity: rad/s^2
 // - angle: deg/s
-#define TARGET_VELOCITY_SLEW_RATE 200.0f
+#define TARGET_VELOCITY_SLEW_RATE 120.0f
 #define TARGET_ANGLE_SLEW_RATE_DEG 360.0f
 
 // ================= FOC gains =================
@@ -55,11 +55,11 @@ Copyright (c) 2026.
 #define CURRENT_PID_D 0.0f
 
 // 速度ループ PID
-#define VELOCITY_PID_P 0.25f
-#define VELOCITY_PID_I 0.2f
+#define VELOCITY_PID_P 0.5f
+#define VELOCITY_PID_I 1.0f
 #define VELOCITY_PID_D 0.0f
-#define VELOCITY_PID_OUTPUT_RAMP 300.0f
-#define VELOCITY_LPF_TF 0.02f
+#define VELOCITY_PID_OUTPUT_RAMP 120.0f
+#define VELOCITY_LPF_TF 0.01f
 
 // 位置ループ P
 #define ANGLE_P_GAIN 9.0f

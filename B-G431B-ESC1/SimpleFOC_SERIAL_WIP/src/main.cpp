@@ -61,6 +61,7 @@ static float requested_velocity = 0.0f;
 static float requested_angle = 0.0f;
 
 static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
+static int16_t debug_status = 0;
 
 static float last_angle = 0.0f;
 static uint32_t last_angle_sample_us = 0;
@@ -189,6 +190,16 @@ static void apply_commands_from_rx() {
 
     const bool run = (!timed_out) && (enable != 0);
 
+    debug_status = 0;
+    if (timed_out)
+        debug_status |= 1;
+    if (enable != 0)
+        debug_status |= 2;
+    if (run)
+        debug_status |= 4;
+    if (mode_raw == 1)
+        debug_status |= 8;
+
     // voltage limit
     const float vlim = (float)Rx_16Data[RX_VOLTAGE_LIMIT] * VOLTAGE_LIMIT_SCALE;
     if (!timed_out && vlim > 0.1f && vlim < 100.0f) {
@@ -226,7 +237,7 @@ static void update_tx_telemetry() {
     const float vel = estimated_velocity;
     const float target = (control_mode == MODE_VELOCITY) ? target_velocity : target_angle;
 
-    Tx_16Data[TX_DEBUG] = 0;
+    Tx_16Data[TX_DEBUG] = debug_status;
 
     // angle [rad] -> 0.1 deg
     Tx_16Data[TX_ANGLE] = clamp_i16(lroundf((angle * kRadToDeg) * (1.0f / TARGET_ANGLE_SCALE)));
@@ -276,7 +287,7 @@ void setup() {
     currentSense.skip_align = true;
     motor.linkCurrentSense(&currentSense);
 
-    motor.voltage_sensor_align = 1;
+    motor.voltage_sensor_align = 3;
     motor.velocity_index_search = 3;
 
     motor.voltage_limit = DEFAULT_VOLTAGE_LIMIT;
@@ -316,11 +327,11 @@ void setup() {
 // ================= LOOP =================
 
 void loop() {
-    // RX/TX
-    serial_task_update();
-
     // FOC
     motor.loopFOC();
+
+    // RX/TX
+    serial_task_update();
 
     // Command apply
     apply_commands_from_rx();
