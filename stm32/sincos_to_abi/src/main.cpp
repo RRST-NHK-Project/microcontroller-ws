@@ -17,9 +17,9 @@ namespace {
     constexpr uint32_t kZWidthCounts = 4;
     constexpr bool kInvertDirection = false;
 
-    constexpr bool kUseFastAtan2 = true;
-    constexpr bool kEnableFilter = false;
+    constexpr bool kUseFilter = false;
     constexpr float kFilterAlpha = 0.2f;
+    constexpr uint32_t kMaxStepPerSample = 4;
 
     constexpr float kSinOffset = 2048.0f;
     constexpr float kCosOffset = 2048.0f;
@@ -36,32 +36,9 @@ namespace {
 
     uint16_t g_adcBuffer[2];
     uint32_t g_lastPhase = 0;
+    uint32_t g_glitchCount = 0;
     float g_sinFilt = 0.0f;
     float g_cosFilt = 0.0f;
-
-    inline float fastAtan2f(float y, float x) {
-        const float abs_y = fabsf(y) + 1.0e-10f;
-        float r = 0.0f;
-        float angle = 0.0f;
-
-        if (x >= 0.0f) {
-            r = (x - abs_y) / (x + abs_y);
-            angle = 0.78539816339f;
-        } else {
-            r = (x + abs_y) / (abs_y - x);
-            angle = 2.35619449019f;
-        }
-
-        angle += (0.1963f * r * r - 0.9817f) * r;
-        return (y < 0.0f) ? -angle : angle;
-    }
-
-    inline float computeAngle(float sin_v, float cos_v) {
-        if (kUseFastAtan2) {
-            return fastAtan2f(sin_v, cos_v);
-        }
-        return atan2f(sin_v, cos_v);
-    }
 
     inline void writePin(uint8_t pin, bool level) {
 #if defined(digitalWriteFast)
@@ -193,14 +170,14 @@ namespace {
 
         cos_v += sin_v * kPhaseSkew;
 
-        if (kEnableFilter) {
+        if (kUseFilter) {
             g_sinFilt += (sin_v - g_sinFilt) * kFilterAlpha;
             g_cosFilt += (cos_v - g_cosFilt) * kFilterAlpha;
             sin_v = g_sinFilt;
             cos_v = g_cosFilt;
         }
 
-        float angle = computeAngle(sin_v, cos_v);
+        float angle = atan2f(sin_v, cos_v);
         if (angle < 0.0f) {
             angle += kTwoPi;
         }
@@ -210,9 +187,33 @@ namespace {
             phase_q = 0;
         }
 
-        if (phase_q != g_lastPhase) {
-            updateOutputs(phase_q);
-            g_lastPhase = phase_q;
+        int32_t delta = static_cast<int32_t>(phase_q) - static_cast<int32_t>(g_lastPhase);
+        if (delta > static_cast<int32_t>(kTotalCounts / 2)) {
+            delta -= static_cast<int32_t>(kTotalCounts);
+        } else if (delta < -static_cast<int32_t>(kTotalCounts / 2)) {
+            delta += static_cast<int32_t>(kTotalCounts);
+        }
+
+        if (delta == 0) {
+            return;
+        }
+
+        if (static_cast<uint32_t>(abs(delta)) > kMaxStepPerSample) {
+            g_glitchCount++;
+            return;
+        }
+
+        const int32_t step = (delta > 0) ? 1 : -1;
+        while (delta != 0) {
+            uint32_t next = g_lastPhase;
+            if (step > 0) {
+                next = (g_lastPhase + 1U) % kTotalCounts;
+            } else {
+                next = (g_lastPhase == 0) ? (kTotalCounts - 1U) : (g_lastPhase - 1U);
+            }
+            updateOutputs(next);
+            g_lastPhase = next;
+            delta -= step;
         }
     }
 } // namespace
