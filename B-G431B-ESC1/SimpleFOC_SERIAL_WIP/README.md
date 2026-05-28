@@ -40,7 +40,7 @@ pio run
 
 ### MCU -> PC (telemetry)
 
-`serial_bridge` 側の受信スロット数は 17 (`kRx16Num=17`) です。
+`serial_bridge` 側の受信スロット数は 24 です。
 
 本ファームの割り当て:
 
@@ -49,6 +49,7 @@ pio run
 - `Tx_16Data[TX_TARGET]`  (=3): target (mode に応じて単位が変化)
 - `Tx_16Data[TX_MODE]`    (=4): mode (0=velocity, 1=angle)
 - `Tx_16Data[TX_VOLTAGE_LIMIT]` (=5): voltage_limit (0.1 V)
+- `Tx_16Data[TX_RPM]` (=6): rpm (1 rpm, signed)
 
 ## 動作
 

@@ -3,8 +3,8 @@
 ・シリアル通信のフレームデータ定義ヘッダーファイル
 
 serial_bridge (PC側) との関係:
-- PC -> MCU は 24 x int16 (serial_bridge/include/serial_bridge/config.hpp の kTx16Num)
-- MCU -> PC は 17 x int16 (kRx16Num)
+- PC -> MCU は 24 x int16
+- MCU -> PC も 24 x int16
 
 注意:
 - esp32_serial_bridge と同じ命名に合わせて
@@ -18,7 +18,7 @@ Copyright (c) 2026.
 #pragma once
 #include <stdint.h>
 
-#define Tx16NUM 17 // MCU -> PC
+#define Tx16NUM 24 // MCU -> PC
 #define Rx16NUM 24 // PC -> MCU
 
 extern volatile int16_t Tx_16Data[Tx16NUM];
@@ -29,7 +29,8 @@ extern volatile int16_t Tx_16Data[Tx16NUM];
 3: target (unit depends on mode)
 4: mode (0=velocity, 1=angle)
 5: voltage_limit (0.1 V)
-6..16: reserved
+6: rpm (1 rpm, signed)
+7..23: reserved
 */
 
 extern volatile int16_t Rx_16Data[Rx16NUM];
