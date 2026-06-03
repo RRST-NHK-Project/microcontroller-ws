@@ -94,8 +94,35 @@ Copyright (c) 2026.
 #define RX_TARGET_ANGLE 4
 #define RX_VOLTAGE_LIMIT 5
 
+// ===== Runtime tuning parameters =====
+// Apply-mask based update to avoid unintentionally overwriting parameters.
+// - RX_PARAM_APPLY_MASK: bit-field (see RX_PARAM_APPLY_* below)
+// - Parameter slots are only applied when the corresponding bit is set.
+#define RX_PARAM_APPLY_MASK 6
+
+#define RX_VELOCITY_LIMIT 7
+#define RX_CURRENT_LIMIT 8
+
+#define RX_VELOCITY_PID_P 9
+#define RX_VELOCITY_PID_I 10
+#define RX_VELOCITY_PID_D 11
+#define RX_VELOCITY_PID_OUTPUT_RAMP 12
+// LPF Tf in milliseconds (e.g. 20 -> 0.020s)
+#define RX_VELOCITY_LPF_TF_MS 13
+
+#define RX_ANGLE_P_GAIN 14
+
+// Apply-mask bits
+#define RX_PARAM_APPLY_VOLTAGE_LIMIT (1 << 0)
+#define RX_PARAM_APPLY_VELOCITY_LIMIT (1 << 1)
+#define RX_PARAM_APPLY_CURRENT_LIMIT (1 << 2)
+#define RX_PARAM_APPLY_VELOCITY_PID (1 << 3)
+#define RX_PARAM_APPLY_VELOCITY_OUTPUT_RAMP (1 << 4)
+#define RX_PARAM_APPLY_VELOCITY_LPF_TF (1 << 5)
+#define RX_PARAM_APPLY_ANGLE_P_GAIN (1 << 6)
+
 // ================= Slot Index (MCU -> PC) =================
-// Tx_16Data[0..16]
+// Tx_16Data[0..23]
 #define TX_DEBUG 0
 #define TX_ANGLE 1
 #define TX_VELOCITY 2
@@ -105,6 +132,18 @@ Copyright (c) 2026.
 // 追加テレメトリ: 実測RPM (signed, 1rpm)
 #define TX_RPM 6
 
+// Echo current tuning parameters
+#define TX_VELOCITY_LIMIT 7
+#define TX_CURRENT_LIMIT 8
+
+#define TX_VELOCITY_PID_P 9
+#define TX_VELOCITY_PID_I 10
+#define TX_VELOCITY_PID_D 11
+#define TX_VELOCITY_PID_OUTPUT_RAMP 12
+#define TX_VELOCITY_LPF_TF_MS 13
+
+#define TX_ANGLE_P_GAIN 14
+
 // ================= Unit scaling =================
 // 受信側: int16 -> float
 // - velocity: 0.1 rad/s
@@ -113,3 +152,15 @@ Copyright (c) 2026.
 #define TARGET_VELOCITY_SCALE 0.1f
 #define TARGET_ANGLE_SCALE 0.1f
 #define VOLTAGE_LIMIT_SCALE 0.1f
+
+// tuning scales
+// - velocity_limit: 0.1 rad/s
+// - current_limit: 0.1 A
+// - velocity PID gains: 0.001
+// - velocity PID output_ramp: 1.0
+// - velocity LPF Tf: milliseconds
+// - angle P gain: 0.01
+#define VELOCITY_LIMIT_SCALE 0.1f
+#define CURRENT_LIMIT_SCALE 0.1f
+#define VELOCITY_PID_GAIN_SCALE 0.001f
+#define ANGLE_P_GAIN_SCALE 0.01f
