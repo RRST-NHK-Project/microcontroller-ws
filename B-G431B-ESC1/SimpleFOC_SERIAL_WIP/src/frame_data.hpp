@@ -46,7 +46,7 @@ extern volatile int16_t Rx_16Data[Rx16NUM];
 0: debug/reserved
 1: enable (0=stop, 1=run)
 2: mode (0=velocity, 1=angle)
-3: target_velocity (0.1 rad/s)
+3: target_velocity (1 rpm)
 4: target_angle (0.1 deg)
 5: voltage_limit (0.1 V)
 6: param_apply_mask (bit-field)

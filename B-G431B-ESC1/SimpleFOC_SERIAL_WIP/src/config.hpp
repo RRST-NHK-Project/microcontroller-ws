@@ -43,7 +43,7 @@ Copyright (c) 2026.
 // SimpleFOC の Encoder は "PPR(1chあたりのパルス/回転)" を指定し、
 // quadrature(4x) はライブラリ側で自動換算されます。
 // 例: 2048PPR のAB相インクリメンタル → 2048
-#define ENCODER_PPR 48
+#define ENCODER_PPR 2048
 
 // Index(Z相) を使う場合のみ 1 にしてください。
 // 未配線/ノイズのある Index を有効化すると、高速回転時に角度補正が入り振動の原因になります。
@@ -146,10 +146,10 @@ Copyright (c) 2026.
 
 // ================= Unit scaling =================
 // 受信側: int16 -> float
-// - velocity: 0.1 rad/s
+// - velocity command: 1 rpm
 // - angle: 0.1 deg
 // - voltage_limit: 0.1 V
-#define TARGET_VELOCITY_SCALE 0.1f
+#define TARGET_VELOCITY_SCALE 1.0f
 #define TARGET_ANGLE_SCALE 0.1f
 #define VOLTAGE_LIMIT_SCALE 0.1f
 

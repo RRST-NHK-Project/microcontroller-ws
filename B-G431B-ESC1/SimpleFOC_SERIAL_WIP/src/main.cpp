@@ -81,7 +81,7 @@ enum ControlMode {
 };
 
 static ControlMode control_mode = MODE_VELOCITY;
-static float target_velocity = 0;
+static float target_velocity_rpm = 0;
 static float target_angle = 0;
 
 static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
@@ -137,9 +137,9 @@ void tim4_init() {
 // ======================================================
 static void apply_velocity(float v) {
     control_mode = MODE_VELOCITY;
-    target_velocity = v;
+    target_velocity_rpm = v;
     motor.controller = MotionControlType::velocity;
-    motor.target = v;
+    motor.target = v * (_2PI / 60.0f);
 }
 
 static void apply_angle(float a) {
@@ -239,7 +239,7 @@ static void update_tx() {
     if (control_mode == MODE_ANGLE) {
         Tx_16Data[TX_TARGET] = (int16_t)(target_angle / TARGET_ANGLE_SCALE);
     } else {
-        Tx_16Data[TX_TARGET] = (int16_t)(target_velocity / TARGET_VELOCITY_SCALE);
+        Tx_16Data[TX_TARGET] = (int16_t)(target_velocity_rpm / TARGET_VELOCITY_SCALE);
     }
 
     Tx_16Data[TX_VOLTAGE_LIMIT] = (int16_t)(motor.voltage_limit / VOLTAGE_LIMIT_SCALE);
