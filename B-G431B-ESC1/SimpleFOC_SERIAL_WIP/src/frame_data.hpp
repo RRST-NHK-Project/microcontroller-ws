@@ -30,15 +30,7 @@ extern volatile int16_t Tx_16Data[Tx16NUM];
 4: mode (0=velocity, 1=angle)
 5: voltage_limit (0.1 V)
 6: rpm (1 rpm, signed)
-7: velocity_limit (0.1 rad/s)
-8: current_limit (0.1 A)
-9: velocity PID P (0.001)
-10: velocity PID I (0.001)
-11: velocity PID D (0.001)
-12: velocity PID output_ramp (1.0)
-13: velocity LPF Tf (ms)
-14: angle P gain (0.01)
-15..23: reserved
+7..23: reserved
 */
 
 extern volatile int16_t Rx_16Data[Rx16NUM];
@@ -49,14 +41,5 @@ extern volatile int16_t Rx_16Data[Rx16NUM];
 3: target_velocity (0.1 rad/s)
 4: target_angle (0.1 deg)
 5: voltage_limit (0.1 V)
-6: param_apply_mask (bit-field)
-7: velocity_limit (0.1 rad/s)
-8: current_limit (0.1 A)
-9: velocity PID P (0.001)
-10: velocity PID I (0.001)
-11: velocity PID D (0.001)
-12: velocity PID output_ramp (1.0)
-13: velocity LPF Tf (ms)
-14: angle P gain (0.01)
-15..23: reserved
+6..23: reserved
 */

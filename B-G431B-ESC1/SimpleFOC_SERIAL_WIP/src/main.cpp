@@ -2,9 +2,6 @@
 #include "frame_data.hpp"
 #include "serial_task.hpp"
 
-#include <algorithm>
-#include <cmath>
-
 #include <Arduino.h>
 #include <SimpleFOC.h>
 #include <math.h>
@@ -89,9 +86,6 @@ static int16_t debug_status = 0;
 
 static float estimated_velocity = 0;
 
-// last applied mask (for edge-detection if desired)
-static int16_t last_param_apply_mask = 0;
-
 // ======================================================
 // TIM4 init (FINAL STABLE)
 // ======================================================
@@ -146,59 +140,7 @@ static void apply_angle(float a) {
     control_mode = MODE_ANGLE;
     target_angle = a;
     motor.controller = MotionControlType::angle;
-    motor.target = a * (PI / 180.0f);
-}
-
-static float clamp_non_negative(float value) {
-    return (value < 0.0f) ? 0.0f : value;
-}
-
-static void apply_params_from_rx() {
-    const int16_t mask = Rx_16Data[RX_PARAM_APPLY_MASK];
-    if (mask == 0) {
-        last_param_apply_mask = 0;
-        return;
-    }
-
-    // Apply on any non-zero mask (edge-detection can be added later).
-    (void)last_param_apply_mask;
-    last_param_apply_mask = mask;
-
-    if (mask & RX_PARAM_APPLY_VOLTAGE_LIMIT) {
-        const float v = clamp_non_negative(Rx_16Data[RX_VOLTAGE_LIMIT] * VOLTAGE_LIMIT_SCALE);
-        // keep within supply if known
-        motor.voltage_limit = std::min(v, (float)DEFAULT_VOLTAGE_SUPPLY);
-        voltage_limit = motor.voltage_limit;
-    }
-
-    if (mask & RX_PARAM_APPLY_VELOCITY_LIMIT) {
-        const float vlim = clamp_non_negative(Rx_16Data[RX_VELOCITY_LIMIT] * VELOCITY_LIMIT_SCALE);
-        motor.velocity_limit = vlim;
-    }
-
-    if (mask & RX_PARAM_APPLY_CURRENT_LIMIT) {
-        const float clim = clamp_non_negative(Rx_16Data[RX_CURRENT_LIMIT] * CURRENT_LIMIT_SCALE);
-        motor.current_limit = clim;
-    }
-
-    if (mask & RX_PARAM_APPLY_VELOCITY_PID) {
-        motor.PID_velocity.P = Rx_16Data[RX_VELOCITY_PID_P] * VELOCITY_PID_GAIN_SCALE;
-        motor.PID_velocity.I = Rx_16Data[RX_VELOCITY_PID_I] * VELOCITY_PID_GAIN_SCALE;
-        motor.PID_velocity.D = Rx_16Data[RX_VELOCITY_PID_D] * VELOCITY_PID_GAIN_SCALE;
-    }
-
-    if (mask & RX_PARAM_APPLY_VELOCITY_OUTPUT_RAMP) {
-        motor.PID_velocity.output_ramp = clamp_non_negative((float)Rx_16Data[RX_VELOCITY_PID_OUTPUT_RAMP]);
-    }
-
-    if (mask & RX_PARAM_APPLY_VELOCITY_LPF_TF) {
-        const float tf_ms = clamp_non_negative((float)Rx_16Data[RX_VELOCITY_LPF_TF_MS]);
-        motor.LPF_velocity.Tf = tf_ms / 1000.0f;
-    }
-
-    if (mask & RX_PARAM_APPLY_ANGLE_P_GAIN) {
-        motor.P_angle.P = Rx_16Data[RX_ANGLE_P_GAIN] * ANGLE_P_GAIN_SCALE;
-    }
+    motor.target = a;
 }
 
 // ======================================================
@@ -231,32 +173,9 @@ static void update_tx() {
     float angle = encoder.getAngle();
     float vel = motor.shaft_velocity;
 
-    Tx_16Data[TX_ANGLE] = (int16_t)std::lround((angle * 180.0f / PI) / TARGET_ANGLE_SCALE);
-    Tx_16Data[TX_VELOCITY] = (int16_t)std::lround(vel / TARGET_VELOCITY_SCALE);
+    Tx_16Data[TX_ANGLE] = (int16_t)(angle * 180.0f / PI);
+    Tx_16Data[TX_VELOCITY] = (int16_t)(vel);
     Tx_16Data[TX_DEBUG] = debug_status;
-
-    Tx_16Data[TX_MODE] = (int16_t)control_mode;
-    if (control_mode == MODE_ANGLE) {
-        Tx_16Data[TX_TARGET] = (int16_t)(target_angle / TARGET_ANGLE_SCALE);
-    } else {
-        Tx_16Data[TX_TARGET] = (int16_t)(target_velocity / TARGET_VELOCITY_SCALE);
-    }
-
-    Tx_16Data[TX_VOLTAGE_LIMIT] = (int16_t)(motor.voltage_limit / VOLTAGE_LIMIT_SCALE);
-
-    const float rpm = vel * 60.0f / _2PI;
-    Tx_16Data[TX_RPM] = (int16_t)rpm;
-
-    // Echo runtime parameters (best-effort)
-    Tx_16Data[TX_VELOCITY_LIMIT] = (int16_t)(motor.velocity_limit / VELOCITY_LIMIT_SCALE);
-    Tx_16Data[TX_CURRENT_LIMIT] = (int16_t)(motor.current_limit / CURRENT_LIMIT_SCALE);
-
-    Tx_16Data[TX_VELOCITY_PID_P] = (int16_t)(motor.PID_velocity.P / VELOCITY_PID_GAIN_SCALE);
-    Tx_16Data[TX_VELOCITY_PID_I] = (int16_t)(motor.PID_velocity.I / VELOCITY_PID_GAIN_SCALE);
-    Tx_16Data[TX_VELOCITY_PID_D] = (int16_t)(motor.PID_velocity.D / VELOCITY_PID_GAIN_SCALE);
-    Tx_16Data[TX_VELOCITY_PID_OUTPUT_RAMP] = (int16_t)(motor.PID_velocity.output_ramp);
-    Tx_16Data[TX_VELOCITY_LPF_TF_MS] = (int16_t)std::lround(motor.LPF_velocity.Tf * 1000.0f);
-    Tx_16Data[TX_ANGLE_P_GAIN] = (int16_t)(motor.P_angle.P / ANGLE_P_GAIN_SCALE);
 }
 
 // ======================================================
@@ -323,8 +242,6 @@ void loop() {
     motor.loopFOC();
 
     serial_task_update();
-
-    apply_params_from_rx();
 
     apply_rx();
 
