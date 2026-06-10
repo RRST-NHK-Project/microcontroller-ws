@@ -85,6 +85,47 @@ static float voltage_limit = DEFAULT_VOLTAGE_LIMIT;
 static int16_t debug_status = 0;
 
 static float estimated_velocity = 0;
+static int16_t manual_velocity_prev_count = 0;
+static uint32_t manual_velocity_prev_us = 0;
+
+static int16_t saturate_to_i16(float value) {
+    if (value > 32767.0f) {
+        return 32767;
+    }
+    if (value < -32768.0f) {
+        return -32768;
+    }
+    return (int16_t)lroundf(value);
+}
+
+static void reset_manual_velocity_estimate() {
+    manual_velocity_prev_count = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
+    manual_velocity_prev_us = micros();
+    estimated_velocity = 0;
+}
+
+static void update_manual_velocity_estimate() {
+    const uint32_t now_us = micros();
+    const uint32_t dt_us = now_us - manual_velocity_prev_us;
+    if (dt_us == 0) {
+        return;
+    }
+
+    const int16_t now_count = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
+    int32_t diff = (int32_t)now_count - (int32_t)manual_velocity_prev_count;
+    manual_velocity_prev_count = now_count;
+    manual_velocity_prev_us = now_us;
+
+    if (diff > 32767) {
+        diff -= 65536;
+    }
+    if (diff < -32768) {
+        diff += 65536;
+    }
+
+    const float dt = (float)dt_us * 1.0e-6f;
+    estimated_velocity = ((float)diff / (float)encoder.cpr) * _2PI / dt;
+}
 
 // ======================================================
 // TIM4 init (FINAL STABLE)
@@ -170,11 +211,15 @@ static void apply_rx() {
 // telemetry
 // ======================================================
 static void update_tx() {
+    update_manual_velocity_estimate();
+
     float angle = encoder.getAngle();
-    float vel = motor.shaft_velocity;
+    float foc_velocity = motor.shaft_velocity;
+    float manual_rpm = estimated_velocity * 60.0f / _2PI;
 
     Tx_16Data[TX_ANGLE] = (int16_t)(angle * 180.0f / PI);
-    Tx_16Data[TX_VELOCITY] = (int16_t)(vel);
+    Tx_16Data[TX_VELOCITY] = saturate_to_i16(foc_velocity);
+    Tx_16Data[TX_RPM] = saturate_to_i16(manual_rpm);
     Tx_16Data[TX_DEBUG] = debug_status;
 }
 
@@ -196,6 +241,7 @@ void setup() {
     // ===== TIM4 =====
     tim4_init();
     encoder.init();
+    reset_manual_velocity_estimate();
 
     // ===== driver =====
     driver.voltage_power_supply = DEFAULT_VOLTAGE_SUPPLY;
