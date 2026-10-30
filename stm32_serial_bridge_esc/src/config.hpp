@@ -1,7 +1,8 @@
 /*====================================================================
 <config.h>
 書き込み前にここでIDと動作モードを設定してください．
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #pragma once

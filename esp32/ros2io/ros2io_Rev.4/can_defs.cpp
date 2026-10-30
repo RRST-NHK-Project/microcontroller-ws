@@ -1,7 +1,8 @@
 /*====================================================================
 <can_defs.cpp>
 ・CAN関連の変数や関数の実装ファイル
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #include "can_defs.h"

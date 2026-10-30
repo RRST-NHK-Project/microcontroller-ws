@@ -1,7 +1,8 @@
 /*====================================================================
 <mode_init.cpp>
 ・各モードの初期化関数の実装ファイル
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #include <Arduino.h>

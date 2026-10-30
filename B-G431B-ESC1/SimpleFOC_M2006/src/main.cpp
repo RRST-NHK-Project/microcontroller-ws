@@ -9,7 +9,8 @@ Description:
   - ROS 側は serial_bridge/src/bridge_node.cpp の実装を前提
   - DATA は int16 big-endian
 
-Copyright (c) 2026.
+Copyright (c) 2026 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #include "config.hpp"

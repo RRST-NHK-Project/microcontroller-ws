@@ -1,7 +1,8 @@
 /*====================================================================
 <ros_defs.h>
 ・microROS関連の変数や関数の定義ファイル
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #pragma once

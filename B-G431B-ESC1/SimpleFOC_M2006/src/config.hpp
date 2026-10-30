@@ -4,7 +4,8 @@
 serial_bridge (ROS2) 側は DEVICE_ID と int16配列のスロット数(PC->MCU=24, MCU->PC=17)
 に合わせて動作します。
 
-Copyright (c) 2026.
+Copyright (c) 2026 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #pragma once

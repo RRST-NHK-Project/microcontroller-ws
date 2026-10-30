@@ -1,6 +1,7 @@
 /*<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 ros2io Rev.3
-Copyright © 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>*/
 
 // そろそろRev.4作るよ！

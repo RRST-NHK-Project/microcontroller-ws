@@ -24,7 +24,8 @@ Description:
   incoming frames from the PC. Received frames are validated using the
   checksum and stored in Rx_16Data array.
 
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 #include <Arduino.h>

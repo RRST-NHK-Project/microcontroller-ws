@@ -2,7 +2,8 @@
 ros2io Rev.4 beta
 Target board: ESP32 Dev Module (ESP32-DEVKITC-32E)
 
-Copyright (c) 2025 RRST-NHK-Project. All rights reserved.
+Copyright (c) 2025 RRST-NHK-Project
+SPDX-License-Identifier: MIT
 ====================================================================*/
 
 /*
